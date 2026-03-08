@@ -1,0 +1,708 @@
+Struktur folder backend
+backend
+├── src
+│   ├── config
+│   │   ├── db.js
+│   │   ├── env.js
+│   │   └── appConfig.js
+│   │
+│   ├── controllers
+│   │   ├── productController.js
+│   │   ├── orderController.js
+│   │   ├── paymentController.js
+│   │   ├── webhookController.js
+│   │   ├── authController.js
+│   │   └── adminController.js
+│   │
+│   ├── routes
+│   │   ├── index.js
+│   │   ├── productRoutes.js
+│   │   ├── orderRoutes.js
+│   │   ├── paymentRoutes.js
+│   │   ├── webhookRoutes.js
+│   │   ├── authRoutes.js
+│   │   └── adminRoutes.js
+│   │
+│   ├── services
+│   │   ├── productService.js
+│   │   ├── orderService.js
+│   │   ├── paymentService.js
+│   │   ├── transactionService.js
+│   │   ├── webhookService.js
+│   │   ├── pricingService.js
+│   │   ├── providerService.js
+│   │   └── authService.js
+│   │
+│   ├── providers
+│   │   ├── bangjeffProvider.js
+│   │   ├── digiflazzProvider.js
+│   │   ├── tokopayProvider.js
+│   │   └── providerFactory.js
+│   │
+│   ├── models
+│   │   ├── Product.js
+│   │   ├── Category.js
+│   │   ├── Transaction.js
+│   │   ├── Payment.js
+│   │   ├── User.js
+│   │   ├── Admin.js
+│   │   └── Setting.js
+│   │
+│   ├── middleware
+│   │   ├── authMiddleware.js
+│   │   ├── adminMiddleware.js
+│   │   ├── errorMiddleware.js
+│   │   ├── notFoundMiddleware.js
+│   │   └── validateRequest.js
+│   │
+│   ├── validators
+│   │   ├── orderValidator.js
+│   │   ├── authValidator.js
+│   │   ├── paymentValidator.js
+│   │   └── webhookValidator.js
+│   │
+│   ├── utils
+│   │   ├── generateInvoiceId.js
+│   │   ├── generateSignature.js
+│   │   ├── formatPrice.js
+│   │   ├── response.js
+│   │   ├── logger.js
+│   │   ├── date.js
+│   │   └── slugify.js
+│   │
+│   ├── jobs
+│   │   ├── syncProductsJob.js
+│   │   └── checkPendingTransactionsJob.js
+│   │
+│   ├── constants
+│   │   ├── orderStatus.js
+│   │   ├── paymentStatus.js
+│   │   ├── providerType.js
+│   │   └── paymentMethod.js
+│   │
+│   ├── docs
+│   │   └── apiDocs.js
+│   │
+│   └── app.js
+│
+├── .env
+├── .env.example
+├── package.json
+├── server.js
+└── README.md
+Penjelasan folder dan file satu per satu
+1. config
+
+Tempat semua konfigurasi utama.
+
+src/config/db.js
+
+Untuk koneksi MongoDB.
+
+src/config/env.js
+
+Untuk membaca environment variable dari .env.
+
+src/config/appConfig.js
+
+Untuk config aplikasi umum, misalnya:
+
+nama app
+
+port
+
+base URL
+
+nama provider aktif
+
+fee default
+
+2. controllers
+
+Controller menerima request dari route, lalu memanggil service.
+
+src/controllers/productController.js
+
+Untuk endpoint produk, misalnya:
+
+ambil semua produk
+
+ambil produk per game
+
+sync produk
+
+src/controllers/orderController.js
+
+Untuk:
+
+buat order topup
+
+cek detail order
+
+cek riwayat order
+
+src/controllers/paymentController.js
+
+Untuk:
+
+buat invoice pembayaran
+
+cek status pembayaran
+
+src/controllers/webhookController.js
+
+Untuk menerima webhook dari payment gateway.
+
+src/controllers/authController.js
+
+Untuk login admin, logout, cek profile admin.
+
+src/controllers/adminController.js
+
+Untuk fitur admin seperti:
+
+ubah harga
+
+ubah margin
+
+aktif/nonaktifkan produk
+
+3. routes
+
+Daftar endpoint.
+
+src/routes/index.js
+
+Gabungkan semua route.
+
+src/routes/productRoutes.js
+
+Contoh:
+
+GET /api/products
+GET /api/products/:slug
+POST /api/products/sync
+src/routes/orderRoutes.js
+
+Contoh:
+
+POST /api/orders
+GET /api/orders/:invoiceId
+src/routes/paymentRoutes.js
+
+Contoh:
+
+POST /api/payments/create
+GET /api/payments/:invoiceId
+src/routes/webhookRoutes.js
+
+Contoh:
+
+POST /api/webhooks/payment
+POST /api/webhooks/provider
+src/routes/authRoutes.js
+
+Contoh:
+
+POST /api/auth/login
+GET /api/auth/me
+src/routes/adminRoutes.js
+
+Contoh:
+
+GET /api/admin/dashboard
+PATCH /api/admin/products/:id
+4. services
+
+Ini inti logika bisnis.
+
+src/services/productService.js
+
+Untuk:
+
+ambil produk dari database
+
+ambil produk dari provider
+
+mapping format produk provider ke format internal
+
+src/services/orderService.js
+
+Untuk:
+
+validasi order
+
+buat transaksi
+
+hitung total harga
+
+kirim pesanan ke provider
+
+src/services/paymentService.js
+
+Untuk:
+
+buat invoice
+
+simpan data pembayaran
+
+verifikasi pembayaran
+
+src/services/transactionService.js
+
+Untuk:
+
+update status transaksi
+
+cek transaksi pending
+
+simpan log perubahan status
+
+src/services/webhookService.js
+
+Untuk:
+
+proses webhook payment gateway
+
+ubah status transaksi setelah pembayaran sukses
+
+src/services/pricingService.js
+
+Untuk:
+
+hitung harga jual
+
+tambah margin
+
+tambah biaya admin
+
+hitung harga promo
+
+src/services/providerService.js
+
+Jembatan ke provider API.
+
+Misalnya nanti dia yang memanggil:
+
+bangjeffProvider
+
+digiflazzProvider
+
+src/services/authService.js
+
+Untuk login admin dan token.
+
+5. providers
+
+Ini folder paling penting untuk sistem topup.
+
+Tujuannya supaya koneksi ke API luar dipisah rapi.
+
+src/providers/bangjeffProvider.js
+
+Isi fungsi khusus provider Bangjeff, misalnya:
+
+get products
+
+create order
+
+check status
+
+src/providers/digiflazzProvider.js
+
+Kalau nanti kamu tambah Digiflazz, file ini sudah siap.
+
+src/providers/tokopayProvider.js
+
+Kalau pembayaran pakai Tokopay.
+
+src/providers/providerFactory.js
+
+Untuk menentukan provider mana yang dipakai.
+
+Misalnya:
+
+kalau produk via Bangjeff → pakai bangjeffProvider
+
+kalau pembayaran via Tokopay → pakai tokopayProvider
+
+6. models
+
+Schema MongoDB.
+
+src/models/Product.js
+
+Simpan data produk.
+
+Contoh field:
+
+name
+
+code
+
+category
+
+provider
+
+buyPrice
+
+sellPrice
+
+isActive
+
+src/models/Category.js
+
+Untuk kategori game atau layanan.
+
+src/models/Transaction.js
+
+Data transaksi utama.
+
+Contoh field:
+
+invoiceId
+
+productCode
+
+userId
+
+nickname
+
+zoneId
+
+status
+
+paymentStatus
+
+providerStatus
+
+src/models/Payment.js
+
+Menyimpan invoice pembayaran.
+
+src/models/User.js
+
+Kalau nanti ada fitur akun user.
+
+src/models/Admin.js
+
+Akun admin panel.
+
+src/models/Setting.js
+
+Untuk simpan setting sistem, misalnya:
+
+margin default
+
+provider aktif
+
+mode maintenance
+
+7. middleware
+src/middleware/authMiddleware.js
+
+Cek token login.
+
+src/middleware/adminMiddleware.js
+
+Pastikan hanya admin yang bisa akses route tertentu.
+
+src/middleware/errorMiddleware.js
+
+Menangani error global.
+
+src/middleware/notFoundMiddleware.js
+
+Kalau route tidak ditemukan.
+
+src/middleware/validateRequest.js
+
+Menjalankan validasi input.
+
+8. validators
+
+Pisahkan validasi supaya controller bersih.
+
+src/validators/orderValidator.js
+
+Validasi body order.
+
+src/validators/authValidator.js
+
+Validasi login admin.
+
+src/validators/paymentValidator.js
+
+Validasi request pembayaran.
+
+src/validators/webhookValidator.js
+
+Validasi data webhook.
+
+9. utils
+src/utils/generateInvoiceId.js
+
+Untuk generate ID invoice unik.
+
+src/utils/generateSignature.js
+
+Untuk membuat signature API provider/payment.
+
+src/utils/formatPrice.js
+
+Format Rupiah.
+
+src/utils/response.js
+
+Format response API biar konsisten.
+
+src/utils/logger.js
+
+Logging.
+
+src/utils/date.js
+
+Helper tanggal.
+
+src/utils/slugify.js
+
+Kalau perlu slug kategori/produk.
+
+10. jobs
+
+Untuk proses otomatis.
+
+src/jobs/syncProductsJob.js
+
+Sinkron produk dari provider ke database.
+
+src/jobs/checkPendingTransactionsJob.js
+
+Cek transaksi yang masih pending.
+
+Ini berguna kalau provider lambat update status.
+
+11. constants
+src/constants/orderStatus.js
+
+Misalnya:
+
+PENDING
+
+PROCESSING
+
+SUCCESS
+
+FAILED
+
+src/constants/paymentStatus.js
+
+Misalnya:
+
+UNPAID
+
+PAID
+
+EXPIRED
+
+src/constants/providerType.js
+
+Misalnya:
+
+BANGJEFF
+
+DIGIFLAZZ
+
+src/constants/paymentMethod.js
+
+Misalnya:
+
+QRIS
+
+EWALLET
+
+BANK_TRANSFER
+
+12. docs
+src/docs/apiDocs.js
+
+Kalau nanti mau tambah Swagger atau dokumentasi API.
+
+13. File utama
+src/app.js
+
+Setup Express:
+
+middleware
+
+route
+
+error handler
+
+server.js
+
+Menjalankan server.
+
+.env
+
+Isi secret asli.
+
+.env.example
+
+Template env.
+
+README.md
+
+Catatan project.
+
+Struktur minimal yang saya sarankan untuk mulai
+
+Kalau kamu belum mau terlalu banyak file, mulai dari versi ini dulu:
+
+backend
+├── src
+│   ├── config
+│   │   ├── db.js
+│   │   └── env.js
+│   ├── controllers
+│   │   ├── productController.js
+│   │   ├── orderController.js
+│   │   ├── paymentController.js
+│   │   └── webhookController.js
+│   ├── routes
+│   │   ├── index.js
+│   │   ├── productRoutes.js
+│   │   ├── orderRoutes.js
+│   │   ├── paymentRoutes.js
+│   │   └── webhookRoutes.js
+│   ├── services
+│   │   ├── productService.js
+│   │   ├── orderService.js
+│   │   ├── paymentService.js
+│   │   └── providerService.js
+│   ├── providers
+│   │   ├── bangjeffProvider.js
+│   │   └── tokopayProvider.js
+│   ├── models
+│   │   ├── Product.js
+│   │   ├── Transaction.js
+│   │   └── Payment.js
+│   ├── middleware
+│   │   ├── errorMiddleware.js
+│   │   └── notFoundMiddleware.js
+│   ├── utils
+│   │   ├── generateInvoiceId.js
+│   │   ├── generateSignature.js
+│   │   └── response.js
+│   └── app.js
+├── .env
+├── .env.example
+├── package.json
+└── server.js
+
+Ini sudah cukup bagus untuk mulai.
+
+Urutan file yang sebaiknya kamu buat dulu
+
+Biar tidak bingung, buat file dalam urutan ini:
+
+Tahap 1 — dasar server
+
+server.js
+
+src/app.js
+
+src/config/env.js
+
+src/config/db.js
+
+Tahap 2 — route dasar
+
+src/routes/index.js
+
+src/routes/productRoutes.js
+
+src/routes/orderRoutes.js
+
+src/routes/paymentRoutes.js
+
+src/routes/webhookRoutes.js
+
+Tahap 3 — controller
+
+src/controllers/productController.js
+
+src/controllers/orderController.js
+
+src/controllers/paymentController.js
+
+src/controllers/webhookController.js
+
+Tahap 4 — service
+
+src/services/productService.js
+
+src/services/orderService.js
+
+src/services/paymentService.js
+
+src/services/providerService.js
+
+Tahap 5 — provider
+
+src/providers/bangjeffProvider.js
+
+src/providers/tokopayProvider.js
+
+Tahap 6 — model
+
+src/models/Product.js
+
+src/models/Transaction.js
+
+src/models/Payment.js
+
+Tahap 7 — helper
+
+src/utils/generateInvoiceId.js
+
+src/utils/generateSignature.js
+
+src/utils/response.js
+
+Tahap 8 — middleware
+
+src/middleware/errorMiddleware.js
+
+src/middleware/notFoundMiddleware.js
+
+Rekomendasi khusus untuk topup game
+
+Untuk proyek seperti kamu, file yang paling penting adalah:
+
+orderService.js
+
+providerService.js
+
+bangjeffProvider.js
+
+tokopayProvider.js
+
+Transaction.js
+
+webhookController.js
+
+Karena inti bisnis topup ada di sana.
+
+Saran struktur endpoint
+
+Supaya sekalian jelas, kamu bisa pakai endpoint seperti ini:
+
+GET    /api/products
+POST   /api/orders
+GET    /api/orders/:invoiceId
+POST   /api/payments/create
+POST   /api/webhooks/payment
+POST   /api/webhooks/provider
+POST   /api/auth/login
+GET    /api/admin/dashboard
