@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Urutan pengerjaan paling bagus
 
-## Getting Started
+Untuk sekarang, jangan langsung buat semua detail. Urutan yang enak:
 
-First, run the development server:
+Tahap 1
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Buat dulu:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+login/page.tsx
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+dashboard/page.tsx
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+lib/auth.ts
 
-## Learn More
+Tujuannya: login dulu bisa jalan.
 
-To learn more about Next.js, take a look at the following resources:
+Tahap 2
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Buat:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+components/LoginForm.tsx
 
-## Deploy on Vercel
+Tujuannya: rapikan form login.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Tahap 3
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Buat:
+
+Sidebar.tsx
+
+Header.tsx
+
+pasang di layout.tsx
+
+Tujuannya: dashboard mulai punya tampilan admin panel.
+
+Tahap 4
+
+Baru buat:
+
+products/page.tsx
+
+orders/page.tsx
+
+git add .
+git commit -m "deskripsi perubahan"
+git push
