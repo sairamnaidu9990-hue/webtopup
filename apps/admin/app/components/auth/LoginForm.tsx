@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveToken } from "@/lib/auth";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -19,7 +18,7 @@ export default function LoginForm() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:4000/api/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -33,27 +32,23 @@ export default function LoginForm() {
         throw new Error(data.message || "Login gagal");
       }
 
-      saveToken(data.token);
-
       router.push("/dashboard");
+      router.refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Terjadi kesalahan");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <form onSubmit={handleLogin} className="space-y-4">
-
-      {error && (
-        <div className="text-red-500 text-sm">{error}</div>
-      )}
+      {error && <div className="text-sm text-red-500">{error}</div>}
 
       <input
         type="email"
         placeholder="Email"
-        className="w-full border p-2 rounded"
+        className="w-full rounded border p-2"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
@@ -62,7 +57,7 @@ export default function LoginForm() {
       <input
         type="password"
         placeholder="Password"
-        className="w-full border p-2 rounded"
+        className="w-full rounded border p-2"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
@@ -70,12 +65,11 @@ export default function LoginForm() {
 
       <button
         type="submit"
-        className="w-full bg-black text-white py-2 rounded"
+        className="w-full rounded bg-black py-2 text-white"
         disabled={loading}
       >
         {loading ? "Loading..." : "Login"}
       </button>
-
     </form>
   );
 }

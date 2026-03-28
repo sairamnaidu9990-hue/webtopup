@@ -1,0 +1,26 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get("admin_token")?.value;
+  const { pathname } = req.nextUrl;
+
+  const isAuthPage = pathname === "/login";
+  const isProtectedPage =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/products") ||
+    pathname.startsWith("/orders");
+
+  if (!token && isProtectedPage) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
+  if (token && isAuthPage) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/login", "/dashboard/:path*", "/products/:path*", "/orders/:path*"],
+};

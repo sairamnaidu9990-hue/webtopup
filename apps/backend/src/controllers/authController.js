@@ -1,8 +1,8 @@
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const Admin = require("../models/admin");
+const Admin = require("../models/Admin");
+const generateToken = require("../utils/generateToken");
 
-exports.loginAdmin = async (req, res) => {
+async function loginAdmin(req, res) {
   try {
     const { email, password } = req.body;
 
@@ -12,7 +12,9 @@ exports.loginAdmin = async (req, res) => {
       });
     }
 
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
+    const admin = await Admin.findOne({
+      email: email.toLowerCase().trim(),
+    });
 
     if (!admin) {
       return res.status(401).json({
@@ -34,15 +36,7 @@ exports.loginAdmin = async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      {
-        id: admin._id,
-        email: admin.email,
-        role: admin.role,
-      },
-      process.env.JWT_SECRET || "secret123",
-      { expiresIn: "7d" }
-    );
+    const token = generateToken(admin);
 
     return res.status(200).json({
       message: "Login berhasil",
@@ -60,4 +54,29 @@ exports.loginAdmin = async (req, res) => {
       error: error.message,
     });
   }
+}
+
+async function getMe(req, res) {
+  try {
+    return res.status(200).json({
+      admin: req.admin,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Terjadi kesalahan server",
+      error: error.message,
+    });
+  }
+}
+
+async function logoutAdmin(req, res) {
+  return res.status(200).json({
+    message: "Logout berhasil",
+  });
+}
+
+module.exports = {
+  loginAdmin,
+  getMe,
+  logoutAdmin,
 };
