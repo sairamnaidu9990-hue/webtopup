@@ -43,29 +43,43 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleLogin} className="space-y-4">
-      {error && <div className="text-sm text-red-500">{error}</div>}
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
-      <input
-        type="email"
-        placeholder="Email"
-        className="w-full rounded border p-2"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
+      <div>
+        <label className="mb-2 block text-sm font-medium text-gray-700">
+          Email
+        </label>
+        <input
+          type="email"
+          placeholder="admin@webtopup.com"
+          className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-black"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
 
-      <input
-        type="password"
-        placeholder="Password"
-        className="w-full rounded border p-2"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
+      <div>
+        <label className="mb-2 block text-sm font-medium text-gray-700">
+          Password
+        </label>
+        <input
+          type="password"
+          placeholder="Masukkan password"
+          className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-black"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </div>
 
       <button
         type="submit"
-        className="w-full rounded bg-black py-2 text-white"
+        className="w-full rounded-xl bg-black py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
         disabled={loading}
       >
         {loading ? "Loading..." : "Login"}
