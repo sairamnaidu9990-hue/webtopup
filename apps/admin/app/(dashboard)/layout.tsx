@@ -1,40 +1,36 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useState } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 
-export default async function DashboardLayout({
+type DashboardShellProps = {
+  adminEmail?: string;
+  children: React.ReactNode;
+};
+
+export default function DashboardShell({
+  adminEmail,
   children,
-}: Readonly<{ children: React.ReactNode }>) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("admin_token")?.value;
-
-  if (!token) {
-    redirect("/login");
-  }
-
-  const res = await fetch("http://localhost:3000/api/auth/me", {
-    headers: {
-      Cookie: `admin_token=${token}`,
-    },
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    redirect("/login");
-  }
-
-  const data = await res.json();
-  const adminEmail = data?.admin?.email;
+}: DashboardShellProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
       <div className="flex min-h-screen">
-        <Sidebar />
+        <Sidebar
+          mobileOpen={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+        />
 
-        <div className="flex min-h-screen flex-1 flex-col">
-          <Header adminEmail={adminEmail} />
-          <main className="flex-1 p-6">{children}</main>
+        <div className="flex min-h-screen flex-1 flex-col lg:pl-0">
+          <Header
+            adminEmail={adminEmail}
+            onMenuClick={() => setMobileOpen(true)}
+          />
+          <main className="flex-1 p-6">
+            <div className="mx-auto max-w-7xl">{children}</div>
+          </main>
         </div>
       </div>
     </div>

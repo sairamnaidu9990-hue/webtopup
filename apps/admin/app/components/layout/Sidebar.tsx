@@ -3,44 +3,70 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+type SidebarProps = {
+  mobileOpen?: boolean;
+  onClose?: () => void;
+};
+
 const menuItems = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Products", href: "/products" },
   { label: "Orders", href: "/orders" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({
+  mobileOpen = false,
+  onClose,
+}: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 border-r border-gray-200 bg-white lg:flex lg:flex-col">
-      <div className="border-b border-gray-200 px-6 py-5">
-        <h1 className="text-xl font-bold text-gray-900">WebTopup Admin</h1>
-        <p className="text-sm text-gray-500">Management Panel</p>
-      </div>
+    <>
+      <div
+        onClick={onClose}
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity lg:hidden ${
+          mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
 
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href;
+      <aside
+        className={`fixed left-0 top-0 z-50 flex h-screen w-64 flex-col bg-[#111217] text-white transition-transform duration-300 lg:static lg:z-auto lg:h-auto lg:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <Link
+          href="/dashboard"
+          onClick={onClose}
+          className="flex h-[79px] flex-col justify-center border-b border-white/10 px-6 transition hover:bg-white/5"
+        >
+          <h1 className="text-lg font-semibold tracking-tight">WebTopup</h1>
+          <p className="mt-1 text-xs text-gray-400">Admin Panel</p>
+        </Link>
 
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`block rounded-xl px-4 py-3 text-sm font-medium transition ${
-                    isActive
-                      ? "bg-black text-white"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-    </aside>
+        <nav className="flex-1 px-4 py-6">
+          <ul className="space-y-2">
+            {menuItems.map((item) => {
+              const isActive = pathname === item.href;
+
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={onClose}
+                    className={`flex items-center rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? "bg-white/10 text-white"
+                        : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      </aside>
+    </>
   );
 }

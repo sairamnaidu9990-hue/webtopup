@@ -43,43 +43,47 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleLogin} className="space-y-4">
+      
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
           {error}
         </div>
       )}
 
+      {/* Email */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-700">
+        <label className="mb-2 block text-sm text-gray-300">
           Email
         </label>
         <input
           type="email"
           placeholder="admin@webtopup.com"
-          className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-black"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 outline-none transition focus:border-white/30 focus:ring-2 focus:ring-white/10"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
       </div>
 
+      {/* Password */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-700">
+        <label className="mb-2 block text-sm text-gray-300">
           Password
         </label>
         <input
           type="password"
           placeholder="Masukkan password"
-          className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-black"
+          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 outline-none transition focus:border-white/30 focus:ring-2 focus:ring-white/10"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
       </div>
 
+      {/* Button */}
       <button
         type="submit"
-        className="w-full rounded-xl bg-black py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+        className="w-full rounded-xl bg-white py-3 text-sm font-medium text-black transition hover:opacity-90 disabled:opacity-50"
         disabled={loading}
       >
         {loading ? "Loading..." : "Login"}
