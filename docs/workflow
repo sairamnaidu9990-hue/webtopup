@@ -1,0 +1,168 @@
+🚀 ROADMAP PROJECT TOPUP (REAL PRODUCTION)
+🎯 GOAL AKHIR
+
+Website kamu bisa:
+
+user pilih game
+isi ID
+bayar
+topup otomatis
+admin bisa monitor
+🧱 PHASE 1 — FOUNDATION (✅ kamu hampir selesai)
+1. Auth Admin
+ login admin
+ proteksi dashboard
+ logout
+ UI admin
+
+👉 STATUS: DONE
+
+🧩 PHASE 2 — PRODUCTS (NEXT STEP 🔥)
+🎯 Tujuan
+
+Menampilkan daftar produk (diamond, UC, dll)
+
+Backend
+ buat schema Product (MongoDB)
+ buat endpoint:
+GET /products
+POST /products
+PATCH /products/:id
+ simpan:
+game
+nama produk
+harga
+kode provider (Digiflazz)
+Admin
+ halaman /products
+ tampilkan list produk
+ tambah produk
+ edit harga
+Frontend (user)
+ tampilkan game list
+ tampilkan produk saat klik game
+🎯 hasil phase ini
+
+User sudah bisa:
+👉 lihat produk topup
+
+🧩 PHASE 3 — ORDER SYSTEM
+🎯 Tujuan
+
+User bisa buat order
+
+Backend
+ schema Order
+ endpoint:
+POST /orders
+GET /orders
+ simpan:
+userId / input ID game
+produk
+harga
+status (pending, success, failed)
+Admin
+ halaman /orders
+ lihat semua order
+ filter status
+Frontend
+ form input ID game
+ tombol beli
+ kirim ke backend
+🎯 hasil
+
+👉 user sudah bisa buat transaksi (belum bayar)
+
+🧩 PHASE 4 — PAYMENT
+🎯 Tujuan
+
+User bisa bayar
+
+Backend
+ integrasi:
+QRIS
+e-wallet
+transfer
+ endpoint:
+POST /payment
+ buat invoice
+Admin
+ lihat status pembayaran
+Frontend
+ tampilkan invoice
+ status bayar
+🎯 hasil
+
+👉 user bisa bayar
+
+🧩 PHASE 5 — AUTO TOPUP (🔥 CORE)
+🎯 Tujuan
+
+Topup otomatis ke provider
+
+Backend
+ integrasi Digiflazz / Tokopay
+ kirim request topup
+ webhook handler
+ update status order
+🎯 hasil
+
+👉 topup otomatis jalan
+
+🧩 PHASE 6 — POLISH (BIAR JUALAN 🔥)
+UI/UX
+ loading state
+ error handling
+ animasi ringan
+Feature
+ search produk
+ kategori game
+ promo / diskon
+Security
+ rate limit
+ validation
+ sanitize input
+🧩 PHASE 7 — DEPLOY
+ VPS setup
+ domain
+ nginx
+ pm2
+ SSL (https)
+🧠 STRATEGI KERJA HARIAN
+
+Ikuti ini:
+
+1 fitur kecil per hari
+
+Contoh:
+
+Hari 1:
+👉 backend products
+
+Hari 2:
+👉 admin products
+
+Hari 3:
+👉 frontend products
+
+🎯 PRIORITAS SEKARANG (BESOK)
+
+Mulai dari:
+
+👉 PRODUCTS (WAJIB)
+
+Kenapa?
+
+semua fitur bergantung ke produk
+tanpa ini tidak bisa jualan
+🚀 NEXT STEP (langsung action besok)
+
+Kalau kamu lanjut besok, ketik:
+
+lanjut products backend
+
+Saya akan:
+
+buatkan schema MongoDB
+buat API lengkap
+siap langsung kamu pakai

@@ -12,6 +12,7 @@ const menuItems = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Products", href: "/products" },
   { label: "Orders", href: "/orders" },
+  { label: "Games", href: "/games" },
 ];
 
 export default function Sidebar({

@@ -1,8 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./src/routes/authRoutes");
-
 const app = express();
+const gameRoutes = require("./src/routes/game.routes");
+const productRoutes = require("./src/routes/product.routes");
 
 app.use(
   cors({
@@ -18,5 +19,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/games", gameRoutes);
+app.use("/api/products", productRoutes);
 
 module.exports = app;
