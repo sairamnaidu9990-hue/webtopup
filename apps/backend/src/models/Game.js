@@ -1,29 +1,33 @@
 const mongoose = require("mongoose");
 
-const gameSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-    },
-    code: {
-      type: String, 
-      required: true,
-      unique: true,
-    },
-    provider: {
-    type: String, 
-      required: true,
-    },
-    logo: {
-      type: String,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
+const gameSchema = new mongoose.Schema({
+  name: String,
+  code: String,
+  provider: {
+    type: String,
+    default: "",
   },
-  { timestamps: true }
-);
+  logo: {
+    type: String,
+    default: "",
+  },
+  status: {
+    type: String,
+    default: "ACTIVE",
+  },
+  syncSource: {
+    type: String,
+    enum: ["manual", "bangjeff"],
+    default: "manual",
+  },
+  inputs: [
+    {
+      name: String,
+      type: String,
+      title: String,
+      options: Array,
+    },
+  ],
+}, { timestamps: true });
 
 module.exports = mongoose.model("Game", gameSchema);

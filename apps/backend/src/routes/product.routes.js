@@ -6,10 +6,23 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  syncGames,
+  syncGameDetails,
+  syncVariants,
+  syncCatalog,
+  testBangJeff,
 } = require("../controllers/product.controller");
+
+
+router.post("/sync/games", syncGames);
+router.post("/sync/details", syncGameDetails);
+router.post("/sync/variants", syncVariants);
+router.post("/sync/all", syncCatalog);
+
 
 // GET all products
 router.get("/", getProducts);
+router.get("/test/bangjeff", testBangJeff);
 
 // CREATE product
 router.post("/", createProduct);
