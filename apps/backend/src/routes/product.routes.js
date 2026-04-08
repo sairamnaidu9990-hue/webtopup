@@ -10,7 +10,6 @@ const {
   syncGameDetails,
   syncVariants,
   syncCatalog,
-  testBangJeff,
 } = require("../controllers/product.controller");
 
 
@@ -22,7 +21,6 @@ router.post("/sync/all", syncCatalog);
 
 // GET all products
 router.get("/", getProducts);
-router.get("/test/bangjeff", testBangJeff);
 
 // CREATE product
 router.post("/", createProduct);

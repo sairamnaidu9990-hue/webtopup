@@ -1,16 +1,29 @@
 const crypto = require("crypto");
 
-function normalizePathname(pathname) {
+function normalizePathname(pathname, keepLeadingSlash = false) {
   let normalizedPathname = pathname || "";
 
   try {
     normalizedPathname = new URL(pathname).pathname;
   } catch {}
 
-  return String(normalizedPathname).replace(/^\/+/, "");
+  const cleanPathname = String(normalizedPathname).trim().replace(/^\/+/, "");
+
+  if (keepLeadingSlash) {
+    return `/${cleanPathname}`;
+  }
+
+  return cleanPathname;
 }
 
-const generateSignature = (method, pathname, payload, timestamp, clientId) => {
+const generateSignature = (
+  method,
+  pathname,
+  payload,
+  timestamp,
+  clientId,
+  options = {}
+) => {
   const payloadString = JSON.stringify(payload ?? {});
   const hashedPayload = crypto
     .createHash("md5")
@@ -18,7 +31,8 @@ const generateSignature = (method, pathname, payload, timestamp, clientId) => {
     .digest("hex");
   const timestampString = String(timestamp);
   const signaturePayload = `${String(method).toUpperCase()}:${normalizePathname(
-    pathname
+    pathname,
+    options.keepLeadingSlash
   )}:${hashedPayload}:${timestampString}`;
 
   const signature = crypto

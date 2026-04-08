@@ -280,30 +280,6 @@ async function syncVariantsData(region, requestedProductCode = "") {
   return summary;
 }
 
-async function testBangJeff(req, res) {
-  try {
-    const region = getRegion(req);
-    const products = await getBangjeffProducts(region);
-
-    if (!Array.isArray(products)) {
-      throw new Error("BangJeff product response is invalid");
-    }
-
-    return res.status(200).json({
-      message: "BangJeff connection OK",
-      region,
-      totalProducts: products.length,
-      sample: products.slice(0, 5),
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: "Error test API",
-      error: getErrorMessage(error, "BangJeff request failed"),
-      response: error.bangjeff || null,
-    });
-  }
-}
-
 async function syncGames(req, res) {
   try {
     const region = getRegion(req);
@@ -500,7 +476,6 @@ async function deleteProduct(req, res) {
 }
 
 module.exports = {
-  testBangJeff,
   syncGames,
   syncGameDetails,
   syncVariants,
