@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import GameForm from "../../components/games/GameForm";
 import GameList from "../../components/games/GameList";
-import SyncPanel from "../../components/bangjeff/SyncPanel";
 
 type Game = {
   _id: string;
@@ -37,7 +36,6 @@ export default function GamesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
 
-  // FETCH GAMES
   const fetchGames = async () => {
     try {
       const res = await fetch(`${API}/api/games`);
@@ -54,7 +52,6 @@ export default function GamesPage() {
     fetchGames();
   }, []);
 
-  // DELETE GAME
   const handleDelete = async (id: string) => {
     if (!confirm("Yakin hapus game?")) return;
 
@@ -68,7 +65,6 @@ export default function GamesPage() {
     }
   };
 
-  // EDIT GAME
   const handleEdit = (game: Game) => {
     setEditingId(game._id);
     setName(game.name);
@@ -80,7 +76,6 @@ export default function GamesPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // SUBMIT FORM
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -93,7 +88,7 @@ export default function GamesPage() {
 
       const method = editingId ? "PATCH" : "POST";
 
-const res = await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -108,12 +103,9 @@ const res = await fetch(url, {
       }
 
       setSuccess(
-        editingId
-          ? "Game berhasil diupdate"
-          : "Game berhasil ditambahkan"
+        editingId ? "Game berhasil diupdate" : "Game berhasil ditambahkan"
       );
 
-      // reset form
       setEditingId(null);
       setName("");
       setCode("");
@@ -122,7 +114,6 @@ const res = await fetch(url, {
       setStatus("ACTIVE");
 
       fetchGames();
-
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       console.error("Submit error:", err);
@@ -133,9 +124,6 @@ const res = await fetch(url, {
 
   return (
     <div className="space-y-6">
-      <SyncPanel apiBase={API || ""} onSynced={fetchGames} />
-
-      {/* FORM */}
       <GameForm
         name={name}
         code={code}
@@ -153,7 +141,6 @@ const res = await fetch(url, {
         submitting={submitting}
       />
 
-      {/* LIST */}
       {loading ? (
         <p className="text-sm text-gray-500">Loading games...</p>
       ) : (

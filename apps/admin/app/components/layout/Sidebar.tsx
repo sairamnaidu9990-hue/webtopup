@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 type SidebarProps = {
   mobileOpen?: boolean;
   onClose?: () => void;
 };
 
+const providerItems = [{ label: "Bangjeff", href: "/dashboard" }];
+
 const menuItems = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Products", href: "/products" },
   { label: "Games", href: "/games" },
   { label: "Variants", href: "/variants" },
   { label: "Orders", href: "/orders" },
@@ -21,6 +22,11 @@ export default function Sidebar({
   onClose,
 }: SidebarProps) {
   const pathname = usePathname();
+  const [providerOpen, setProviderOpen] = useState(
+    pathname === "/dashboard" || pathname.startsWith("/dashboard/")
+  );
+  const isProviderActive =
+    pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 
   return (
     <>
@@ -47,6 +53,46 @@ export default function Sidebar({
 
         <nav className="flex-1 px-4 py-6">
           <ul className="space-y-2">
+            <li>
+              <button
+                type="button"
+                onClick={() => setProviderOpen((current) => !current)}
+                className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                  isProviderActive || providerOpen
+                    ? "bg-white/10 text-white"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <span>Provider Control</span>
+                <span className="text-xs text-gray-400">
+                  {providerOpen ? "-" : "+"}
+                </span>
+              </button>
+
+              {providerOpen ? (
+                <div className="mt-2 space-y-1 pl-3">
+                  {providerItems.map((item) => {
+                    const isActive = pathname === item.href;
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onClose}
+                        className={`flex items-center rounded-xl border px-4 py-2.5 text-sm transition-all duration-200 ${
+                          isActive
+                            ? "border-white/10 bg-white/10 text-white"
+                            : "border-transparent text-gray-400 hover:border-white/10 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </li>
+
             {menuItems.map((item) => {
               const isActive = pathname === item.href;
 

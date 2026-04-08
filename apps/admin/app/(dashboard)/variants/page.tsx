@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import SyncPanel from "@/app/components/bangjeff/SyncPanel";
 import VariantForm from "@/app/components/variants/VariantForm";
 import VariantList from "@/app/components/variants/VariantList";
 import { Variant } from "@/app/types/Variant";
@@ -135,7 +134,9 @@ export default function VariantsPage() {
         throw new Error(payload.message || "Gagal simpan variant");
       }
 
-      setSuccess(editingId ? "Variant berhasil diupdate" : "Variant berhasil ditambahkan");
+      setSuccess(
+        editingId ? "Variant berhasil diupdate" : "Variant berhasil ditambahkan"
+      );
       resetForm();
       fetchData();
       setTimeout(() => setSuccess(""), 3000);
@@ -149,13 +150,6 @@ export default function VariantsPage() {
 
   return (
     <div className="space-y-6">
-      <SyncPanel
-        apiBase={API || ""}
-        onSynced={fetchData}
-        title="BangJeff Variant Sync"
-        description="Ambil data game, detail, dan variant terbaru lalu cek hasilnya di bawah."
-      />
-
       <VariantForm
         name={name}
         providerCode={providerCode}

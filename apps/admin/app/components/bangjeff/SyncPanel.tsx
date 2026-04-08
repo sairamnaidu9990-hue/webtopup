@@ -23,6 +23,66 @@ const defaultActions: SyncAction[] = [
   { label: "Sync All", endpoint: "/api/products/sync/all" },
 ];
 
+type FeedbackProps = {
+  tone: "success" | "error";
+  message: string;
+};
+
+function FeedbackBanner({ tone, message }: FeedbackProps) {
+  const isSuccess = tone === "success";
+
+  return (
+    <div
+      className={`mt-6 overflow-hidden rounded-2xl border ${
+        isSuccess
+          ? "border-emerald-200 bg-[linear-gradient(135deg,#f4fff7_0%,#dcfce7_100%)]"
+          : "border-red-200 bg-[linear-gradient(135deg,#fff5f5_0%,#fee2e2_100%)]"
+      }`}
+    >
+      <div className="flex items-start gap-3 px-4 py-3.5">
+        <div
+          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+            isSuccess
+              ? "bg-emerald-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
+          {isSuccess ? "OK" : "!"}
+        </div>
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <p
+              className={`text-sm font-semibold ${
+                isSuccess ? "text-emerald-900" : "text-red-900"
+              }`}
+            >
+              {isSuccess ? "Sync berhasil" : "Sync gagal"}
+            </p>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${
+                isSuccess
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              {tone}
+            </span>
+          </div>
+
+          <p
+            className={`mt-1 text-sm ${
+              isSuccess ? "text-emerald-800" : "text-red-800"
+            }`}
+          >
+            {message}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SyncPanel({
   apiBase,
   onSynced,
@@ -89,17 +149,8 @@ export default function SyncPanel({
         </div>
       </div>
 
-      {message ? (
-        <div className="mt-4 rounded-xl bg-green-100 px-4 py-3 text-sm text-green-700">
-          {message}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
+      {message ? <FeedbackBanner tone="success" message={message} /> : null}
+      {error ? <FeedbackBanner tone="error" message={error} /> : null}
     </div>
   );
 }
