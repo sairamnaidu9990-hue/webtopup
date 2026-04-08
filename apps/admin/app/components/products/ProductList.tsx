@@ -25,6 +25,7 @@ export default function ProductList({ products, onDelete, onEdit }: Props) {
               {p.logo && (
                 <img
                   src={p.logo}
+                  alt={p.name}
                   className="h-10 w-10 rounded-lg object-cover"
                 />
               )}

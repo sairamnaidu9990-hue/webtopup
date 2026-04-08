@@ -5,12 +5,14 @@ type Props = {
   code: string;
   logo: string;
   provider: string;
+  status: string;
   editingId: string | null;
 
   setName: (v: string) => void;
   setCode: (v: string) => void;
   setLogo: (v: string) => void;
   setProvider: (v: string) => void;
+  setStatus: (v: string) => void;
 
   onSubmit: (e: React.FormEvent) => void;
   success: string;
@@ -22,13 +24,16 @@ export default function GameForm({
   code,
   logo,
   provider,
+  status,
   editingId,
   setName,
   setCode,
   setLogo,
   setProvider,
+  setStatus,
   onSubmit,
   success,
+  submitting,
 }: Props) {
   return (
     <div className="rounded-2xl border bg-white p-6">
@@ -74,9 +79,25 @@ export default function GameForm({
           onChange={(e) => setLogo(e.target.value)}
         />
 
-            <button className="col-span-4 rounded-xl bg-black py-2 text-white">
-            {editingId ? "Update Game" : "Add Game"}
-            </button>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="rounded-xl border px-4 py-2"
+        >
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+        </select>
+
+        <button
+          disabled={submitting}
+          className="col-span-4 rounded-xl bg-black py-2 text-white disabled:opacity-50"
+        >
+          {submitting
+            ? "Loading..."
+            : editingId
+            ? "Update Game"
+            : "Add Game"}
+        </button>
       </form>
     </div>
   );

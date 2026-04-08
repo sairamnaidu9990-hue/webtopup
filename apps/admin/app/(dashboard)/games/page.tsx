@@ -3,12 +3,22 @@
 import { useEffect, useState } from "react";
 import GameForm from "../../components/games/GameForm";
 import GameList from "../../components/games/GameList";
+import SyncPanel from "../../components/bangjeff/SyncPanel";
+
 type Game = {
   _id: string;
   name: string;
   code: string;
   logo?: string;
   provider?: string;
+  status?: string;
+  syncSource?: string;
+  inputs?: Array<{
+    name: string;
+    type?: string;
+    title?: string;
+    options?: Array<{ value: string; title: string }>;
+  }>;
 };
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -22,6 +32,7 @@ export default function GamesPage() {
   const [code, setCode] = useState("");
   const [logo, setLogo] = useState("");
   const [provider, setProvider] = useState("");
+  const [status, setStatus] = useState("ACTIVE");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
@@ -64,6 +75,7 @@ export default function GamesPage() {
     setCode(game.code);
     setLogo(game.logo || "");
     setProvider(game.provider || "");
+    setStatus(game.status || "ACTIVE");
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -81,17 +93,19 @@ export default function GamesPage() {
 
       const method = editingId ? "PATCH" : "POST";
 
-      const res = await fetch(url, {
-  method,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({ name, code, logo, provider }),
-});
+const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, code, logo, provider, status }),
+      });
 
-const data = await res.json();
-console.log("RESPONSE:", data);
-console.log("STATUS:", res.status);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Gagal simpan game");
+      }
 
       setSuccess(
         editingId
@@ -105,6 +119,7 @@ console.log("STATUS:", res.status);
       setCode("");
       setLogo("");
       setProvider("");
+      setStatus("ACTIVE");
 
       fetchGames();
 
@@ -118,17 +133,21 @@ console.log("STATUS:", res.status);
 
   return (
     <div className="space-y-6">
+      <SyncPanel apiBase={API || ""} onSynced={fetchGames} />
+
       {/* FORM */}
       <GameForm
         name={name}
         code={code}
         logo={logo}
         provider={provider}
+        status={status}
         editingId={editingId}
         setName={setName}
         setCode={setCode}
         setLogo={setLogo}
         setProvider={setProvider}
+        setStatus={setStatus}
         onSubmit={handleSubmit}
         success={success}
         submitting={submitting}

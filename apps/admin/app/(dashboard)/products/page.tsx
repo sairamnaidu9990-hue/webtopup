@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import ProductForm from "@/app/components/products/ProductForm";
 import ProductList from "@/app/components/products/ProductList";
+import { Product } from "@/app/types/Product";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -11,23 +12,12 @@ type Game = {
   name: string;
 };
 
-type Product = {
-  _id: string;
-  name: string;
-  basePrice: number;
-  markup: number;
-  providerCode?: string;
-  logo?: string;
-  game?: {
-    _id: string;
-    name: string;
-  };
-};
-
 export default function ProductsPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState("");
 
   const [name, setName] = useState("");
   const [basePrice, setBasePrice] = useState("");
@@ -81,7 +71,7 @@ export default function ProductsPage() {
     setMarkup(String(p.markup));
     setProviderCode(p.providerCode || "");
     setLogo(p.logo || "");
-    setGameId(p.game?._id);
+    setGameId(p.game?._id || "");
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -92,35 +82,52 @@ export default function ProductsPage() {
 
     if (!gameId) return alert("Pilih game dulu");
 
+    setSubmitting(true);
+
     const url = editingId
       ? `${API}/api/products/${editingId}`
       : `${API}/api/products`;
 
     const method = editingId ? "PATCH" : "POST";
 
-    await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        game: gameId,
-        basePrice: Number(basePrice),
-        markup: Number(markup),
-        providerCode,
-        logo,
-      }),
-    });
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          game: gameId,
+          basePrice: Number(basePrice),
+          markup: Number(markup),
+          providerCode,
+          logo,
+        }),
+      });
 
-    // reset
-    setEditingId(null);
-    setName("");
-    setBasePrice("");
-    setMarkup("10");
-    setProviderCode("");
-    setLogo("");
-    setGameId("");
+      const payload = await response.json();
 
-    fetchData();
+      if (!response.ok) {
+        throw new Error(payload.message || "Gagal simpan product");
+      }
+
+      setSuccess(editingId ? "Product berhasil diupdate" : "Product berhasil ditambahkan");
+
+      setEditingId(null);
+      setName("");
+      setBasePrice("");
+      setMarkup("10");
+      setProviderCode("");
+      setLogo("");
+      setGameId("");
+
+      fetchData();
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Gagal simpan product");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -141,6 +148,8 @@ export default function ProductsPage() {
         setGameId={setGameId}
         onSubmit={handleSubmit}
         editingId={editingId}
+        submitting={submitting}
+        success={success}
       />
 
       {loading ? (

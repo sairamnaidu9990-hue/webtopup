@@ -11,5 +11,5 @@ export type Product = {
   price: number;
   providerCode?: string;
   logo?: string;
-  game: Game;
+  game?: Game;
 };

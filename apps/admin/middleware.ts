@@ -7,7 +7,9 @@ export function middleware(req: NextRequest) {
   const isAuthPage = pathname === "/login";
   const isProtectedPage =
     pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/games") ||
     pathname.startsWith("/products") ||
+    pathname.startsWith("/variants") ||
     pathname.startsWith("/orders");
 
   if (!token && isProtectedPage) {
@@ -22,5 +24,12 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/dashboard/:path*", "/products/:path*", "/orders/:path*"],
+  matcher: [
+    "/login",
+    "/dashboard/:path*",
+    "/games/:path*",
+    "/products/:path*",
+    "/variants/:path*",
+    "/orders/:path*",
+  ],
 };

@@ -11,8 +11,9 @@ type SidebarProps = {
 const menuItems = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Products", href: "/products" },
-  { label: "Orders", href: "/orders" },
   { label: "Games", href: "/games" },
+  { label: "Variants", href: "/variants" },
+  { label: "Orders", href: "/orders" },
 ];
 
 export default function Sidebar({
