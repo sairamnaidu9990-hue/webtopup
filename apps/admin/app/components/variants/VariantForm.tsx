@@ -8,6 +8,7 @@ type Game = {
 
 type Props = {
   isOpen: boolean;
+  allowCreate?: boolean;
   name: string;
   providerCode: string;
   basePrice: string;
@@ -48,7 +49,7 @@ export default function VariantForm(props: Props) {
     <div className="rounded-2xl border bg-white p-5 sm:p-6">
       <h2 className="text-lg font-semibold">{title}</h2>
 
-      {!props.isOpen ? (
+      {!props.isOpen && props.allowCreate !== false ? (
         <button
           type="button"
           onClick={props.onOpen}

@@ -17,12 +17,14 @@ type SyncFeedback = {
 type Props = {
   apiBase: string;
   games: Game[];
+  syncSource?: "bangjeff" | "manual";
   onSynced: () => Promise<void> | void;
 };
 
 export default function VariantMarkupSyncPanel({
   apiBase,
   games,
+  syncSource,
   onSynced,
 }: Props) {
   const [globalMarkup, setGlobalMarkup] = useState("0");
@@ -80,7 +82,10 @@ export default function VariantMarkupSyncPanel({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ markup: markupValue }),
+          body: JSON.stringify({
+            markup: markupValue,
+            ...(syncSource ? { syncSource } : {}),
+          }),
         }
       );
 

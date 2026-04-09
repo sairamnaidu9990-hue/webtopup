@@ -2,6 +2,7 @@
 
 type Props = {
   isOpen: boolean;
+  allowCreate?: boolean;
   name: string;
   code: string;
   logo: string;
@@ -24,6 +25,7 @@ type Props = {
 
 export default function GameForm({
   isOpen,
+  allowCreate = true,
   name,
   code,
   logo,
@@ -47,7 +49,7 @@ export default function GameForm({
     <div className="rounded-2xl border bg-white p-5 sm:p-6">
       <h2 className="text-lg font-semibold">{title}</h2>
 
-      {!isOpen ? (
+      {!isOpen && allowCreate ? (
         <button
           type="button"
           onClick={onOpen}

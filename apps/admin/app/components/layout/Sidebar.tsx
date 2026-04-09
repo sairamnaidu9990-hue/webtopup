@@ -10,18 +10,35 @@ type SidebarProps = {
   onClose?: () => void;
 };
 
-const providerItems = [
-  { label: "BangJeff", href: "/provider-control/bangjeff" },
-  { label: "Markup Variant", href: "/provider-control/bangjeff/markup" },
+const providerGroups = [
+  {
+    id: "bangjeff",
+    label: "BangJeff",
+    children: [
+      { label: "Dashboard", href: "/provider-control/bangjeff" },
+      { label: "Games", href: "/provider-control/bangjeff/games" },
+      { label: "Variants", href: "/provider-control/bangjeff/variants" },
+      {
+        label: "Markup Variant",
+        href: "/provider-control/bangjeff/markup",
+      },
+    ],
+  },
+  {
+    id: "manual",
+    label: "Manual",
+    children: [
+      { label: "Dashboard", href: "/provider-control/manual" },
+      { label: "Games", href: "/provider-control/manual/games" },
+      { label: "Variants", href: "/provider-control/manual/variants" },
+      { label: "Markup Variant", href: "/provider-control/manual/markup" },
+    ],
+  },
 ];
 
 const primaryItems = [{ label: "Dashboard", href: "/dashboard" }];
 
-const menuItems = [
-  { label: "Games", href: "/games" },
-  { label: "Variants", href: "/variants" },
-  { label: "Orders", href: "/orders" },
-];
+const menuItems = [{ label: "Orders", href: "/orders" }];
 
 const desktopSidebarStyle: CSSProperties = {
   position: "sticky",
@@ -38,6 +55,8 @@ type SidebarNavProps = {
   providerOpen: boolean;
   setProviderOpen: Dispatch<SetStateAction<boolean>>;
   isProviderRoute: boolean;
+  providerGroupOpen: Record<string, boolean>;
+  setProviderGroupOpen: Dispatch<SetStateAction<Record<string, boolean>>>;
 };
 
 function SidebarNav({
@@ -46,6 +65,8 @@ function SidebarNav({
   providerOpen,
   setProviderOpen,
   isProviderRoute,
+  providerGroupOpen,
+  setProviderGroupOpen,
 }: SidebarNavProps) {
   return (
     <>
@@ -98,22 +119,69 @@ function SidebarNav({
 
             {providerOpen ? (
               <div className="mt-2 space-y-1 pl-3">
-                {providerItems.map((item) => {
-                  const isActive = pathname === item.href;
+                <Link
+                  href="/provider-control"
+                  onClick={onNavigate}
+                  className={`flex items-center rounded-xl px-4 py-2.5 text-sm transition-all duration-200 ${
+                    pathname === "/provider-control"
+                      ? "bg-[#1f2330] text-white"
+                      : "text-gray-400 hover:bg-[#171a22] hover:text-white"
+                  }`}
+                >
+                  Overview
+                </Link>
+
+                {providerGroups.map((group) => {
+                  const isGroupActive = group.children.some((item) =>
+                    pathname.startsWith(item.href)
+                  );
+                  const isGroupOpen = providerGroupOpen[group.id] || isGroupActive;
 
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onNavigate}
-                      className={`flex items-center rounded-xl border px-4 py-2.5 text-sm transition-all duration-200 ${
-                        isActive
-                          ? "border-[#343847] bg-[#252833] text-white"
-                          : "border-transparent text-gray-400 hover:border-[#2c3140] hover:bg-[#1a1d27] hover:text-white"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
+                    <div key={group.id} className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setProviderGroupOpen((current) => ({
+                            ...current,
+                            [group.id]: !isGroupOpen,
+                          }))
+                        }
+                        className={`flex w-full items-center justify-between rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                          isGroupActive || isGroupOpen
+                            ? "border-[#343847] bg-[#252833] text-white"
+                            : "border-transparent text-gray-400 hover:border-[#2c3140] hover:bg-[#1a1d27] hover:text-white"
+                        }`}
+                      >
+                        <span>{group.label}</span>
+                        <span className="text-[11px] text-gray-400">
+                          {isGroupOpen ? "-" : "+"}
+                        </span>
+                      </button>
+
+                      {isGroupOpen ? (
+                        <div className="space-y-1 pl-3">
+                          {group.children.map((item) => {
+                            const isActive = pathname === item.href;
+
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={onNavigate}
+                                className={`flex items-center rounded-xl px-4 py-2.5 text-sm transition-all duration-200 ${
+                                  isActive
+                                    ? "bg-[#1f2330] text-white"
+                                    : "text-gray-400 hover:bg-[#171a22] hover:text-white"
+                                }`}
+                              >
+                                {item.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
                   );
                 })}
               </div>
@@ -153,12 +221,32 @@ export default function Sidebar({
   const isProviderRoute =
     pathname === "/provider-control" || pathname.startsWith("/provider-control/");
   const [providerOpen, setProviderOpen] = useState(isProviderRoute);
+  const [providerGroupOpen, setProviderGroupOpen] = useState<Record<string, boolean>>(
+    () =>
+      providerGroups.reduce<Record<string, boolean>>((acc, group) => {
+        acc[group.id] = group.children.some((item) => pathname.startsWith(item.href));
+        return acc;
+      }, {})
+  );
 
   useEffect(() => {
     if (isProviderRoute) {
       setProviderOpen(true);
     }
   }, [isProviderRoute]);
+
+  useEffect(() => {
+    setProviderGroupOpen((current) => ({
+      ...current,
+      ...providerGroups.reduce<Record<string, boolean>>((acc, group) => {
+        acc[group.id] =
+          group.children.some((item) => pathname.startsWith(item.href)) ||
+          current[group.id] ||
+          false;
+        return acc;
+      }, {}),
+    }));
+  }, [pathname]);
 
   return (
     <>
@@ -180,6 +268,8 @@ export default function Sidebar({
           providerOpen={providerOpen}
           setProviderOpen={setProviderOpen}
           isProviderRoute={isProviderRoute}
+          providerGroupOpen={providerGroupOpen}
+          setProviderGroupOpen={setProviderGroupOpen}
         />
       </aside>
 
@@ -192,6 +282,8 @@ export default function Sidebar({
           providerOpen={providerOpen}
           setProviderOpen={setProviderOpen}
           isProviderRoute={isProviderRoute}
+          providerGroupOpen={providerGroupOpen}
+          setProviderGroupOpen={setProviderGroupOpen}
         />
       </aside>
     </>

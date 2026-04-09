@@ -12,12 +12,40 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
   const pathname = usePathname();
 
   const pageTitle = (() => {
+    if (pathname === "/provider-control") {
+      return "Provider Control";
+    }
+
+    if (pathname.startsWith("/provider-control/bangjeff/games")) {
+      return "BangJeff Games";
+    }
+
+    if (pathname.startsWith("/provider-control/bangjeff/variants")) {
+      return "BangJeff Variants";
+    }
+
     if (pathname.startsWith("/provider-control/bangjeff/markup")) {
-      return "Markup Variant";
+      return "BangJeff Markup";
     }
 
     if (pathname.startsWith("/provider-control/bangjeff")) {
-      return "BangJeff";
+      return "BangJeff Dashboard";
+    }
+
+    if (pathname.startsWith("/provider-control/manual")) {
+      if (pathname.startsWith("/provider-control/manual/games")) {
+        return "Manual Games";
+      }
+
+      if (pathname.startsWith("/provider-control/manual/variants")) {
+        return "Manual Variants";
+      }
+
+      if (pathname.startsWith("/provider-control/manual/markup")) {
+        return "Manual Markup";
+      }
+
+      return "Manual Dashboard";
     }
 
     if (pathname.startsWith("/games")) {

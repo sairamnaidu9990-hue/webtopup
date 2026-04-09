@@ -55,6 +55,8 @@ export default function BangjeffDashboardPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [loading, setLoading] = useState(true);
+  const gamesCacheKey = `${GAMES_CACHE_KEY}:bangjeff`;
+  const variantsCacheKey = `${VARIANTS_CACHE_KEY}:bangjeff`;
 
   const fetchDashboardData = async ({
     refreshGames = true,
@@ -67,11 +69,11 @@ export default function BangjeffDashboardPage() {
       const requests: Array<Promise<Response>> = [];
 
       if (refreshGames) {
-        requests.push(fetch(`${API}/api/games`));
+        requests.push(fetch(`${API}/api/games?syncSource=bangjeff`));
       }
 
       if (refreshVariants) {
-        requests.push(fetch(`${API}/api/variants`));
+        requests.push(fetch(`${API}/api/variants?syncSource=bangjeff`));
       }
 
       const responses = await Promise.all(requests);
@@ -83,7 +85,7 @@ export default function BangjeffDashboardPage() {
         const nextGames = Array.isArray(gamesPayload) ? gamesPayload : [];
 
         setGames(nextGames);
-        writeSessionCache(GAMES_CACHE_KEY, nextGames);
+        writeSessionCache(gamesCacheKey, nextGames);
       }
 
       if (refreshVariants) {
@@ -94,7 +96,7 @@ export default function BangjeffDashboardPage() {
           : [];
 
         setVariants(nextVariants);
-        writeSessionCache(VARIANTS_CACHE_KEY, nextVariants);
+        writeSessionCache(variantsCacheKey, nextVariants);
       }
     } catch (error) {
       console.error(error);
@@ -104,8 +106,8 @@ export default function BangjeffDashboardPage() {
   };
 
   useEffect(() => {
-    const cachedGames = readSessionCache<Game[]>(GAMES_CACHE_KEY);
-    const cachedVariants = readSessionCache<Variant[]>(VARIANTS_CACHE_KEY);
+    const cachedGames = readSessionCache<Game[]>(gamesCacheKey);
+    const cachedVariants = readSessionCache<Variant[]>(variantsCacheKey);
 
     const hasCachedGames =
       !!cachedGames?.data && Array.isArray(cachedGames.data);
@@ -137,7 +139,7 @@ export default function BangjeffDashboardPage() {
         refreshVariants: shouldRefreshVariants,
       });
     }
-  }, []);
+  }, [gamesCacheKey, variantsCacheKey]);
 
   const stats: DashboardStats = {
     totalGames: games.length,
@@ -155,20 +157,26 @@ export default function BangjeffDashboardPage() {
 
   const quickLinks = [
     {
+      title: "Provider Control",
+      href: "/provider-control",
+      description:
+        "Kembali ke landing page provider untuk melihat struktur navigasi dan provider lain yang nanti akan ditambahkan.",
+    },
+    {
       title: "Markup Variant",
       href: "/provider-control/bangjeff/markup",
       description:
         "Kelola penyesuaian markup massal untuk seluruh variant atau per game dari halaman operasional khusus.",
     },
     {
-      title: "Kelola Games",
-      href: "/games",
+      title: "BangJeff Games",
+      href: "/provider-control/bangjeff/games",
       description:
         "Kelola metadata game internal seperti provider, logo, status, dan field input yang ditampilkan ke user.",
     },
     {
-      title: "Kelola Variants",
-      href: "/variants",
+      title: "BangJeff Variants",
+      href: "/provider-control/bangjeff/variants",
       description:
         "Atur harga dasar, markup, logo variant, region, dan status jual setiap item katalog.",
     },

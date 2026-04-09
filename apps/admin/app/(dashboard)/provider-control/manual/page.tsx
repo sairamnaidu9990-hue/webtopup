@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import VariantMarkupSyncPanel from "@/app/components/variants/VariantMarkupSyncPanel";
 import {
   CATALOG_CACHE_TTL_MS,
   GAMES_CACHE_KEY,
@@ -14,24 +13,21 @@ import {
   writeSessionCache,
 } from "@/app/lib/sessionCache";
 import { Variant } from "@/app/types/Variant";
-import Card from "../../../../components/ui/Card";
-import SectionTitle from "../../../../components/ui/SectionTitle";
+import Card from "../../../components/ui/Card";
+import SectionTitle from "../../../components/ui/SectionTitle";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 type Game = {
   _id: string;
-  name: string;
-  code: string;
   status?: string;
+  syncSource?: string;
 };
 
-export default function BangjeffMarkupPage() {
+export default function ManualProviderPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [loading, setLoading] = useState(true);
-  const gamesCacheKey = `${GAMES_CACHE_KEY}:bangjeff`;
-  const variantsCacheKey = `${VARIANTS_CACHE_KEY}:bangjeff`;
 
   const fetchData = async ({
     refreshGames = true,
@@ -44,11 +40,11 @@ export default function BangjeffMarkupPage() {
       const requests: Array<Promise<Response>> = [];
 
       if (refreshGames) {
-        requests.push(fetch(`${API}/api/games?syncSource=bangjeff`));
+        requests.push(fetch(`${API}/api/games`));
       }
 
       if (refreshVariants) {
-        requests.push(fetch(`${API}/api/variants?syncSource=bangjeff`));
+        requests.push(fetch(`${API}/api/variants`));
       }
 
       const responses = await Promise.all(requests);
@@ -60,7 +56,7 @@ export default function BangjeffMarkupPage() {
         const nextGames = Array.isArray(gamesPayload) ? gamesPayload : [];
 
         setGames(nextGames);
-        writeSessionCache(gamesCacheKey, nextGames);
+        writeSessionCache(GAMES_CACHE_KEY, nextGames);
       }
 
       if (refreshVariants) {
@@ -71,7 +67,7 @@ export default function BangjeffMarkupPage() {
           : [];
 
         setVariants(nextVariants);
-        writeSessionCache(variantsCacheKey, nextVariants);
+        writeSessionCache(VARIANTS_CACHE_KEY, nextVariants);
       }
     } catch (error) {
       console.error(error);
@@ -81,8 +77,8 @@ export default function BangjeffMarkupPage() {
   };
 
   useEffect(() => {
-    const cachedGames = readSessionCache<Game[]>(gamesCacheKey);
-    const cachedVariants = readSessionCache<Variant[]>(variantsCacheKey);
+    const cachedGames = readSessionCache<Game[]>(GAMES_CACHE_KEY);
+    const cachedVariants = readSessionCache<Variant[]>(VARIANTS_CACHE_KEY);
 
     const hasCachedGames =
       !!cachedGames?.data && Array.isArray(cachedGames.data);
@@ -114,111 +110,100 @@ export default function BangjeffMarkupPage() {
         refreshVariants: shouldRefreshVariants,
       });
     }
-  }, [gamesCacheKey, variantsCacheKey]);
+  }, []);
 
   const stats = useMemo(() => {
-    const activeVariants = variants.filter(
-      (variant) => variant.status === "ACTIVE"
-    ).length;
-    const activeGames = games.filter((game) => game.status === "ACTIVE").length;
-    const gameIds = new Set(
-      variants
-        .map((variant) => variant.game?._id)
-        .filter((gameId): gameId is string => Boolean(gameId))
+    const manualGames = games.filter((game) => game.syncSource === "manual");
+    const manualVariants = variants.filter(
+      (variant) => variant.syncSource === "manual"
     );
 
     return {
-      totalGames: games.length,
-      activeGames,
-      totalVariants: variants.length,
-      activeVariants,
-      coveredGames: gameIds.size,
+      totalGames: manualGames.length,
+      activeGames: manualGames.filter((game) => game.status === "ACTIVE").length,
+      totalVariants: manualVariants.length,
+      activeVariants: manualVariants.filter(
+        (variant) => variant.status === "ACTIVE"
+      ).length,
     };
   }, [games, variants]);
 
   return (
     <div className="space-y-6">
       <SectionTitle
-        title="Markup Variant"
-        subtitle="Halaman khusus untuk mengelola sinkronisasi markup massal BangJeff tanpa menumpuk aksi bulk di halaman variant harian."
+        title="Manual Dashboard"
+        subtitle="Area provider internal untuk katalog yang dikelola langsung oleh tim admin tanpa proses sinkronisasi dari provider eksternal."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card title="Total Variants" variant="info">
-          <p className="text-4xl font-bold tracking-tight">
-            {loading ? 0 : stats.totalVariants}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            {loading ? 0 : stats.activeVariants} variant aktif siap menerima
-            pembaruan markup
-          </p>
-        </Card>
-
-        <Card title="Total Games" variant="success">
+        <Card title="Manual Games" variant="info">
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.totalGames}
           </p>
           <p className="mt-2 text-sm text-white/80">
-            {loading ? 0 : stats.activeGames} game aktif tersimpan di katalog
+            {loading ? 0 : stats.activeGames} game manual aktif di katalog
           </p>
         </Card>
 
-        <Card title="Game Tercakup" variant="warning">
+        <Card title="Manual Variants" variant="success">
           <p className="text-4xl font-bold tracking-tight">
-            {loading ? 0 : stats.coveredGames}
+            {loading ? 0 : stats.totalVariants}
           </p>
           <p className="mt-2 text-sm text-white/80">
-            Jumlah game yang saat ini sudah memiliki variant di database
+            {loading ? 0 : stats.activeVariants} variant manual aktif siap
+            dijual
+          </p>
+        </Card>
+
+        <Card title="Sumber Data" variant="warning">
+          <p className="text-base font-semibold">Internal Management</p>
+          <p className="mt-2 text-sm text-white/80">
+            Data manual tidak tergantung sinkronisasi provider eksternal dan
+            dikelola sepenuhnya dari panel admin.
           </p>
         </Card>
 
         <Card title="Mode Operasional" variant="danger">
-          <p className="text-base font-semibold">Bulk Markup</p>
+          <p className="text-base font-semibold">Kurasi Manual</p>
           <p className="mt-2 text-sm text-white/80">
-            Gunakan untuk penyesuaian margin cepat saat strategi harga berubah
-            secara menyeluruh atau per game tertentu.
+            Cocok untuk produk custom, campaign khusus, atau katalog tambahan
+            di luar integrasi provider otomatis.
           </p>
         </Card>
       </div>
 
-      <VariantMarkupSyncPanel
-        apiBase={API || ""}
-        games={games}
-        syncSource="bangjeff"
-        onSynced={() =>
-          fetchData({
-            refreshGames: false,
-            refreshVariants: true,
-          })
-        }
-      />
-
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <Card title="Panduan Penggunaan">
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card title="Arah Pengembangan">
           <div className="space-y-4 text-sm text-gray-600">
             <div className="rounded-2xl bg-gray-50 p-4">
               <p className="font-semibold text-gray-900">
-                Sync semua variant
+                1. Provider internal
               </p>
               <p className="mt-1">
-                Gunakan saat kebijakan margin berlaku sama untuk seluruh katalog
-                dan kamu ingin memperbarui harga jual secara massal.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">Sync per game</p>
-              <p className="mt-1">
-                Gunakan untuk game dengan karakter pasar khusus, misalnya butuh
-                margin lebih agresif atau lebih kompetitif dibanding game lain.
+                Manual diposisikan sebagai provider internal, sehingga struktur
+                navigasinya tetap sejajar dengan provider eksternal seperti
+                BangJeff.
               </p>
             </div>
 
             <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">Catatan produksi</p>
+              <p className="font-semibold text-gray-900">
+                2. Katalog khusus admin
+              </p>
               <p className="mt-1">
-                Perubahan markup akan menghitung ulang harga jual dari harga
-                modal yang sudah tersimpan, tanpa mengubah data sumber BangJeff.
+                Area ini bisa dipakai untuk produk yang dibuat langsung oleh tim
+                admin tanpa menunggu feed produk dari pihak ketiga.
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-gray-50 p-4">
+              <p className="font-semibold text-gray-900">
+                3. Siap ditambah halaman
+              </p>
+              <p className="mt-1">
+                Kalau nanti diperlukan, kita bisa tambahkan child page seperti
+                Manual Games, Manual Variants, atau Manual Pricing tanpa
+                mengubah struktur sidebar lagi.
               </p>
             </div>
           </div>
@@ -232,30 +217,39 @@ export default function BangjeffMarkupPage() {
             >
               <p className="font-semibold text-gray-900">Provider Control</p>
               <p className="mt-1 text-sm text-gray-600">
-                Kembali ke landing page provider untuk berpindah antar area
-                operasional provider dengan struktur yang sama.
+                Kembali ke overview provider untuk berpindah antar area
+                operasional.
               </p>
             </Link>
 
             <Link
-              href="/provider-control/bangjeff"
+              href="/provider-control/manual/games"
               className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
             >
-              <p className="font-semibold text-gray-900">BangJeff Dashboard</p>
+              <p className="font-semibold text-gray-900">Manual Games</p>
               <p className="mt-1 text-sm text-gray-600">
-                Kembali ke dashboard provider untuk sinkronisasi katalog dan
-                ringkasan data.
+                Kelola katalog game manual yang dibuat langsung oleh tim admin.
               </p>
             </Link>
 
             <Link
-              href="/provider-control/bangjeff/variants"
+              href="/provider-control/manual/variants"
               className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
             >
-              <p className="font-semibold text-gray-900">BangJeff Variants</p>
+              <p className="font-semibold text-gray-900">Manual Variants</p>
               <p className="mt-1 text-sm text-gray-600">
-                Lanjutkan edit variant satu per satu setelah penyesuaian markup
-                massal selesai.
+                Kelola variant manual untuk produk internal tanpa feed provider
+                eksternal.
+              </p>
+            </Link>
+
+            <Link
+              href="/provider-control/manual/markup"
+              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
+            >
+              <p className="font-semibold text-gray-900">Manual Markup</p>
+              <p className="mt-1 text-sm text-gray-600">
+                Atur markup massal untuk seluruh variant manual atau per game.
               </p>
             </Link>
           </div>

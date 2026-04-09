@@ -32,10 +32,10 @@ const summaryCards = [
 export default function DashboardPage() {
   const quickLinks = [
     {
-      title: "Kontrol BangJeff",
-      href: "/provider-control/bangjeff",
+      title: "Provider Control",
+      href: "/provider-control",
       description:
-        "Kelola sinkronisasi katalog BangJeff, termasuk game, detail input, dan variant yang tersimpan di database internal.",
+        "Kelola struktur provider seperti BangJeff dan Manual dari satu area navigasi yang siap dikembangkan.",
     },
     {
       title: "Monitoring Order",
@@ -44,10 +44,10 @@ export default function DashboardPage() {
         "Tinjau status transaksi, identifikasi order gagal, dan pantau order yang masih diproses.",
     },
     {
-      title: "Manajemen Game",
-      href: "/games",
+      title: "BangJeff Games",
+      href: "/provider-control/bangjeff/games",
       description:
-        "Kelola metadata game internal seperti nama tampilan, provider, logo, dan status katalog.",
+        "Masuk ke katalog game BangJeff untuk mengelola metadata internal seperti provider, logo, dan status katalog.",
     },
   ];
 

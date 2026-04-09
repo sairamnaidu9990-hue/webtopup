@@ -17,6 +17,20 @@ function getMarkupValue(value) {
   return parsed;
 }
 
+function getSyncSourceValue(value) {
+  if (!value) {
+    return "";
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+
+  if (normalized === "bangjeff" || normalized === "manual") {
+    return normalized;
+  }
+
+  return null;
+}
+
 async function applyMarkupToVariants(filter, markup) {
   const variants = await Variant.find(filter).select("_id basePrice");
 
@@ -219,6 +233,7 @@ exports.updateVariant = async (req, res) => {
 exports.syncMarkupAllVariants = async (req, res) => {
   try {
     const markup = getMarkupValue(req.body?.markup);
+    const syncSource = getSyncSourceValue(req.body?.syncSource);
 
     if (markup == null) {
       return res.status(400).json({
@@ -226,14 +241,22 @@ exports.syncMarkupAllVariants = async (req, res) => {
       });
     }
 
-    const totalVariants = await Variant.countDocuments();
-    const updatedCount = await applyMarkupToVariants({}, markup);
+    if (syncSource === null) {
+      return res.status(400).json({
+        message: "Sync source tidak valid",
+      });
+    }
+
+    const filter = syncSource ? { syncSource } : {};
+    const totalVariants = await Variant.countDocuments(filter);
+    const updatedCount = await applyMarkupToVariants(filter, markup);
 
     return res.status(200).json({
       message: "Sync markup semua variant selesai",
       summary: {
         scope: "all",
         markup,
+        syncSource: syncSource || "all",
         totalVariants,
         updatedCount,
       },
@@ -250,6 +273,7 @@ exports.syncMarkupByGame = async (req, res) => {
   try {
     const gameId = String(req.params.gameId || "").trim();
     const markup = getMarkupValue(req.body?.markup);
+    const syncSource = getSyncSourceValue(req.body?.syncSource);
 
     if (!gameId) {
       return res.status(400).json({
@@ -263,7 +287,16 @@ exports.syncMarkupByGame = async (req, res) => {
       });
     }
 
-    const game = await Game.findById(gameId).select("_id name code");
+    if (syncSource === null) {
+      return res.status(400).json({
+        message: "Sync source tidak valid",
+      });
+    }
+
+    const game = await Game.findOne({
+      _id: gameId,
+      ...(syncSource ? { syncSource } : {}),
+    }).select("_id name code syncSource");
 
     if (!game) {
       return res.status(404).json({
@@ -271,14 +304,19 @@ exports.syncMarkupByGame = async (req, res) => {
       });
     }
 
-    const totalVariants = await Variant.countDocuments({ game: game._id });
-    const updatedCount = await applyMarkupToVariants({ game: game._id }, markup);
+    const filter = {
+      game: game._id,
+      ...(syncSource ? { syncSource } : {}),
+    };
+    const totalVariants = await Variant.countDocuments(filter);
+    const updatedCount = await applyMarkupToVariants(filter, markup);
 
     return res.status(200).json({
       message: "Sync markup per game selesai",
       summary: {
         scope: "game",
         markup,
+        syncSource: syncSource || game.syncSource || "all",
         totalVariants,
         updatedCount,
         game: {
