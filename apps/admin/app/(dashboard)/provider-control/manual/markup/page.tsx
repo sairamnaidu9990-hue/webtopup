@@ -183,7 +183,7 @@ export default function ManualMarkupPage() {
       </div>
 
       <VariantMarkupSyncPanel
-        apiBase={API || ""}
+        apiBase=""
         games={games}
         syncSource="manual"
         onSynced={() =>

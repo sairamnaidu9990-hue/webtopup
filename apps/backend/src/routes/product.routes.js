@@ -11,12 +11,13 @@ const {
   syncVariants,
   syncCatalog,
 } = require("../controllers/product.controller");
+const { protectAdmin } = require("../middleware/authMiddleware");
 
 
-router.post("/sync/games", syncGames);
-router.post("/sync/details", syncGameDetails);
-router.post("/sync/variants", syncVariants);
-router.post("/sync/all", syncCatalog);
+router.post("/sync/games", protectAdmin, syncGames);
+router.post("/sync/details", protectAdmin, syncGameDetails);
+router.post("/sync/variants", protectAdmin, syncVariants);
+router.post("/sync/all", protectAdmin, syncCatalog);
 
 
 // GET all products

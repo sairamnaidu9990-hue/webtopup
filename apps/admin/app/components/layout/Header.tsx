@@ -20,6 +20,10 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
       return "BangJeff Games";
     }
 
+    if (pathname.startsWith("/provider-control/bangjeff/sync-logs")) {
+      return "BangJeff Sync Logs";
+    }
+
     if (pathname.startsWith("/provider-control/bangjeff/variants")) {
       return "BangJeff Variants";
     }
@@ -58,6 +62,10 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
 
     if (pathname.startsWith("/orders")) {
       return "Orders";
+    }
+
+    if (pathname.startsWith("/admins")) {
+      return "Admin Management";
     }
 
     return "Dashboard";

@@ -59,7 +59,15 @@ async function loginAdmin(req, res) {
 async function getMe(req, res) {
   try {
     return res.status(200).json({
-      admin: req.admin,
+      admin: {
+        id: req.admin._id,
+        name: req.admin.name,
+        email: req.admin.email,
+        role: req.admin.role,
+        isActive: req.admin.isActive,
+        createdAt: req.admin.createdAt,
+        updatedAt: req.admin.updatedAt,
+      },
     });
   } catch (error) {
     return res.status(500).json({

@@ -182,7 +182,7 @@ export default function BangjeffMarkupPage() {
       </div>
 
       <VariantMarkupSyncPanel
-        apiBase={API || ""}
+        apiBase=""
         games={games}
         syncSource="bangjeff"
         onSynced={() =>

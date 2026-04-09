@@ -18,6 +18,7 @@ const providerGroups = [
       { label: "Dashboard", href: "/provider-control/bangjeff" },
       { label: "Games", href: "/provider-control/bangjeff/games" },
       { label: "Variants", href: "/provider-control/bangjeff/variants" },
+      { label: "Sync Logs", href: "/provider-control/bangjeff/sync-logs" },
       {
         label: "Markup Variant",
         href: "/provider-control/bangjeff/markup",
@@ -38,7 +39,10 @@ const providerGroups = [
 
 const primaryItems = [{ label: "Dashboard", href: "/dashboard" }];
 
-const menuItems = [{ label: "Orders", href: "/orders" }];
+const menuItems = [
+  { label: "Orders", href: "/orders" },
+  { label: "Admin Management", href: "/admins" },
+];
 
 const desktopSidebarStyle: CSSProperties = {
   position: "sticky",

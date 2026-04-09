@@ -49,6 +49,12 @@ export default function DashboardPage() {
       description:
         "Masuk ke katalog game BangJeff untuk mengelola metadata internal seperti provider, logo, dan status katalog.",
     },
+    {
+      title: "Admin Management",
+      href: "/admins",
+      description:
+        "Kelola akun admin, role, password, dan status aktif dari satu halaman operasional.",
+    },
   ];
 
   return (

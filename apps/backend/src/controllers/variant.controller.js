@@ -1,6 +1,7 @@
 const Variant = require("../models/Variant");
 const Game = require("../models/Game");
 const calculatePrice = require("../utils/calculatePrice");
+const createSyncLog = require("../utils/createSyncLog");
 
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
@@ -250,18 +251,39 @@ exports.syncMarkupAllVariants = async (req, res) => {
     const filter = syncSource ? { syncSource } : {};
     const totalVariants = await Variant.countDocuments(filter);
     const updatedCount = await applyMarkupToVariants(filter, markup);
+    const summary = {
+      scope: "all",
+      markup,
+      syncSource: syncSource || "all",
+      totalVariants,
+      updatedCount,
+    };
+
+    await createSyncLog({
+      provider: syncSource || "catalog",
+      action: "sync_markup_all_variants",
+      scope: "all",
+      status: "SUCCESS",
+      syncSource: syncSource || "all",
+      summary,
+      admin: req.admin || null,
+    });
 
     return res.status(200).json({
       message: "Sync markup semua variant selesai",
-      summary: {
-        scope: "all",
-        markup,
-        syncSource: syncSource || "all",
-        totalVariants,
-        updatedCount,
-      },
+      summary,
     });
   } catch (error) {
+    await createSyncLog({
+      provider: getSyncSourceValue(req.body?.syncSource) || "catalog",
+      action: "sync_markup_all_variants",
+      scope: "all",
+      status: "FAILED",
+      syncSource: getSyncSourceValue(req.body?.syncSource) || "all",
+      errorMessage: error.message,
+      admin: req.admin || null,
+    });
+
     return res.status(500).json({
       message: "Error sync markup semua variant",
       error: error.message,
@@ -310,23 +332,46 @@ exports.syncMarkupByGame = async (req, res) => {
     };
     const totalVariants = await Variant.countDocuments(filter);
     const updatedCount = await applyMarkupToVariants(filter, markup);
+    const summary = {
+      scope: "game",
+      markup,
+      syncSource: syncSource || game.syncSource || "all",
+      totalVariants,
+      updatedCount,
+      game: {
+        _id: game._id,
+        name: game.name,
+        code: game.code,
+      },
+    };
+
+    await createSyncLog({
+      provider: syncSource || game.syncSource || "catalog",
+      action: "sync_markup_game_variants",
+      scope: "game",
+      status: "SUCCESS",
+      syncSource: syncSource || game.syncSource || "all",
+      productCode: game.code || "",
+      summary,
+      admin: req.admin || null,
+    });
 
     return res.status(200).json({
       message: "Sync markup per game selesai",
-      summary: {
-        scope: "game",
-        markup,
-        syncSource: syncSource || game.syncSource || "all",
-        totalVariants,
-        updatedCount,
-        game: {
-          _id: game._id,
-          name: game.name,
-          code: game.code,
-        },
-      },
+      summary,
     });
   } catch (error) {
+    await createSyncLog({
+      provider: getSyncSourceValue(req.body?.syncSource) || "catalog",
+      action: "sync_markup_game_variants",
+      scope: "game",
+      status: "FAILED",
+      syncSource: getSyncSourceValue(req.body?.syncSource) || "all",
+      productCode: "",
+      errorMessage: error.message,
+      admin: req.admin || null,
+    });
+
     return res.status(500).json({
       message: "Error sync markup per game",
       error: error.message,

@@ -163,6 +163,12 @@ export default function BangjeffDashboardPage() {
         "Kembali ke landing page provider untuk melihat struktur navigasi dan provider lain yang nanti akan ditambahkan.",
     },
     {
+      title: "Sync Logs",
+      href: "/provider-control/bangjeff/sync-logs",
+      description:
+        "Pantau riwayat sinkronisasi BangJeff dan aktivitas bulk markup lengkap dengan status dan actor admin.",
+    },
+    {
       title: "Markup Variant",
       href: "/provider-control/bangjeff/markup",
       description:
@@ -236,7 +242,7 @@ export default function BangjeffDashboardPage() {
       </div>
 
       <SyncPanel
-        apiBase={API || ""}
+        apiBase=""
         onSynced={() =>
           fetchDashboardData({
             refreshGames: true,

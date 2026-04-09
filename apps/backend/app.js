@@ -1,8 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./src/routes/authRoutes");
+const adminRoutes = require("./src/routes/admin.routes");
 const gameRoutes = require("./src/routes/game.routes");
 const productRoutes = require("./src/routes/product.routes");
+const syncLogRoutes = require("./src/routes/syncLog.routes");
 const variantRoutes = require("./src/routes/variant.routes");
 const app = express();
 
@@ -37,8 +39,10 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/admins", adminRoutes);
 app.use("/api/games", gameRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/sync-logs", syncLogRoutes);
 app.use("/api/variants", variantRoutes);
 
 module.exports = app;

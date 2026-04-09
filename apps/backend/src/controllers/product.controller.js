@@ -2,6 +2,7 @@ const Product = require("../models/Product");
 const Game = require("../models/Game");
 const Variant = require("../models/Variant");
 const calculatePrice = require("../utils/calculatePrice");
+const createSyncLog = require("../utils/createSyncLog");
 const {
   getBangjeffProducts,
   getBangjeffProductDetail,
@@ -285,12 +286,33 @@ async function syncGames(req, res) {
     const region = getRegion(req);
     const summary = await syncGamesData(region);
 
+    await createSyncLog({
+      provider: "bangjeff",
+      action: "sync_games",
+      status: "SUCCESS",
+      syncSource: "bangjeff",
+      region,
+      summary,
+      admin: req.admin || null,
+    });
+
     return res.status(200).json({
       message: "Sync product selesai",
       region,
       summary,
     });
   } catch (error) {
+    await createSyncLog({
+      provider: "bangjeff",
+      action: "sync_games",
+      status: "FAILED",
+      syncSource: "bangjeff",
+      region: getRegion(req),
+      errorMessage: getErrorMessage(error, "Sync product gagal"),
+      summary: error.bangjeff || null,
+      admin: req.admin || null,
+    });
+
     return res.status(500).json({
       message: "Error sync product",
       error: getErrorMessage(error, "Sync product gagal"),
@@ -305,6 +327,18 @@ async function syncGameDetails(req, res) {
     const productCode = getRequestedProductCode(req);
     const summary = await syncGameDetailsData(region, productCode);
 
+    await createSyncLog({
+      provider: "bangjeff",
+      action: "sync_game_details",
+      scope: productCode ? "product" : "provider",
+      status: "SUCCESS",
+      syncSource: "bangjeff",
+      region,
+      productCode,
+      summary,
+      admin: req.admin || null,
+    });
+
     return res.status(200).json({
       message: "Sync product detail selesai",
       region,
@@ -312,6 +346,19 @@ async function syncGameDetails(req, res) {
       summary,
     });
   } catch (error) {
+    await createSyncLog({
+      provider: "bangjeff",
+      action: "sync_game_details",
+      scope: getRequestedProductCode(req) ? "product" : "provider",
+      status: "FAILED",
+      syncSource: "bangjeff",
+      region: getRegion(req),
+      productCode: getRequestedProductCode(req),
+      errorMessage: getErrorMessage(error, "Sync product detail gagal"),
+      summary: error.bangjeff || null,
+      admin: req.admin || null,
+    });
+
     return res.status(500).json({
       message: "Error sync product detail",
       error: getErrorMessage(error, "Sync product detail gagal"),
@@ -326,6 +373,18 @@ async function syncVariants(req, res) {
     const productCode = getRequestedProductCode(req);
     const summary = await syncVariantsData(region, productCode);
 
+    await createSyncLog({
+      provider: "bangjeff",
+      action: "sync_variants",
+      scope: productCode ? "product" : "provider",
+      status: "SUCCESS",
+      syncSource: "bangjeff",
+      region,
+      productCode,
+      summary,
+      admin: req.admin || null,
+    });
+
     return res.status(200).json({
       message: "Sync variant selesai",
       region,
@@ -333,6 +392,19 @@ async function syncVariants(req, res) {
       summary,
     });
   } catch (error) {
+    await createSyncLog({
+      provider: "bangjeff",
+      action: "sync_variants",
+      scope: getRequestedProductCode(req) ? "product" : "provider",
+      status: "FAILED",
+      syncSource: "bangjeff",
+      region: getRegion(req),
+      productCode: getRequestedProductCode(req),
+      errorMessage: getErrorMessage(error, "Sync variant gagal"),
+      summary: error.bangjeff || null,
+      admin: req.admin || null,
+    });
+
     return res.status(500).json({
       message: "Error sync variant",
       error: getErrorMessage(error, "Sync variant gagal"),
@@ -348,18 +420,44 @@ async function syncCatalog(req, res) {
     const games = await syncGamesData(region);
     const details = await syncGameDetailsData(region, productCode);
     const variants = await syncVariantsData(region, productCode);
+    const summary = {
+      games,
+      details,
+      variants,
+    };
+
+    await createSyncLog({
+      provider: "bangjeff",
+      action: "sync_catalog",
+      scope: productCode ? "product" : "provider",
+      status: "SUCCESS",
+      syncSource: "bangjeff",
+      region,
+      productCode,
+      summary,
+      admin: req.admin || null,
+    });
 
     return res.status(200).json({
       message: "Sync BangJeff selesai",
       region,
       productCode: productCode || null,
-      summary: {
-        games,
-        details,
-        variants,
-      },
+      summary,
     });
   } catch (error) {
+    await createSyncLog({
+      provider: "bangjeff",
+      action: "sync_catalog",
+      scope: getRequestedProductCode(req) ? "product" : "provider",
+      status: "FAILED",
+      syncSource: "bangjeff",
+      region: getRegion(req),
+      productCode: getRequestedProductCode(req),
+      errorMessage: getErrorMessage(error, "Sync catalog gagal"),
+      summary: error.bangjeff || null,
+      admin: req.admin || null,
+    });
+
     return res.status(500).json({
       message: "Error sync catalog BangJeff",
       error: getErrorMessage(error, "Sync catalog gagal"),

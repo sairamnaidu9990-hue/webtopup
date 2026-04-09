@@ -1,7 +1,7 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const Admin = require("./src/models/admin");
+const Admin = require("./src/models/Admin");
 
 async function createAdmin() {
   try {
@@ -22,7 +22,7 @@ async function createAdmin() {
       name: "Super Admin",
       email: "sairamnaidu9990@gmail.com",
       password: hashedPassword,
-      role: "admin",
+      role: "super_admin",
       isActive: true,
     });
 
