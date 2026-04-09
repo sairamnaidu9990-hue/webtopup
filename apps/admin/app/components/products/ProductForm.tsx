@@ -37,7 +37,7 @@ export default function ProductForm(props: Props) {
   return (
     <div className="rounded-2xl border bg-white p-6">
       <h2 className="mb-4 text-lg font-semibold">
-        {props.editingId ? "Edit Product" : "Add Product"}
+        {props.editingId ? "Perbarui Produk" : "Tambah Produk"}
       </h2>
 
       {props.success && (
@@ -57,7 +57,7 @@ export default function ProductForm(props: Props) {
 
         <input
           type="number"
-          placeholder="Base Price"
+          placeholder="Harga modal"
           value={props.basePrice}
           onChange={(e) => props.setBasePrice(e.target.value)}
           className="rounded-xl border px-4 py-2"
@@ -75,7 +75,7 @@ export default function ProductForm(props: Props) {
 
         {/* 🔥 PREVIEW */}
         <div className="col-span-3 rounded-xl bg-gray-50 p-4">
-          <p className="text-sm text-gray-500">Markup</p>
+          <p className="text-sm text-gray-500">Estimasi harga jual</p>
           <p className="text-lg font-semibold text-gray-800">
             Rp {Math.ceil(previewPrice)}
           </p>
@@ -85,14 +85,14 @@ export default function ProductForm(props: Props) {
         </div>
 
         <input
-          placeholder="Provider Code"
+          placeholder="Kode provider"
           value={props.providerCode}
           onChange={(e) => props.setProviderCode(e.target.value)}
           className="rounded-xl border px-4 py-2"
         />
 
         <input
-          placeholder="Logo URL"
+          placeholder="URL logo"
           value={props.logo}
           onChange={(e) => props.setLogo(e.target.value)}
           className="rounded-xl border px-4 py-2"
@@ -117,10 +117,10 @@ export default function ProductForm(props: Props) {
           className="col-span-3 rounded-xl bg-black py-2 text-white disabled:opacity-50"
         >
           {props.submitting
-            ? "Loading..."
+            ? "Menyimpan..."
             : props.editingId
-            ? "Update Product"
-            : "Add Product"}
+            ? "Simpan Perubahan"
+            : "Tambah Produk"}
         </button>
       </form>
     </div>

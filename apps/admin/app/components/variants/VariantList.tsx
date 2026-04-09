@@ -1,20 +1,135 @@
 "use client";
 
+import { useState } from "react";
 import { Variant } from "@/app/types/Variant";
 
 type Props = {
+  games: Array<{
+    _id: string;
+    name: string;
+  }>;
   variants: Variant[];
   onEdit: (variant: Variant) => void;
   onDelete: (id: string) => void;
 };
 
-export default function VariantList({ variants, onEdit, onDelete }: Props) {
+export default function VariantList({
+  games,
+  variants,
+  onEdit,
+  onDelete,
+}: Props) {
+  const [search, setSearch] = useState("");
+  const [gameFilter, setGameFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredVariants = variants.filter((variant) => {
+    const matchesGame =
+      gameFilter === "ALL" || variant.game?._id === gameFilter;
+    const matchesStatus =
+      statusFilter === "ALL" ||
+      (variant.status || "UNKNOWN") === statusFilter;
+
+    const searchableText = [
+      variant.name,
+      variant.providerCode,
+      variant.game?.name,
+      variant.region,
+      variant.status,
+      variant.currency,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch =
+      normalizedSearch.length === 0 ||
+      searchableText.includes(normalizedSearch);
+
+    return matchesGame && matchesStatus && matchesSearch;
+  });
+
+  const statusOptions = Array.from(
+    new Set(variants.map((variant) => variant.status || "UNKNOWN"))
+  );
+
   return (
     <div className="rounded-2xl border bg-white p-6">
-      <h2 className="mb-4 text-lg font-semibold">List Variants</h2>
+      <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Daftar Variant</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Menampilkan {filteredVariants.length} dari {variants.length} variant.
+          </p>
+        </div>
+
+        <div className="grid w-full gap-3 md:grid-cols-3 lg:max-w-3xl">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Cari variant
+            </label>
+            <input
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Cari nama variant, game, kode provider, atau region"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Game
+            </label>
+            <select
+              value={gameFilter}
+              onChange={(event) => setGameFilter(event.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            >
+              <option value="ALL">Semua game</option>
+              {games.map((game) => (
+                <option key={game._id} value={game._id}>
+                  {game.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Status
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            >
+              <option value="ALL">Semua status</option>
+              {statusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
 
       <div className="space-y-3">
-        {variants.map((variant, index) => (
+        {variants.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Belum ada data variant yang tersimpan.
+          </p>
+        ) : null}
+
+        {variants.length > 0 && filteredVariants.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Tidak ada variant yang cocok dengan pencarian.
+          </p>
+        ) : null}
+
+        {filteredVariants.map((variant, index) => (
           <div
             key={variant._id}
             className="flex items-center justify-between rounded-xl border p-3"
@@ -58,14 +173,14 @@ export default function VariantList({ variants, onEdit, onDelete }: Props) {
                 onClick={() => onEdit(variant)}
                 className="text-sm text-blue-600"
               >
-                Edit
+                Ubah
               </button>
 
               <button
                 onClick={() => onDelete(variant._id)}
                 className="text-sm text-red-500"
               >
-                Delete
+                Hapus
               </button>
             </div>
           </div>

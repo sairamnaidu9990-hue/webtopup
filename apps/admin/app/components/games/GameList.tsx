@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 type Game = {
   _id: string;
   name: string;
@@ -26,12 +28,118 @@ type Props = {
 };
 
 export default function GameList({ games, onEdit, onDelete }: Props) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [sourceFilter, setSourceFilter] = useState("ALL");
+
+  const statusOptions = Array.from(
+    new Set(games.map((game) => game.status || "UNKNOWN"))
+  );
+  const sourceOptions = Array.from(
+    new Set(games.map((game) => game.syncSource || "manual"))
+  );
+
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredGames = games.filter((game) => {
+    const matchesStatus =
+      statusFilter === "ALL" || (game.status || "UNKNOWN") === statusFilter;
+    const matchesSource =
+      sourceFilter === "ALL" || (game.syncSource || "manual") === sourceFilter;
+
+    const searchableText = [
+      game.name,
+      game.code,
+      game.provider,
+      game.status,
+      game.syncSource,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch =
+      normalizedSearch.length === 0 ||
+      searchableText.includes(normalizedSearch);
+
+    return matchesStatus && matchesSource && matchesSearch;
+  });
+
   return (
     <div className="rounded-2xl border bg-white p-6">
-      <h2 className="mb-4 text-lg font-semibold">List Games</h2>
+      <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Daftar Game</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Menampilkan {filteredGames.length} dari {games.length} game.
+          </p>
+        </div>
+
+        <div className="grid w-full gap-3 md:grid-cols-3 lg:max-w-3xl">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Cari game
+            </label>
+            <input
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Cari nama game, kode, provider, atau status"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Status
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            >
+              <option value="ALL">Semua status</option>
+              {statusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Sumber Data
+            </label>
+            <select
+              value={sourceFilter}
+              onChange={(event) => setSourceFilter(event.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            >
+              <option value="ALL">Semua sumber</option>
+              {sourceOptions.map((source) => (
+                <option key={source} value={source}>
+                  {source}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
 
       <div className="space-y-3">
-        {games.map((game, index) => (
+        {games.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Belum ada data game yang tersimpan.
+          </p>
+        ) : null}
+
+        {games.length > 0 && filteredGames.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Tidak ada game yang cocok dengan pencarian.
+          </p>
+        ) : null}
+
+        {filteredGames.map((game, index) => (
           <div
             key={game._id}
             className="flex items-center justify-between rounded-xl border p-3"
@@ -61,7 +169,7 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
                     {game.syncSource || "manual"}
                   </span>
                   <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">
-                    Inputs: {game.inputs?.length || 0}
+                    Input: {game.inputs?.length || 0}
                   </span>
                 </div>
               </div>
@@ -72,14 +180,14 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
                 onClick={() => onEdit(game)}
                 className="text-sm text-blue-600"
               >
-                Edit
+                Ubah
               </button>
 
               <button
                 onClick={() => onDelete(game._id)}
                 className="text-sm text-red-500"
               >
-                Delete
+                Hapus
               </button>
             </div>
           </div>

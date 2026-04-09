@@ -4,6 +4,16 @@ import { useEffect, useState } from "react";
 import VariantForm from "@/app/components/variants/VariantForm";
 import VariantList from "@/app/components/variants/VariantList";
 import { Variant } from "@/app/types/Variant";
+import {
+  isSessionCacheFresh,
+  readSessionCache,
+  writeSessionCache,
+} from "@/app/lib/sessionCache";
+import {
+  CATALOG_CACHE_TTL_MS,
+  GAMES_CACHE_KEY,
+  VARIANTS_CACHE_KEY,
+} from "@/app/lib/catalogCache";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -19,6 +29,7 @@ export default function VariantsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [gameId, setGameId] = useState("");
@@ -32,18 +43,46 @@ export default function VariantsPage() {
   const [duration, setDuration] = useState("0");
   const [status, setStatus] = useState("ACTIVE");
 
-  const fetchData = async () => {
+  const fetchData = async ({
+    refreshGames = true,
+    refreshVariants = true,
+  }: {
+    refreshGames?: boolean;
+    refreshVariants?: boolean;
+  } = {}) => {
     try {
-      const [gamesResponse, variantsResponse] = await Promise.all([
-        fetch(`${API}/api/games`),
-        fetch(`${API}/api/variants`),
-      ]);
+      const requests: Array<Promise<Response>> = [];
 
-      const gamesPayload = await gamesResponse.json();
-      const variantsPayload = await variantsResponse.json();
+      if (refreshGames) {
+        requests.push(fetch(`${API}/api/games`));
+      }
 
-      setGames(gamesPayload);
-      setVariants(variantsPayload);
+      if (refreshVariants) {
+        requests.push(fetch(`${API}/api/variants`));
+      }
+
+      const responses = await Promise.all(requests);
+      let responseIndex = 0;
+
+      if (refreshGames) {
+        const gamesResponse = responses[responseIndex++];
+        const gamesPayload = await gamesResponse.json();
+        const nextGames = Array.isArray(gamesPayload) ? gamesPayload : [];
+
+        setGames(nextGames);
+        writeSessionCache(GAMES_CACHE_KEY, nextGames);
+      }
+
+      if (refreshVariants) {
+        const variantsResponse = responses[responseIndex++];
+        const variantsPayload = await variantsResponse.json();
+        const nextVariants = Array.isArray(variantsPayload)
+          ? variantsPayload
+          : [];
+
+        setVariants(nextVariants);
+        writeSessionCache(VARIANTS_CACHE_KEY, nextVariants);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -52,7 +91,39 @@ export default function VariantsPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    const cachedGames = readSessionCache<Game[]>(GAMES_CACHE_KEY);
+    const cachedVariants = readSessionCache<Variant[]>(VARIANTS_CACHE_KEY);
+
+    const hasCachedGames =
+      !!cachedGames?.data && Array.isArray(cachedGames.data);
+    const hasCachedVariants =
+      !!cachedVariants?.data && Array.isArray(cachedVariants.data);
+
+    if (hasCachedGames) {
+      setGames(cachedGames.data);
+    }
+
+    if (hasCachedVariants) {
+      setVariants(cachedVariants.data);
+    }
+
+    if (hasCachedGames || hasCachedVariants) {
+      setLoading(false);
+    }
+
+    const shouldRefreshGames =
+      !hasCachedGames ||
+      !isSessionCacheFresh(cachedGames.savedAt, CATALOG_CACHE_TTL_MS);
+    const shouldRefreshVariants =
+      !hasCachedVariants ||
+      !isSessionCacheFresh(cachedVariants.savedAt, CATALOG_CACHE_TTL_MS);
+
+    if (shouldRefreshGames || shouldRefreshVariants) {
+      fetchData({
+        refreshGames: shouldRefreshGames,
+        refreshVariants: shouldRefreshVariants,
+      });
+    }
   }, []);
 
   const resetForm = () => {
@@ -70,6 +141,7 @@ export default function VariantsPage() {
   };
 
   const handleEdit = (variant: Variant) => {
+    setSuccess("");
     setEditingId(variant._id);
     setGameId(variant.game?._id || "");
     setName(variant.name);
@@ -81,19 +153,23 @@ export default function VariantsPage() {
     setCurrency(variant.currency || "IDR");
     setDuration(String(variant.duration ?? 0));
     setStatus(variant.status || "ACTIVE");
+    setFormOpen(true);
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus variant ini?")) return;
+    if (!confirm("Yakin ingin menghapus variant ini?")) return;
 
     try {
       await fetch(`${API}/api/variants/${id}`, {
         method: "DELETE",
       });
 
-      fetchData();
+      fetchData({
+        refreshGames: false,
+        refreshVariants: true,
+      });
     } catch (error) {
       console.error(error);
     }
@@ -135,10 +211,13 @@ export default function VariantsPage() {
       }
 
       setSuccess(
-        editingId ? "Variant berhasil diupdate" : "Variant berhasil ditambahkan"
+        editingId ? "Variant berhasil diperbarui" : "Variant berhasil ditambahkan"
       );
       resetForm();
-      fetchData();
+      fetchData({
+        refreshGames: false,
+        refreshVariants: true,
+      });
       setTimeout(() => setSuccess(""), 3000);
     } catch (error) {
       console.error(error);
@@ -151,6 +230,7 @@ export default function VariantsPage() {
   return (
     <div className="space-y-6">
       <VariantForm
+        isOpen={formOpen}
         name={name}
         providerCode={providerCode}
         basePrice={basePrice}
@@ -176,12 +256,22 @@ export default function VariantsPage() {
         setStatus={setStatus}
         setGameId={setGameId}
         onSubmit={handleSubmit}
+        onOpen={() => {
+          setSuccess("");
+          setFormOpen(true);
+        }}
+        onClose={() => {
+          setSuccess("");
+          resetForm();
+          setFormOpen(false);
+        }}
       />
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading variants...</p>
+        <p className="text-sm text-gray-500">Memuat data variant...</p>
       ) : (
         <VariantList
+          games={games}
           variants={variants}
           onEdit={handleEdit}
           onDelete={handleDelete}

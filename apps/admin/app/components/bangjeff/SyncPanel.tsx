@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useState } from "react";
 
 type SyncAction = {
@@ -28,24 +29,88 @@ type FeedbackProps = {
   message: string;
 };
 
+const panelStyle: CSSProperties = {
+  border: "1px solid #e5e7eb",
+  borderRadius: "28px",
+  background: "linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%)",
+  boxShadow: "0 18px 40px rgba(15, 23, 42, 0.06)",
+};
+
+const buttonBaseStyle: CSSProperties = {
+  borderRadius: "14px",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  padding: "10px 16px",
+  fontSize: "14px",
+  fontWeight: 600,
+  lineHeight: 1.2,
+  letterSpacing: "0.01em",
+  transition:
+    "transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease",
+};
+
+const feedbackBaseStyle: CSSProperties = {
+  borderRadius: "18px",
+  borderWidth: "1px",
+  borderStyle: "solid",
+  overflow: "hidden",
+  boxShadow: "0 8px 22px rgba(15, 23, 42, 0.05)",
+};
+
+const feedbackToneStyle: Record<FeedbackProps["tone"], CSSProperties> = {
+  success: {
+    borderColor: "#a7f3d0",
+    background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
+  },
+  error: {
+    borderColor: "#fecaca",
+    background: "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)",
+  },
+};
+
+function getButtonStyle(isRunning: boolean, isDisabled: boolean): CSSProperties {
+  if (isDisabled && !isRunning) {
+    return {
+      ...buttonBaseStyle,
+      borderColor: "#e2e8f0",
+      background: "#f8fafc",
+      color: "#94a3b8",
+      boxShadow: "none",
+      cursor: "not-allowed",
+      transform: "none",
+    };
+  }
+
+  if (isRunning) {
+    return {
+      ...buttonBaseStyle,
+      borderColor: "#0f172a",
+      background: "linear-gradient(180deg, #0f172a 0%, #111827 100%)",
+      color: "#ffffff",
+      boxShadow: "0 12px 24px rgba(15, 23, 42, 0.18)",
+    };
+  }
+
+  return {
+    ...buttonBaseStyle,
+    borderColor: "#111827",
+    background: "linear-gradient(180deg, #1f2937 0%, #111827 100%)",
+    color: "#ffffff",
+    boxShadow: "0 8px 18px rgba(15, 23, 42, 0.12)",
+  };
+}
+
 function FeedbackBanner({ tone, message }: FeedbackProps) {
   const isSuccess = tone === "success";
 
   return (
-    <div
-      className={`mt-6 overflow-hidden rounded-2xl border ${
-        isSuccess
-          ? "border-emerald-200 bg-[linear-gradient(135deg,#f4fff7_0%,#dcfce7_100%)]"
-          : "border-red-200 bg-[linear-gradient(135deg,#fff5f5_0%,#fee2e2_100%)]"
-      }`}
-    >
-      <div className="flex items-start gap-3 px-4 py-3.5">
+    <div style={{ ...feedbackBaseStyle, ...feedbackToneStyle[tone] }}>
+      <div className="flex items-start gap-4 px-5 py-4">
         <div
-          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-            isSuccess
-              ? "bg-emerald-600 text-white"
-              : "bg-red-600 text-white"
-          }`}
+          className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white shadow-sm"
+          style={{
+            backgroundColor: isSuccess ? "#059669" : "#dc2626",
+          }}
         >
           {isSuccess ? "OK" : "!"}
         </div>
@@ -53,27 +118,25 @@ function FeedbackBanner({ tone, message }: FeedbackProps) {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <p
-              className={`text-sm font-semibold ${
-                isSuccess ? "text-emerald-900" : "text-red-900"
-              }`}
+              className="text-sm font-semibold"
+              style={{ color: isSuccess ? "#064e3b" : "#7f1d1d" }}
             >
-              {isSuccess ? "Sync berhasil" : "Sync gagal"}
+              {isSuccess ? "Sinkronisasi berhasil" : "Sinkronisasi gagal"}
             </p>
             <span
-              className={`rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${
-                isSuccess
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-red-100 text-red-700"
-              }`}
+              className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+              style={{
+                backgroundColor: isSuccess ? "#d1fae5" : "#fee2e2",
+                color: isSuccess ? "#047857" : "#b91c1c",
+              }}
             >
-              {tone}
+              {isSuccess ? "Berhasil" : "Error"}
             </span>
           </div>
 
           <p
-            className={`mt-1 text-sm ${
-              isSuccess ? "text-emerald-800" : "text-red-800"
-            }`}
+            className="mt-1.5 text-sm leading-6"
+            style={{ color: isSuccess ? "#065f46" : "#991b1b" }}
           >
             {message}
           </p>
@@ -127,21 +190,45 @@ export default function SyncPanel({
   };
 
   return (
-    <div className="rounded-2xl border bg-white p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
+    <div className="p-6" style={panelStyle}>
+      <div className="flex flex-col gap-5">
+        <div className="max-w-2xl">
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="mt-1 text-sm text-gray-500">{description}</p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3 pt-1">
           {actions.map((action) => (
             <button
               key={action.endpoint}
               type="button"
               onClick={() => runSync(action)}
               disabled={running !== null}
-              className="rounded-xl border border-black px-4 py-2 text-sm font-medium text-black transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="text-sm"
+              style={getButtonStyle(
+                running === action.endpoint,
+                running !== null
+              )}
+              onMouseEnter={(event) => {
+                if (running === null) {
+                  event.currentTarget.style.transform = "translateY(-1px)";
+                  event.currentTarget.style.boxShadow =
+                    "0 12px 22px rgba(15, 23, 42, 0.16)";
+                  event.currentTarget.style.background =
+                    "linear-gradient(180deg, #273244 0%, #17202f 100%)";
+                }
+              }}
+              onMouseLeave={(event) => {
+                if (running === null) {
+                  const baseStyle = getButtonStyle(false, false);
+                  event.currentTarget.style.transform =
+                    baseStyle.transform?.toString() || "none";
+                  event.currentTarget.style.boxShadow =
+                    baseStyle.boxShadow?.toString() || "";
+                  event.currentTarget.style.background =
+                    baseStyle.background?.toString() || "";
+                }
+              }}
             >
               {running === action.endpoint ? "Syncing..." : action.label}
             </button>
@@ -149,8 +236,12 @@ export default function SyncPanel({
         </div>
       </div>
 
-      {message ? <FeedbackBanner tone="success" message={message} /> : null}
-      {error ? <FeedbackBanner tone="error" message={error} /> : null}
+      {message || error ? (
+        <div className="mt-6">
+          {message ? <FeedbackBanner tone="success" message={message} /> : null}
+          {error ? <FeedbackBanner tone="error" message={error} /> : null}
+        </div>
+      ) : null}
     </div>
   );
 }

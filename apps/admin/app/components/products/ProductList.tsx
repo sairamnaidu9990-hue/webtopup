@@ -11,9 +11,15 @@ type Props = {
 export default function ProductList({ products, onDelete, onEdit }: Props) {
   return (
     <div className="rounded-2xl border bg-white p-6">
-      <h2 className="mb-4 text-lg font-semibold">List Products</h2>
+      <h2 className="mb-4 text-lg font-semibold">Daftar Produk</h2>
 
       <div className="space-y-3">
+        {products.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Belum ada data produk yang tersimpan.
+          </p>
+        ) : null}
+
         {products.map((p, i) => (
           <div
             key={p._id}
@@ -46,14 +52,14 @@ export default function ProductList({ products, onDelete, onEdit }: Props) {
                 onClick={() => onEdit(p)}
                 className="text-sm text-blue-600"
               >
-                Edit
+                Ubah
               </button>
 
               <button
                 onClick={() => onDelete(p._id)}
                 className="text-sm text-red-500"
               >
-                Delete
+                Hapus
               </button>
             </div>
           </div>

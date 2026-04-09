@@ -1,167 +1,74 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import SyncPanel from "@/app/components/bangjeff/SyncPanel";
 import Card from "../../components/ui/Card";
 import SectionTitle from "../../components/ui/SectionTitle";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
-
-type Game = {
-  _id: string;
-  status?: string;
-  syncSource?: string;
-  inputs?: Array<unknown>;
-};
-
-type Variant = {
-  _id: string;
-  status?: string;
-  syncSource?: string;
-};
-
-type DashboardStats = {
-  totalGames: number;
-  activeGames: number;
-  totalVariants: number;
-  activeVariants: number;
-  bangjeffGames: number;
-  bangjeffVariants: number;
-  gamesWithInputs: number;
-};
-
-const emptyStats: DashboardStats = {
-  totalGames: 0,
-  activeGames: 0,
-  totalVariants: 0,
-  activeVariants: 0,
-  bangjeffGames: 0,
-  bangjeffVariants: 0,
-  gamesWithInputs: 0,
-};
+const summaryCards = [
+  {
+    title: "Total Order",
+    value: 0,
+    note: "Jumlah seluruh order yang tercatat pada sistem transaksi.",
+    variant: "info" as const,
+  },
+  {
+    title: "Sukses",
+    value: 0,
+    note: "Order yang selesai diproses dan valid untuk direkonsiliasi.",
+    variant: "success" as const,
+  },
+  {
+    title: "Failed",
+    value: 0,
+    note: "Order yang gagal diproses dan memerlukan tindak lanjut.",
+    variant: "danger" as const,
+  },
+  {
+    title: "Process",
+    value: 0,
+    note: "Order yang masih menunggu penyelesaian dari sistem atau provider.",
+    variant: "warning" as const,
+  },
+];
 
 export default function DashboardPage() {
-  const [games, setGames] = useState<Game[]>([]);
-  const [variants, setVariants] = useState<Variant[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchDashboardData = async () => {
-    try {
-      const [gamesResponse, variantsResponse] = await Promise.all([
-        fetch(`${API}/api/games`),
-        fetch(`${API}/api/variants`),
-      ]);
-
-      const [gamesPayload, variantsPayload] = await Promise.all([
-        gamesResponse.json(),
-        variantsResponse.json(),
-      ]);
-
-      setGames(Array.isArray(gamesPayload) ? gamesPayload : []);
-      setVariants(Array.isArray(variantsPayload) ? variantsPayload : []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const stats: DashboardStats = {
-    totalGames: games.length,
-    activeGames: games.filter((game) => game.status === "ACTIVE").length,
-    totalVariants: variants.length,
-    activeVariants: variants.filter((variant) => variant.status === "ACTIVE")
-      .length,
-    bangjeffGames: games.filter((game) => game.syncSource === "bangjeff").length,
-    bangjeffVariants: variants.filter(
-      (variant) => variant.syncSource === "bangjeff"
-    ).length,
-    gamesWithInputs: games.filter((game) => (game.inputs?.length || 0) > 0)
-      .length,
-  };
-
   const quickLinks = [
     {
-      title: "Kelola Games",
-      href: "/games",
+      title: "Kontrol BangJeff",
+      href: "/provider-control/bangjeff",
       description:
-        "Rapikan nama, provider, logo, status, dan data input game tanpa menjalankan sync dari halaman ini.",
+        "Kelola sinkronisasi katalog BangJeff, termasuk game, detail input, dan variant yang tersimpan di database internal.",
     },
     {
-      title: "Kelola Variants",
-      href: "/variants",
-      description:
-        "Review nominal, harga modal, markup, logo variant, dan status aktif dari katalog BangJeff.",
-    },
-    {
-      title: "Pantau Orders",
+      title: "Monitoring Order",
       href: "/orders",
       description:
-        "Halaman order masih placeholder, tapi route-nya sudah siap dipakai saat flow transaksi dibangun.",
+        "Tinjau status transaksi, identifikasi order gagal, dan pantau order yang masih diproses.",
+    },
+    {
+      title: "Manajemen Game",
+      href: "/games",
+      description:
+        "Kelola metadata game internal seperti nama tampilan, provider, logo, dan status katalog.",
     },
   ];
-
-  const highlights = loading ? emptyStats : stats;
 
   return (
     <div className="space-y-6">
       <SectionTitle
-        title="Bangjeff Dashboard"
-        subtitle="Pusat kontrol provider Bangjeff untuk sync katalog ke database kamu, lalu dipakai bersama oleh admin panel dan frontend user."
+        title="Dashboard"
+        subtitle="Ringkasan operasional untuk memantau transaksi dan mengakses area kontrol katalog provider."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card title="Total Games" variant="info">
-          <p className="text-4xl font-bold tracking-tight">
-            {highlights.totalGames}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            {highlights.activeGames} game aktif di katalog
-          </p>
-        </Card>
-
-        <Card title="Total Variants" variant="success">
-          <p className="text-4xl font-bold tracking-tight">
-            {highlights.totalVariants}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            {highlights.activeVariants} variant aktif untuk dijual
-          </p>
-        </Card>
-
-        <Card title="BangJeff Synced" variant="warning">
-          <p className="text-4xl font-bold tracking-tight">
-            {highlights.bangjeffGames}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            game sinkron dan {highlights.bangjeffVariants} variant dari BangJeff
-          </p>
-        </Card>
-
-        <Card title="Input Ready" variant="danger">
-          <p className="text-4xl font-bold tracking-tight">
-            {highlights.gamesWithInputs}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            game sudah punya product detail untuk validasi input user
-          </p>
-        </Card>
+        {summaryCards.map((item) => (
+          <Card key={item.title} title={item.title} variant={item.variant}>
+            <p className="text-4xl font-bold tracking-tight">{item.value}</p>
+            <p className="mt-2 text-sm text-white/80">{item.note}</p>
+          </Card>
+        ))}
       </div>
 
-      <SyncPanel
-        apiBase={API || ""}
-        onSynced={fetchDashboardData}
-        title="BangJeff Control"
-        description="Semua tombol sync provider dipusatkan di dashboard ini supaya alur update katalog tetap rapi."
-      />
-
       <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
-        <Card title="Quick Actions">
+        <Card title="Navigasi Cepat">
           <div className="space-y-3">
             {quickLinks.map((link) => (
               <Link
@@ -176,29 +83,31 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        <Card title="Workflow">
+        <Card title="Catatan Operasional">
           <div className="space-y-4 text-sm text-gray-600">
             <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">1. Sync dari Dashboard</p>
+              <p className="font-semibold text-gray-900">Definisi Metrik</p>
               <p className="mt-1">
-                Tarik catalog live Bangjeff ke backend kamu lewat tombol sync,
-                lalu backend update database MongoDB.
+                Empat kartu di atas merepresentasikan status transaksi utama:
+                total order, sukses, gagal, dan masih diproses.
               </p>
             </div>
 
             <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">2. Rapikan di Admin</p>
+              <p className="font-semibold text-gray-900">Kontrol Provider</p>
               <p className="mt-1">
-                Edit provider, logo game, logo variant, markup, dan status tanpa
-                perlu menyentuh data provider satu per satu dari awal.
+                Sinkronisasi katalog provider ditempatkan pada menu terpisah
+                agar area monitoring transaksi dan area manajemen katalog tidak
+                saling bercampur.
               </p>
             </div>
 
             <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">3. Frontend Hit Database</p>
+              <p className="font-semibold text-gray-900">Status Integrasi</p>
               <p className="mt-1">
-                User site dan admin panel sama-sama membaca katalog dari database
-                kamu, jadi performa dan kontrol tetap di tanganmu.
+                Ringkasan order ini dirancang untuk membaca data transaksi dari
+                backend admin. Jika seluruh nilai masih 0, periksa integrasi
+                sumber data order pada backend.
               </p>
             </div>
           </div>

@@ -54,7 +54,7 @@ export default function ProductsPage() {
 
   // DELETE
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus product ini?")) return;
+    if (!confirm("Yakin ingin menghapus produk ini?")) return;
 
     await fetch(`${API}/api/products/${id}`, {
       method: "DELETE",
@@ -107,10 +107,12 @@ export default function ProductsPage() {
       const payload = await response.json();
 
       if (!response.ok) {
-        throw new Error(payload.message || "Gagal simpan product");
+        throw new Error(payload.message || "Gagal menyimpan produk");
       }
 
-      setSuccess(editingId ? "Product berhasil diupdate" : "Product berhasil ditambahkan");
+      setSuccess(
+        editingId ? "Produk berhasil diperbarui" : "Produk berhasil ditambahkan"
+      );
 
       setEditingId(null);
       setName("");
@@ -124,7 +126,7 @@ export default function ProductsPage() {
       setTimeout(() => setSuccess(""), 3000);
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : "Gagal simpan product");
+      alert(error instanceof Error ? error.message : "Gagal menyimpan produk");
     } finally {
       setSubmitting(false);
     }
@@ -153,7 +155,7 @@ export default function ProductsPage() {
       />
 
       {loading ? (
-        <p>Loading...</p>
+        <p className="text-sm text-gray-500">Memuat data produk...</p>
       ) : (
         <ProductList
           products={products}

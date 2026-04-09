@@ -53,7 +53,7 @@ export default function LoginForm() {
       {/* Email */}
       <div>
         <label className="mb-2 block text-sm text-gray-300">
-          Email
+          Email Admin
         </label>
         <input
           type="email"
@@ -68,11 +68,11 @@ export default function LoginForm() {
       {/* Password */}
       <div>
         <label className="mb-2 block text-sm text-gray-300">
-          Password
+          Kata Sandi
         </label>
         <input
           type="password"
-          placeholder="Masukkan password"
+          placeholder="Masukkan kata sandi"
           className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-gray-500 outline-none transition focus:border-white/30 focus:ring-2 focus:ring-white/10"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -86,7 +86,7 @@ export default function LoginForm() {
         className="w-full rounded-xl bg-white py-3 text-sm font-medium text-black transition hover:opacity-90 disabled:opacity-50"
         disabled={loading}
       >
-        {loading ? "Loading..." : "Login"}
+        {loading ? "Memproses..." : "Masuk"}
       </button>
     </form>
   );
