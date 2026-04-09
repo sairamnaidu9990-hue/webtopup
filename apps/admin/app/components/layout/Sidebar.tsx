@@ -51,13 +51,13 @@ function SidebarNav({
       <Link
         href="/dashboard"
         onClick={onNavigate}
-        className="flex h-[79px] flex-col justify-center border-b border-white/10 px-6 transition hover:bg-[#171a22]"
+        className="flex min-h-[72px] flex-col justify-center border-b border-white/10 px-5 py-4 transition hover:bg-[#171a22] sm:min-h-[79px] sm:px-6"
       >
         <h1 className="text-lg font-semibold tracking-tight">WebTopup</h1>
         <p className="mt-1 text-xs text-gray-400">Admin Panel</p>
       </Link>
 
-      <nav className="flex-1 overflow-y-auto px-4 py-6">
+      <nav className="flex-1 overflow-y-auto px-3 py-5 sm:px-4 sm:py-6">
         <ul className="space-y-2">
           {primaryItems.map((item) => {
             const isActive = pathname === item.href;
@@ -169,7 +169,7 @@ export default function Sidebar({
       />
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-white/5 bg-[#111217] text-white transition-transform duration-300 lg:hidden ${
+        className={`fixed left-0 top-0 z-50 flex h-screen w-[84vw] max-w-[280px] flex-col border-r border-white/5 bg-[#111217] text-white transition-transform duration-300 lg:hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

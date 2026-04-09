@@ -27,11 +27,11 @@ export default function Card({
 }: CardProps) {
   return (
     <div
-      className={`rounded-2xl p-6 shadow-sm transition-all duration-200 hover:-translate-y-[2px] hover:shadow-md ${variantClasses[variant]}`}
+      className={`rounded-2xl p-5 shadow-sm transition-all duration-200 hover:-translate-y-[2px] hover:shadow-md sm:p-6 ${variantClasses[variant]}`}
     >
       {title && (
         <h3
-          className={`mb-4 text-sm font-semibold tracking-wide ${
+          className={`mb-3 text-sm font-semibold tracking-wide sm:mb-4 ${
             variant === "default" ? "text-gray-400" : "text-white/90"
           }`}
         >

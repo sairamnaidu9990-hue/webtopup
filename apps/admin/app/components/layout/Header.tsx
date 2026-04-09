@@ -32,10 +32,10 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
   })();
 
   return (
-    <header className="sticky top-0 z-30 flex h-[79px] items-center justify-between border-b border-[#2a1f1f] bg-[#231919] px-6">
+    <header className="sticky top-0 z-30 flex min-h-[72px] items-center justify-between gap-4 border-b border-[#2a1f1f] bg-[#231919] px-4 py-3 sm:min-h-[79px] sm:px-6">
       
       {/* Left */}
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
           onClick={onMenuClick}
@@ -44,9 +44,11 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
           ☰
         </button>
 
-        <div>
-          <h2 className="text-sm font-semibold text-white">{pageTitle}</h2>
-          <p className="text-xs text-gray-400">
+        <div className="min-w-0">
+          <h2 className="truncate text-sm font-semibold text-white sm:text-base">
+            {pageTitle}
+          </h2>
+          <p className="truncate text-xs text-gray-400 sm:text-sm">
             {adminEmail
               ? `Login sebagai: ${adminEmail}`
               : "Selamat datang"}

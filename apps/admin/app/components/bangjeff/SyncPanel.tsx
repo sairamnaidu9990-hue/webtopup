@@ -190,21 +190,21 @@ export default function SyncPanel({
   };
 
   return (
-    <div className="p-6" style={panelStyle}>
+    <div className="p-5 sm:p-6" style={panelStyle}>
       <div className="flex flex-col gap-5">
         <div className="max-w-2xl">
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="mt-1 text-sm text-gray-500">{description}</p>
         </div>
 
-        <div className="flex flex-wrap gap-3 pt-1">
+        <div className="grid gap-3 pt-1 sm:grid-cols-2 xl:flex xl:flex-wrap">
           {actions.map((action) => (
             <button
               key={action.endpoint}
               type="button"
               onClick={() => runSync(action)}
               disabled={running !== null}
-              className="text-sm"
+              className="w-full text-sm xl:w-auto"
               style={getButtonStyle(
                 running === action.endpoint,
                 running !== null

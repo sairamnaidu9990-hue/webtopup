@@ -55,7 +55,7 @@ export default function VariantList({
   );
 
   return (
-    <div className="rounded-2xl border bg-white p-6">
+    <div className="rounded-2xl border bg-white p-5 sm:p-6">
       <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 className="text-lg font-semibold">Daftar Variant</h2>
@@ -132,21 +132,23 @@ export default function VariantList({
         {filteredVariants.map((variant, index) => (
           <div
             key={variant._id}
-            className="flex items-center justify-between rounded-xl border p-3"
+            className="flex flex-col gap-4 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div className="flex items-center gap-3">
-              <p className="w-6 text-sm text-gray-500">{index + 1}.</p>
+            <div className="flex min-w-0 items-start gap-3">
+              <p className="w-6 shrink-0 pt-1 text-sm text-gray-500">
+                {index + 1}.
+              </p>
 
               {variant.logo ? (
                 <img
                   src={variant.logo}
                   alt={variant.name}
-                  className="h-10 w-10 rounded-lg object-cover"
+                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
                 />
               ) : null}
 
-              <div>
-                <p className="font-medium">{variant.name}</p>
+              <div className="min-w-0">
+                <p className="break-words font-medium">{variant.name}</p>
                 <p className="text-xs text-gray-500">
                   {variant.game?.name || "-"} • {variant.providerCode}
                 </p>
@@ -168,7 +170,7 @@ export default function VariantList({
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex w-full justify-end gap-3 sm:w-auto">
               <button
                 onClick={() => onEdit(variant)}
                 className="text-sm text-blue-600"

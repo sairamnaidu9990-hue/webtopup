@@ -28,7 +28,7 @@ export default function DashboardShell({
             adminEmail={adminEmail}
             onMenuClick={() => setMobileOpen(true)}
           />
-          <main className="flex-1 p-6">
+          <main className="flex-1 px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
             <div className="mx-auto max-w-7xl">{children}</div>
           </main>
         </div>

@@ -3,11 +3,11 @@ import LoginForm from "../../components/auth/LoginForm";
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#111217] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-xl">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
         
         {/* Title */}
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold text-white">
+          <h1 className="text-2xl font-semibold text-white sm:text-[28px]">
             Admin Login
           </h1>
           <p className="mt-2 text-sm text-gray-400">

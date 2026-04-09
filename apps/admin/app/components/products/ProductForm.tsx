@@ -35,7 +35,7 @@ export default function ProductForm(props: Props) {
   const profit = previewPrice - Number(props.basePrice || 0);
 
   return (
-    <div className="rounded-2xl border bg-white p-6">
+    <div className="rounded-2xl border bg-white p-5 sm:p-6">
       <h2 className="mb-4 text-lg font-semibold">
         {props.editingId ? "Perbarui Produk" : "Tambah Produk"}
       </h2>
@@ -46,12 +46,15 @@ export default function ProductForm(props: Props) {
         </div>
       )}
 
-      <form onSubmit={props.onSubmit} className="grid gap-4 md:grid-cols-3">
+      <form
+        onSubmit={props.onSubmit}
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+      >
         <input
           placeholder="Nama Product"
           value={props.name}
           onChange={(e) => props.setName(e.target.value)}
-          className="rounded-xl border px-4 py-2"
+          className="w-full rounded-xl border px-4 py-2"
           required
         />
 
@@ -60,7 +63,7 @@ export default function ProductForm(props: Props) {
           placeholder="Harga modal"
           value={props.basePrice}
           onChange={(e) => props.setBasePrice(e.target.value)}
-          className="rounded-xl border px-4 py-2"
+          className="w-full rounded-xl border px-4 py-2"
           required
         />
 
@@ -69,12 +72,12 @@ export default function ProductForm(props: Props) {
           placeholder="Markup (%)"
           value={props.markup}
           onChange={(e) => props.setMarkup(e.target.value)}
-          className="rounded-xl border px-4 py-2"
+          className="w-full rounded-xl border px-4 py-2"
           required
         />
 
         {/* 🔥 PREVIEW */}
-        <div className="col-span-3 rounded-xl bg-gray-50 p-4">
+        <div className="rounded-xl bg-gray-50 p-4 sm:col-span-2 xl:col-span-3">
           <p className="text-sm text-gray-500">Estimasi harga jual</p>
           <p className="text-lg font-semibold text-gray-800">
             Rp {Math.ceil(previewPrice)}
@@ -88,20 +91,20 @@ export default function ProductForm(props: Props) {
           placeholder="Kode provider"
           value={props.providerCode}
           onChange={(e) => props.setProviderCode(e.target.value)}
-          className="rounded-xl border px-4 py-2"
+          className="w-full rounded-xl border px-4 py-2"
         />
 
         <input
           placeholder="URL logo"
           value={props.logo}
           onChange={(e) => props.setLogo(e.target.value)}
-          className="rounded-xl border px-4 py-2"
+          className="w-full rounded-xl border px-4 py-2"
         />
 
         <select
           value={props.gameId}
           onChange={(e) => props.setGameId(e.target.value)}
-          className="rounded-xl border px-4 py-2"
+          className="w-full rounded-xl border px-4 py-2"
           required
         >
           <option value="">Pilih Game</option>
@@ -114,7 +117,7 @@ export default function ProductForm(props: Props) {
 
         <button
           disabled={props.submitting}
-          className="col-span-3 rounded-xl bg-black py-2 text-white disabled:opacity-50"
+          className="w-full rounded-xl bg-black py-2 text-white disabled:opacity-50 sm:col-span-2 xl:col-span-3"
         >
           {props.submitting
             ? "Menyimpan..."

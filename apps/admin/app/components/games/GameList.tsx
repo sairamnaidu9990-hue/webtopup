@@ -65,7 +65,7 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
   });
 
   return (
-    <div className="rounded-2xl border bg-white p-6">
+    <div className="rounded-2xl border bg-white p-5 sm:p-6">
       <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 className="text-lg font-semibold">Daftar Game</h2>
@@ -142,21 +142,23 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
         {filteredGames.map((game, index) => (
           <div
             key={game._id}
-            className="flex items-center justify-between rounded-xl border p-3"
+            className="flex flex-col gap-4 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div className="flex items-center gap-3">
-              <p className="w-6 text-sm text-gray-500">{index + 1}.</p>
+            <div className="flex min-w-0 items-start gap-3">
+              <p className="w-6 shrink-0 pt-1 text-sm text-gray-500">
+                {index + 1}.
+              </p>
 
               {game.logo && (
                 <img
                   src={game.logo}
                   alt={game.name}
-                  className="h-10 w-10 rounded-lg object-cover"
+                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
                 />
               )}
 
-              <div>
-                <p className="font-medium">{game.name}</p>
+              <div className="min-w-0">
+                <p className="break-words font-medium">{game.name}</p>
                 <p className="text-xs text-gray-500">
                   {game.provider || "Provider belum diisi"}{" "}
                   {game.code ? `• ${game.code}` : ""}
@@ -175,7 +177,7 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex w-full justify-end gap-3 sm:w-auto">
               <button
                 onClick={() => onEdit(game)}
                 className="text-sm text-blue-600"

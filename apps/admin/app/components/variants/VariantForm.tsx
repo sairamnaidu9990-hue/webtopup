@@ -45,7 +45,7 @@ export default function VariantForm(props: Props) {
   const title = props.editingId ? "Perbarui Variant" : "Tambah Variant";
 
   return (
-    <div className="rounded-2xl border bg-white p-6">
+    <div className="rounded-2xl border bg-white p-5 sm:p-6">
       <h2 className="text-lg font-semibold">{title}</h2>
 
       {!props.isOpen ? (
@@ -66,11 +66,14 @@ export default function VariantForm(props: Props) {
       ) : null}
 
       {props.isOpen ? (
-        <form onSubmit={props.onSubmit} className="mt-5 grid gap-4 md:grid-cols-4">
+        <form
+          onSubmit={props.onSubmit}
+          className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        >
           <select
             value={props.gameId}
             onChange={(event) => props.setGameId(event.target.value)}
-            className="rounded-xl border px-4 py-2"
+            className="w-full rounded-xl border px-4 py-2"
             required
           >
             <option value="">Pilih Game</option>
@@ -85,7 +88,7 @@ export default function VariantForm(props: Props) {
             placeholder="Nama variant"
             value={props.name}
             onChange={(event) => props.setName(event.target.value)}
-            className="rounded-xl border px-4 py-2"
+            className="w-full rounded-xl border px-4 py-2"
             required
           />
 
@@ -93,7 +96,7 @@ export default function VariantForm(props: Props) {
             placeholder="Kode provider"
             value={props.providerCode}
             onChange={(event) => props.setProviderCode(event.target.value)}
-            className="rounded-xl border px-4 py-2"
+            className="w-full rounded-xl border px-4 py-2"
             required
           />
 
@@ -102,7 +105,7 @@ export default function VariantForm(props: Props) {
             placeholder="Harga modal"
             value={props.basePrice}
             onChange={(event) => props.setBasePrice(event.target.value)}
-            className="rounded-xl border px-4 py-2"
+            className="w-full rounded-xl border px-4 py-2"
             required
           />
 
@@ -111,7 +114,7 @@ export default function VariantForm(props: Props) {
             placeholder="Markup (%)"
             value={props.markup}
             onChange={(event) => props.setMarkup(event.target.value)}
-            className="rounded-xl border px-4 py-2"
+            className="w-full rounded-xl border px-4 py-2"
             required
           />
 
@@ -119,14 +122,14 @@ export default function VariantForm(props: Props) {
             placeholder="URL logo"
             value={props.logo}
             onChange={(event) => props.setLogo(event.target.value)}
-            className="rounded-xl border px-4 py-2"
+            className="w-full rounded-xl border px-4 py-2"
           />
 
           <input
             placeholder="Region"
             value={props.region}
             onChange={(event) => props.setRegion(event.target.value.toUpperCase())}
-            className="rounded-xl border px-4 py-2"
+            className="w-full rounded-xl border px-4 py-2"
             required
           />
 
@@ -134,7 +137,7 @@ export default function VariantForm(props: Props) {
             placeholder="Mata uang"
             value={props.currency}
             onChange={(event) => props.setCurrency(event.target.value.toUpperCase())}
-            className="rounded-xl border px-4 py-2"
+            className="w-full rounded-xl border px-4 py-2"
             required
           />
 
@@ -143,20 +146,20 @@ export default function VariantForm(props: Props) {
             placeholder="Durasi (menit)"
             value={props.duration}
             onChange={(event) => props.setDuration(event.target.value)}
-            className="rounded-xl border px-4 py-2"
+            className="w-full rounded-xl border px-4 py-2"
             required
           />
 
           <select
             value={props.status}
             onChange={(event) => props.setStatus(event.target.value)}
-            className="rounded-xl border px-4 py-2"
+            className="w-full rounded-xl border px-4 py-2"
           >
             <option value="ACTIVE">ACTIVE</option>
             <option value="INACTIVE">INACTIVE</option>
           </select>
 
-          <div className="rounded-xl bg-gray-50 p-4 md:col-span-2">
+          <div className="rounded-xl bg-gray-50 p-4 sm:col-span-2 xl:col-span-2">
             <p className="text-sm text-gray-500">Estimasi harga jual</p>
             <p className="text-lg font-semibold text-gray-800">
               {props.currency || "IDR"} {Math.ceil(previewPrice)}
@@ -165,7 +168,7 @@ export default function VariantForm(props: Props) {
 
           <button
             disabled={props.submitting}
-            className="rounded-xl bg-black py-2 text-white disabled:opacity-50 md:col-span-4"
+            className="w-full rounded-xl bg-black py-2 text-white disabled:opacity-50 sm:col-span-2 xl:col-span-4"
           >
             {props.submitting
               ? "Menyimpan..."
@@ -177,7 +180,7 @@ export default function VariantForm(props: Props) {
           <button
             type="button"
             onClick={props.onClose}
-            className="rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 md:col-span-4"
+            className="w-full rounded-xl border border-gray-200 py-2 text-sm font-medium text-gray-600 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 sm:col-span-2 xl:col-span-4"
           >
             Tutup Form
           </button>

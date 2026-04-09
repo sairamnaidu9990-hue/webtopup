@@ -10,7 +10,7 @@ type Props = {
 
 export default function ProductList({ products, onDelete, onEdit }: Props) {
   return (
-    <div className="rounded-2xl border bg-white p-6">
+    <div className="rounded-2xl border bg-white p-5 sm:p-6">
       <h2 className="mb-4 text-lg font-semibold">Daftar Produk</h2>
 
       <div className="space-y-3">
@@ -23,21 +23,21 @@ export default function ProductList({ products, onDelete, onEdit }: Props) {
         {products.map((p, i) => (
           <div
             key={p._id}
-            className="flex items-center justify-between rounded-xl border p-3"
+            className="flex flex-col gap-4 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div className="flex items-center gap-3">
-              <p className="w-6 text-sm text-gray-500">{i + 1}.</p>
+            <div className="flex min-w-0 items-start gap-3">
+              <p className="w-6 shrink-0 pt-1 text-sm text-gray-500">{i + 1}.</p>
 
               {p.logo && (
                 <img
                   src={p.logo}
                   alt={p.name}
-                  className="h-10 w-10 rounded-lg object-cover"
+                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
                 />
               )}
 
-              <div>
-                <p className="font-medium">{p.name}</p>
+              <div className="min-w-0">
+                <p className="break-words font-medium">{p.name}</p>
                 <p className="text-xs text-gray-500">
                   {p.game?.name} • Rp {p.price}
                 </p>
@@ -47,7 +47,7 @@ export default function ProductList({ products, onDelete, onEdit }: Props) {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex w-full justify-end gap-3 sm:w-auto">
               <button
                 onClick={() => onEdit(p)}
                 className="text-sm text-blue-600"

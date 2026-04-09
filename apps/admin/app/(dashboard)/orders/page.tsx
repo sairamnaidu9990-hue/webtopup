@@ -9,7 +9,7 @@ export default function OrdersPage() {
         subtitle="Area monitoring transaksi untuk meninjau status order, verifikasi penyelesaian, dan investigasi kegagalan."
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <Card title="Status Integrasi">
           <div className="space-y-3 text-sm text-gray-600">
             <p>
