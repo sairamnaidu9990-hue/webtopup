@@ -155,6 +155,12 @@ export default function BangjeffDashboardPage() {
 
   const quickLinks = [
     {
+      title: "Markup Variant",
+      href: "/provider-control/bangjeff/markup",
+      description:
+        "Kelola penyesuaian markup massal untuk seluruh variant atau per game dari halaman operasional khusus.",
+    },
+    {
       title: "Kelola Games",
       href: "/games",
       description:

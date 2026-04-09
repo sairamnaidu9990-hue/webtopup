@@ -7,6 +7,43 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function getMarkupValue(value) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return parsed;
+}
+
+async function applyMarkupToVariants(filter, markup) {
+  const variants = await Variant.find(filter).select("_id basePrice");
+
+  if (variants.length === 0) {
+    return 0;
+  }
+
+  const operations = variants.map((variant) => {
+    const basePrice = toNumber(variant.basePrice);
+
+    return {
+      updateOne: {
+        filter: { _id: variant._id },
+        update: {
+          $set: {
+            markup,
+            price: calculatePrice(basePrice, markup),
+          },
+        },
+      },
+    };
+  });
+
+  const result = await Variant.bulkWrite(operations);
+  return result.modifiedCount || 0;
+}
+
 exports.getVariants = async (req, res) => {
   try {
     const filter = {};
@@ -174,6 +211,86 @@ exports.updateVariant = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "Error update variant",
+      error: error.message,
+    });
+  }
+};
+
+exports.syncMarkupAllVariants = async (req, res) => {
+  try {
+    const markup = getMarkupValue(req.body?.markup);
+
+    if (markup == null) {
+      return res.status(400).json({
+        message: "Markup harus berupa angka yang valid",
+      });
+    }
+
+    const totalVariants = await Variant.countDocuments();
+    const updatedCount = await applyMarkupToVariants({}, markup);
+
+    return res.status(200).json({
+      message: "Sync markup semua variant selesai",
+      summary: {
+        scope: "all",
+        markup,
+        totalVariants,
+        updatedCount,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error sync markup semua variant",
+      error: error.message,
+    });
+  }
+};
+
+exports.syncMarkupByGame = async (req, res) => {
+  try {
+    const gameId = String(req.params.gameId || "").trim();
+    const markup = getMarkupValue(req.body?.markup);
+
+    if (!gameId) {
+      return res.status(400).json({
+        message: "Game wajib dipilih",
+      });
+    }
+
+    if (markup == null) {
+      return res.status(400).json({
+        message: "Markup harus berupa angka yang valid",
+      });
+    }
+
+    const game = await Game.findById(gameId).select("_id name code");
+
+    if (!game) {
+      return res.status(404).json({
+        message: "Game tidak ditemukan",
+      });
+    }
+
+    const totalVariants = await Variant.countDocuments({ game: game._id });
+    const updatedCount = await applyMarkupToVariants({ game: game._id }, markup);
+
+    return res.status(200).json({
+      message: "Sync markup per game selesai",
+      summary: {
+        scope: "game",
+        markup,
+        totalVariants,
+        updatedCount,
+        game: {
+          _id: game._id,
+          name: game.name,
+          code: game.code,
+        },
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error sync markup per game",
       error: error.message,
     });
   }

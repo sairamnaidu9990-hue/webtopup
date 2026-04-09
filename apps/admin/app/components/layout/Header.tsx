@@ -12,6 +12,10 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
   const pathname = usePathname();
 
   const pageTitle = (() => {
+    if (pathname.startsWith("/provider-control/bangjeff/markup")) {
+      return "Markup Variant";
+    }
+
     if (pathname.startsWith("/provider-control/bangjeff")) {
       return "BangJeff";
     }

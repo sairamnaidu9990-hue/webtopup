@@ -12,6 +12,7 @@ type SidebarProps = {
 
 const providerItems = [
   { label: "BangJeff", href: "/provider-control/bangjeff" },
+  { label: "Markup Variant", href: "/provider-control/bangjeff/markup" },
 ];
 
 const primaryItems = [{ label: "Dashboard", href: "/dashboard" }];
