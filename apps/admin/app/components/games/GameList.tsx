@@ -9,6 +9,9 @@ type Game = {
   logo?: string;
   provider?: string;
   status?: string;
+  isTrending?: boolean;
+  trendingOrder?: number;
+  catalogOrder?: number;
   syncSource?: string;
   inputs?: Array<{
     name: string;
@@ -52,6 +55,9 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
       game.provider,
       game.status,
       game.syncSource,
+      String(game.catalogOrder ?? ""),
+      game.isTrending ? "trending" : "",
+      String(game.trendingOrder ?? ""),
     ]
       .filter(Boolean)
       .join(" ")
@@ -169,6 +175,14 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
                   </span>
                   <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-600">
                     {game.syncSource || "manual"}
+                  </span>
+                  {game.isTrending ? (
+                    <span className="rounded-full bg-rose-50 px-2 py-1 text-rose-700">
+                      Trending #{game.trendingOrder ?? 9999}
+                    </span>
+                  ) : null}
+                  <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">
+                    All Games #{game.catalogOrder ?? 9999}
                   </span>
                   <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">
                     Input: {game.inputs?.length || 0}

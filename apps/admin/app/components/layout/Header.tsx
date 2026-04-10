@@ -68,6 +68,10 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
       return "Admin Management";
     }
 
+    if (pathname.startsWith("/website-settings")) {
+      return "Website Settings";
+    }
+
     return "Dashboard";
   })();
 

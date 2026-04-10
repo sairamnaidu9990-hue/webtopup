@@ -15,6 +15,18 @@ const gameSchema = new mongoose.Schema({
     type: String,
     default: "ACTIVE",
   },
+  isTrending: {
+    type: Boolean,
+    default: false,
+  },
+  trendingOrder: {
+    type: Number,
+    default: 9999,
+  },
+  catalogOrder: {
+    type: Number,
+    default: 9999,
+  },
   syncSource: {
     type: String,
     enum: ["manual", "bangjeff"],

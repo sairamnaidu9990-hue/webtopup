@@ -8,6 +8,7 @@ export function middleware(req: NextRequest) {
   const isProtectedPage =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/admins") ||
+    pathname.startsWith("/website-settings") ||
     pathname.startsWith("/provider-control") ||
     pathname.startsWith("/games") ||
     pathname.startsWith("/products") ||
@@ -29,6 +30,7 @@ export const config = {
   matcher: [
     "/login",
     "/admins/:path*",
+    "/website-settings/:path*",
     "/dashboard/:path*",
     "/provider-control/:path*",
     "/games/:path*",

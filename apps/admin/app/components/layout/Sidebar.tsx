@@ -42,6 +42,7 @@ const primaryItems = [{ label: "Dashboard", href: "/dashboard" }];
 const menuItems = [
   { label: "Orders", href: "/orders" },
   { label: "Admin Management", href: "/admins" },
+  { label: "Website Settings", href: "/website-settings" },
 ];
 
 const desktopSidebarStyle: CSSProperties = {

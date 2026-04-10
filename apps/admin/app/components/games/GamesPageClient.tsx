@@ -17,6 +17,9 @@ type Game = {
   logo?: string;
   provider?: string;
   status?: string;
+  isTrending?: boolean;
+  trendingOrder?: number;
+  catalogOrder?: number;
   syncSource?: string;
   inputs?: Array<{
     name: string;
@@ -47,6 +50,9 @@ export default function GamesPageClient({
   const [logo, setLogo] = useState("");
   const [provider, setProvider] = useState("");
   const [status, setStatus] = useState("ACTIVE");
+  const [isTrending, setIsTrending] = useState(false);
+  const [trendingOrder, setTrendingOrder] = useState("9999");
+  const [catalogOrder, setCatalogOrder] = useState("9999");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
@@ -62,6 +68,9 @@ export default function GamesPageClient({
     setLogo("");
     setProvider("");
     setStatus("ACTIVE");
+    setIsTrending(false);
+    setTrendingOrder("9999");
+    setCatalogOrder("9999");
   };
 
   const fetchGames = async () => {
@@ -117,6 +126,9 @@ export default function GamesPageClient({
     setLogo(game.logo || "");
     setProvider(game.provider || "");
     setStatus(game.status || "ACTIVE");
+    setIsTrending(Boolean(game.isTrending));
+    setTrendingOrder(String(game.trendingOrder ?? 9999));
+    setCatalogOrder(String(game.catalogOrder ?? 9999));
     setFormOpen(true);
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -139,7 +151,16 @@ export default function GamesPageClient({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, code, logo, provider, status }),
+        body: JSON.stringify({
+          name,
+          code,
+          logo,
+          provider,
+          status,
+          isTrending,
+          trendingOrder: Number(trendingOrder),
+          catalogOrder: Number(catalogOrder),
+        }),
       });
 
       const data = await res.json();
@@ -173,12 +194,18 @@ export default function GamesPageClient({
           logo={logo}
           provider={provider}
           status={status}
+          isTrending={isTrending}
+          trendingOrder={trendingOrder}
+          catalogOrder={catalogOrder}
           editingId={editingId}
           setName={setName}
           setCode={setCode}
           setLogo={setLogo}
           setProvider={setProvider}
           setStatus={setStatus}
+          setIsTrending={setIsTrending}
+          setTrendingOrder={setTrendingOrder}
+          setCatalogOrder={setCatalogOrder}
           onSubmit={handleSubmit}
           success={success}
           submitting={submitting}

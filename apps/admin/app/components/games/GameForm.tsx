@@ -8,6 +8,9 @@ type Props = {
   logo: string;
   provider: string;
   status: string;
+  isTrending: boolean;
+  trendingOrder: string;
+  catalogOrder: string;
   editingId: string | null;
 
   setName: (v: string) => void;
@@ -15,6 +18,9 @@ type Props = {
   setLogo: (v: string) => void;
   setProvider: (v: string) => void;
   setStatus: (v: string) => void;
+  setIsTrending: (v: boolean) => void;
+  setTrendingOrder: (v: string) => void;
+  setCatalogOrder: (v: string) => void;
 
   onSubmit: (e: React.FormEvent) => void;
   success: string;
@@ -31,12 +37,18 @@ export default function GameForm({
   logo,
   provider,
   status,
+  isTrending,
+  trendingOrder,
+  catalogOrder,
   editingId,
   setName,
   setCode,
   setLogo,
   setProvider,
   setStatus,
+  setIsTrending,
+  setTrendingOrder,
+  setCatalogOrder,
   onSubmit,
   success,
   submitting,
@@ -104,11 +116,37 @@ export default function GameForm({
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="w-full rounded-xl border px-4 py-2 sm:col-span-2 xl:col-span-1"
+            className="w-full rounded-xl border px-4 py-2"
           >
             <option value="ACTIVE">ACTIVE</option>
             <option value="INACTIVE">INACTIVE</option>
           </select>
+
+          <label className="flex items-center gap-3 rounded-xl border px-4 py-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={isTrending}
+              onChange={(e) => setIsTrending(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            Masukkan ke Trending Games
+          </label>
+
+          <input
+            type="number"
+            placeholder="Urutan Trending"
+            className="w-full rounded-xl border px-4 py-2"
+            value={trendingOrder}
+            onChange={(e) => setTrendingOrder(e.target.value)}
+          />
+
+          <input
+            type="number"
+            placeholder="Urutan All Games"
+            className="w-full rounded-xl border px-4 py-2"
+            value={catalogOrder}
+            onChange={(e) => setCatalogOrder(e.target.value)}
+          />
 
           <button
             disabled={submitting}
