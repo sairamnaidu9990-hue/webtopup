@@ -43,19 +43,19 @@ img {
 }
 
 .site-shell {
-  width: min(calc(100% - 1.25rem), 1320px);
+  width: min(calc(100% - 1.25rem), 1260px);
   margin-inline: auto;
 }
 
 @media (min-width: 640px) {
   .site-shell {
-    width: min(calc(100% - 3rem), 1320px);
+    width: min(calc(100% - 3rem), 1260px);
   }
 }
 
 @media (min-width: 1024px) {
   .site-shell {
-    width: min(calc(100% - 4rem), 1320px);
+    width: min(calc(100% - 6rem), 1260px);
   }
 }
 

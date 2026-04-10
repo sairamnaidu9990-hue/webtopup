@@ -16,6 +16,8 @@ export default function SiteBannerCarousel({
 }) {
   const banners = getActiveBanners(siteSetting);
   const [activeIndex, setActiveIndex] = useState(0);
+  const resolvedActiveIndex =
+    banners.length > 0 ? activeIndex % banners.length : 0;
 
   const handlePrevious = () => {
     setActiveIndex((current) =>
@@ -26,10 +28,6 @@ export default function SiteBannerCarousel({
   const handleNext = () => {
     setActiveIndex((current) => (current + 1) % banners.length);
   };
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [banners.length]);
 
   useEffect(() => {
     if (banners.length <= 1) {
@@ -49,16 +47,16 @@ export default function SiteBannerCarousel({
 
   return (
     <section className="relative left-1/2 right-1/2 w-screen -translate-x-1/2 overflow-hidden bg-[#1a1c22]/82">
-      <div className="site-shell relative flex items-center py-3 sm:py-3 lg:min-h-[553.96px] lg:py-4">
+      <div className="site-shell relative flex items-center justify-center py-2.5 sm:py-3 lg:min-h-[553.96px] lg:py-4">
         <div className="relative w-full min-w-0 overflow-hidden rounded-[24px] bg-[#0f1218] sm:rounded-[28px] lg:min-h-[490px] lg:rounded-[32px]">
           <div
             className="flex transition-transform duration-700 ease-out"
-            style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+            style={{ transform: `translateX(-${resolvedActiveIndex * 100}%)` }}
           >
             {banners.map((banner, index) => (
               <div
                 key={`${banner.imageUrl}-${index}`}
-                className="relative aspect-[16/9.8] w-full shrink-0 sm:aspect-[16/7.8] lg:h-[490px] lg:aspect-auto"
+                className="relative aspect-[16/8.2] w-full shrink-0 sm:aspect-[16/7.8] lg:h-[490px] lg:aspect-auto"
               >
                 <img
                   src={banner.imageUrl}

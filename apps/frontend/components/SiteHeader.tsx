@@ -40,25 +40,25 @@ export default function SiteHeader({
           : "bg-transparent"
       }`}
     >
-      <div className="site-shell flex items-center justify-between py-3 sm:py-4">
-        <Link href="/" className="flex min-w-0 items-center gap-3">
+      <div className="site-shell flex items-center justify-between py-2.5 sm:py-4">
+        <Link href="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           {siteSetting.siteLogoUrl ? (
             <img
               src={siteSetting.siteLogoUrl}
               alt={siteSetting.siteName}
-              className="h-10 w-10 rounded-2xl object-cover ring-1 ring-white/10 sm:h-11 sm:w-11"
+              className="h-9 w-9 rounded-2xl object-cover ring-1 ring-white/10 sm:h-11 sm:w-11"
             />
           ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-sm font-semibold tracking-[0.2em] text-white ring-1 ring-white/10 sm:h-11 sm:w-11">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/10 text-xs font-semibold tracking-[0.18em] text-white ring-1 ring-white/10 sm:h-11 sm:w-11 sm:text-sm sm:tracking-[0.2em]">
               {getInitials(siteSetting.siteName || "WT") || "WT"}
             </div>
           )}
 
           <div className="min-w-0">
-            <p className="truncate font-[family-name:var(--font-display)] text-base font-semibold tracking-tight text-white sm:text-lg">
+            <p className="truncate font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-white sm:text-lg">
               {siteSetting.siteName}
             </p>
-            <p className="truncate text-xs text-white/55">Home</p>
+            <p className="hidden truncate text-xs text-white/55 sm:block">Home</p>
           </div>
         </Link>
 

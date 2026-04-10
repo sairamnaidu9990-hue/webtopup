@@ -1,7 +1,8 @@
 import { getPublicSiteSetting, getStorefrontGames, type StorefrontGame } from "@/lib/siteData";
 import SiteBannerCarousel from "@/components/SiteBannerCarousel";
+import AllGamesSection from "@/components/AllGamesSection";
 
-function GameCard({ game }: { game: StorefrontGame }) {
+function TrendingGameCard({ game }: { game: StorefrontGame }) {
   const initials = game.name
     .split(" ")
     .filter(Boolean)
@@ -11,43 +12,28 @@ function GameCard({ game }: { game: StorefrontGame }) {
     .toUpperCase();
 
   return (
-    <article className="rounded-[28px] border border-white/8 bg-[#1a1d27] p-4 transition duration-300 hover:-translate-y-1 hover:border-white/12 hover:bg-[#202431] hover:shadow-[0_18px_40px_rgba(0,0,0,0.24)] sm:p-5">
-      <div className="flex items-start gap-4">
+    <article className="rounded-[20px] border border-transparent bg-[#1a1c23] p-2.5 transition duration-300 hover:border-[#d33b3b] hover:bg-[#20232c] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.22)] sm:rounded-[22px] sm:p-3 lg:rounded-[24px] lg:p-4">
+      <div className="flex items-center gap-2.5 sm:gap-3 lg:gap-4">
         {game.logo ? (
           <img
             src={game.logo}
             alt={game.name}
-            className="h-14 w-14 rounded-2xl object-cover ring-1 ring-white/10"
+            className="h-[52px] w-[52px] rounded-[14px] object-cover ring-1 ring-white/10 sm:h-[60px] sm:w-[60px] sm:rounded-[16px] lg:h-[72px] lg:w-[72px] lg:rounded-[18px]"
           />
         ) : (
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-sm font-semibold tracking-[0.18em] text-white">
+          <div className="flex h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-white/10 text-xs font-semibold tracking-[0.16em] text-white sm:h-[60px] sm:w-[60px] sm:rounded-[16px] sm:text-sm lg:h-[72px] lg:w-[72px] lg:rounded-[18px]">
             {initials || "GM"}
           </div>
         )}
 
         <div className="min-w-0 flex-1">
-          <p className="truncate font-[family-name:var(--font-display)] text-lg font-semibold tracking-tight text-white">
+          <p className="line-clamp-2 font-[family-name:var(--font-display)] text-sm font-semibold leading-tight tracking-tight text-white sm:text-[0.95rem] lg:text-[1.05rem]">
             {game.name}
           </p>
-          <p className="mt-1 truncate text-sm text-white/50">
-            {game.provider || "Provider belum diatur"}{" "}
-            {game.code ? `• ${game.code}` : ""}
+          <p className="mt-1.5 truncate text-[12px] text-white/68 sm:text-[13px] lg:mt-2 lg:text-sm">
+            {game.provider || "Provider belum diatur"}
           </p>
         </div>
-      </div>
-
-      <div className="mt-5 flex flex-wrap gap-2 text-[11px] font-medium">
-        {game.isTrending ? (
-          <span className="rounded-full bg-[#3b2413] px-3 py-1 text-[#ffbf7c]">
-            Trending #{game.trendingOrder ?? 9999}
-          </span>
-        ) : null}
-        <span className="rounded-full bg-white/8 px-3 py-1 text-white/65">
-          All Games #{game.catalogOrder ?? 9999}
-        </span>
-        <span className="rounded-full bg-[#1f334a] px-3 py-1 text-[#96c2ff]">
-          {game.syncSource || "manual"}
-        </span>
       </div>
     </article>
   );
@@ -81,19 +67,17 @@ export default async function HomePage() {
           </section>
         ) : null}
 
-        <section id="trending-games" className="pt-6 sm:pt-7 lg:pt-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/45">
-                Trending Games
+        <section id="trending-games" className="scroll-mt-20 pt-6 sm:scroll-mt-24 sm:pt-7 lg:pt-8">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <span className="text-base">🔥</span>
+              <p className="text-lg font-semibold uppercase tracking-[0.14em] text-white">
+                Trending
               </p>
-              <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                Game unggulan yang sedang ditonjolkan.
-              </h2>
             </div>
-            <p className="max-w-xl text-sm leading-7 text-white/50 sm:text-right">
-              Section ini hanya membaca game yang ditandai trending dari panel admin dan otomatis mengikuti urutannya.
-            </p>
+            <p className="text-sm leading-6 text-white/88">
+                Berikut adalah beberapa produk yang paling populer saat ini.
+              </p>
           </div>
 
           {storefront.trendingGames.length === 0 ? (
@@ -101,27 +85,22 @@ export default async function HomePage() {
               Belum ada game yang dimasukkan ke Trending Games dari panel admin.
             </div>
           ) : (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-6 grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3">
               {storefront.trendingGames.map((game) => (
-                <GameCard key={game._id} game={game} />
+                <TrendingGameCard key={game._id} game={game} />
               ))}
             </div>
           )}
         </section>
 
-        <section id="all-games" className="pt-8 sm:pt-10 lg:pt-12">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/45">
-                All Games
-              </p>
-              <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                Semua game aktif yang siap tampil ke user.
-              </h2>
-            </div>
-            <p className="max-w-xl text-sm leading-7 text-white/50 sm:text-right">
-              Katalog mengikuti urutan `All Games` dari admin panel, jadi game bisa diatur tampil dari urutan pertama sampai seterusnya.
+        <section id="all-games" className="scroll-mt-20 pt-8 sm:scroll-mt-24 sm:pt-10 lg:pt-12">
+          <div className="space-y-1.5">
+            <p className="text-lg font-semibold uppercase tracking-[0.14em] text-white">
+              All Games
             </p>
+            <p className="text-sm leading-6 text-white/88">
+                Pilih Game Favorite kamu.
+              </p>
           </div>
 
           {storefront.allGames.length === 0 ? (
@@ -129,11 +108,7 @@ export default async function HomePage() {
               Belum ada game aktif yang tersedia untuk frontend user.
             </div>
           ) : (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {storefront.allGames.map((game) => (
-                <GameCard key={game._id} game={game} />
-              ))}
-            </div>
+            <AllGamesSection games={storefront.allGames} />
           )}
         </section>
       </div>

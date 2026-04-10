@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
@@ -74,6 +74,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -106,7 +112,7 @@ async function FrontendShell({
   return (
     <div className="min-h-screen bg-[#111217] text-white">
       <SiteHeader siteSetting={siteSetting} />
-      <div className="pt-24">{children}</div>
+      <div className="pt-14 sm:pt-[76px]">{children}</div>
     </div>
   );
 }
