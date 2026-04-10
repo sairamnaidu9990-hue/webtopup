@@ -58,7 +58,6 @@ export default function SiteHeader({
             <p className="truncate font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-white sm:text-lg">
               {siteSetting.siteName}
             </p>
-            <p className="hidden truncate text-xs text-white/55 sm:block">Home</p>
           </div>
         </Link>
 
