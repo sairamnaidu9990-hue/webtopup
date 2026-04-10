@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 import { getPublicSiteSetting } from "@/lib/siteData";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -113,6 +114,7 @@ async function FrontendShell({
     <div className="min-h-screen bg-[#111217] text-white">
       <SiteHeader siteSetting={siteSetting} />
       <div className="pt-14 sm:pt-[76px]">{children}</div>
+      <SiteFooter siteSetting={siteSetting} />
     </div>
   );
 }

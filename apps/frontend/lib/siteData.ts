@@ -10,6 +10,16 @@ export type SiteBanner = {
   imageUrl: string;
 };
 
+export type SiteFooterLink = {
+  label: string;
+  url: string;
+};
+
+export type SiteFooterColumn = {
+  title: string;
+  links: SiteFooterLink[];
+};
+
 export type PublicSiteSetting = {
   siteName: string;
   siteLogoUrl: string;
@@ -20,6 +30,10 @@ export type PublicSiteSetting = {
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   banners: SiteBanner[];
+  footerDescription: string;
+  footerBottomText: string;
+  footerSocialLinks: SiteFooterLink[];
+  footerLinkColumns: SiteFooterColumn[];
   updatedAt?: string | null;
 };
 
@@ -46,6 +60,11 @@ const defaultSiteSetting: PublicSiteSetting = {
   bannerCount: 3,
   bannerAutoSlideSeconds: 5,
   banners: [],
+  footerDescription:
+    "Top up game dan voucher digital dengan katalog yang dikelola langsung dari panel admin.",
+  footerBottomText: "© 2026 WebTopup. All rights reserved.",
+  footerSocialLinks: [],
+  footerLinkColumns: [],
 };
 
 function syncBannerLength(
@@ -84,6 +103,29 @@ function normalizeSiteSetting(
       Array.isArray(siteSetting?.banners) ? siteSetting.banners : [],
       bannerCount
     ),
+    footerSocialLinks: Array.isArray(siteSetting?.footerSocialLinks)
+      ? siteSetting.footerSocialLinks
+          .map((item) => ({
+            label: String(item?.label || "").trim(),
+            url: String(item?.url || "").trim(),
+          }))
+          .filter((item) => item.label || item.url)
+      : defaultSiteSetting.footerSocialLinks,
+    footerLinkColumns: Array.isArray(siteSetting?.footerLinkColumns)
+      ? siteSetting.footerLinkColumns
+          .map((column) => ({
+            title: String(column?.title || "").trim(),
+            links: Array.isArray(column?.links)
+              ? column.links
+                  .map((item) => ({
+                    label: String(item?.label || "").trim(),
+                    url: String(item?.url || "").trim(),
+                  }))
+                  .filter((item) => item.label || item.url)
+              : [],
+          }))
+          .filter((column) => column.title || column.links.length > 0)
+      : defaultSiteSetting.footerLinkColumns,
   };
 }
 

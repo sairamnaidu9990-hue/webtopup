@@ -5,6 +5,9 @@ const MAX_BANNER_COUNT = 10;
 const DEFAULT_BANNER_SLIDE_SECONDS = 5;
 const MIN_BANNER_SLIDE_SECONDS = 1;
 const MAX_BANNER_SLIDE_SECONDS = 30;
+const MAX_FOOTER_SOCIAL_LINKS = 12;
+const MAX_FOOTER_COLUMNS = 6;
+const MAX_FOOTER_COLUMN_LINKS = 10;
 
 const defaultSiteSetting = {
   siteName: "WebTopup",
@@ -28,6 +31,37 @@ const defaultSiteSetting = {
     {
       title: "",
       imageUrl: "",
+    },
+  ],
+  footerDescription:
+    "Top up game dan voucher digital dengan katalog yang dikelola langsung dari panel admin.",
+  footerBottomText: "© 2026 WebTopup. All rights reserved.",
+  footerSocialLinks: [
+    { label: "Instagram", url: "" },
+    { label: "Telegram", url: "" },
+    { label: "Facebook", url: "" },
+  ],
+  footerLinkColumns: [
+    {
+      title: "Partnership",
+      links: [
+        { label: "Reseller", url: "" },
+        { label: "Affiliate", url: "" },
+      ],
+    },
+    {
+      title: "Site Map",
+      links: [
+        { label: "Contact Us", url: "" },
+        { label: "Terms & Conditions", url: "" },
+      ],
+    },
+    {
+      title: "Support",
+      links: [
+        { label: "Telegram", url: "" },
+        { label: "Line", url: "" },
+      ],
     },
   ],
 };
@@ -60,6 +94,41 @@ function normalizeBannerItem(item) {
     title: String(item?.title || "").trim(),
     imageUrl: String(item?.imageUrl || "").trim(),
   };
+}
+
+function normalizeFooterLink(item) {
+  return {
+    label: String(item?.label || "").trim(),
+    url: String(item?.url || "").trim(),
+  };
+}
+
+function normalizeFooterSocialLinks(items, fallback = []) {
+  const source = Array.isArray(items) ? items : fallback;
+
+  return source
+    .map(normalizeFooterLink)
+    .filter((item) => item.label || item.url)
+    .slice(0, MAX_FOOTER_SOCIAL_LINKS);
+}
+
+function normalizeFooterColumn(column) {
+  return {
+    title: String(column?.title || "").trim(),
+    links: (Array.isArray(column?.links) ? column.links : [])
+      .map(normalizeFooterLink)
+      .filter((item) => item.label || item.url)
+      .slice(0, MAX_FOOTER_COLUMN_LINKS),
+  };
+}
+
+function normalizeFooterLinkColumns(columns, fallback = []) {
+  const source = Array.isArray(columns) ? columns : fallback;
+
+  return source
+    .map(normalizeFooterColumn)
+    .filter((column) => column.title || column.links.length > 0)
+    .slice(0, MAX_FOOTER_COLUMNS);
 }
 
 function syncBannerLength(banners, bannerCount) {
@@ -117,6 +186,18 @@ function serializeSiteSetting(siteSetting) {
         defaultSiteSetting.bannerAutoSlideSeconds
     ),
     banners,
+    footerDescription:
+      siteSetting.footerDescription ?? defaultSiteSetting.footerDescription,
+    footerBottomText:
+      siteSetting.footerBottomText ?? defaultSiteSetting.footerBottomText,
+    footerSocialLinks: normalizeFooterSocialLinks(
+      siteSetting.footerSocialLinks,
+      defaultSiteSetting.footerSocialLinks
+    ),
+    footerLinkColumns: normalizeFooterLinkColumns(
+      siteSetting.footerLinkColumns,
+      defaultSiteSetting.footerLinkColumns
+    ),
     updatedAt: siteSetting.updatedAt || null,
   };
 }
@@ -197,6 +278,26 @@ exports.updateSiteSetting = async (req, res) => {
       siteSetting.banners = syncBannerLength(req.body.banners, nextBannerCount);
     } else if (req.body.bannerCount != null) {
       siteSetting.banners = syncBannerLength(siteSetting.banners || [], nextBannerCount);
+    }
+
+    if (req.body.footerDescription != null) {
+      siteSetting.footerDescription = String(req.body.footerDescription).trim();
+    }
+
+    if (req.body.footerBottomText != null) {
+      siteSetting.footerBottomText = String(req.body.footerBottomText).trim();
+    }
+
+    if (Array.isArray(req.body.footerSocialLinks)) {
+      siteSetting.footerSocialLinks = normalizeFooterSocialLinks(
+        req.body.footerSocialLinks
+      );
+    }
+
+    if (Array.isArray(req.body.footerLinkColumns)) {
+      siteSetting.footerLinkColumns = normalizeFooterLinkColumns(
+        req.body.footerLinkColumns
+      );
     }
 
     siteSetting.updatedBy = req.admin

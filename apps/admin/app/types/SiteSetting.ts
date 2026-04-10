@@ -3,6 +3,16 @@ export type SiteBanner = {
   imageUrl: string;
 };
 
+export type SiteFooterLink = {
+  label: string;
+  url: string;
+};
+
+export type SiteFooterColumn = {
+  title: string;
+  links: SiteFooterLink[];
+};
+
 export type SiteSetting = {
   siteName: string;
   siteLogoUrl: string;
@@ -13,5 +23,9 @@ export type SiteSetting = {
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   banners: SiteBanner[];
+  footerDescription: string;
+  footerBottomText: string;
+  footerSocialLinks: SiteFooterLink[];
+  footerLinkColumns: SiteFooterColumn[];
   updatedAt?: string | null;
 };

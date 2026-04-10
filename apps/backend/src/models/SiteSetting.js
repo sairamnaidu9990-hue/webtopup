@@ -1,5 +1,33 @@
 const mongoose = require("mongoose");
 
+const siteFooterLinkSchema = new mongoose.Schema(
+  {
+    label: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    url: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
+const siteFooterColumnSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    links: [siteFooterLinkSchema],
+  },
+  { _id: false }
+);
+
 const siteSettingSchema = new mongoose.Schema(
   {
     siteName: {
@@ -62,6 +90,19 @@ const siteSettingSchema = new mongoose.Schema(
         { _id: false }
       ),
     ],
+    footerDescription: {
+      type: String,
+      default:
+        "Top up game dan voucher digital dengan katalog yang dikelola langsung dari panel admin.",
+      trim: true,
+    },
+    footerBottomText: {
+      type: String,
+      default: "© 2026 WebTopup. All rights reserved.",
+      trim: true,
+    },
+    footerSocialLinks: [siteFooterLinkSchema],
+    footerLinkColumns: [siteFooterColumnSchema],
     updatedBy: {
       adminId: {
         type: mongoose.Schema.Types.ObjectId,
