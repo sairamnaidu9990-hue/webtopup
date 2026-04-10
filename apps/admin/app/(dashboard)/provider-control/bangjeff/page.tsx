@@ -200,7 +200,6 @@ export default function BangjeffDashboardPage() {
     <div className="space-y-6">
       <SectionTitle
         title="BangJeff Dashboard"
-        subtitle="Pusat sinkronisasi katalog BangJeff ke database internal agar admin panel dan frontend memakai sumber data yang konsisten."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -209,7 +208,6 @@ export default function BangjeffDashboardPage() {
             {highlights.totalGames}
           </p>
           <p className="mt-2 text-sm text-white/80">
-            {highlights.activeGames} game aktif siap ditampilkan di katalog
           </p>
         </Card>
 
@@ -218,7 +216,6 @@ export default function BangjeffDashboardPage() {
             {highlights.totalVariants}
           </p>
           <p className="mt-2 text-sm text-white/80">
-            {highlights.activeVariants} variant aktif siap dijual
           </p>
         </Card>
 
@@ -227,7 +224,6 @@ export default function BangjeffDashboardPage() {
             {highlights.bangjeffGames}
           </p>
           <p className="mt-2 text-sm text-white/80">
-            {highlights.bangjeffGames} game dan {highlights.bangjeffVariants} variant berasal dari sinkronisasi provider
           </p>
         </Card>
 
@@ -235,8 +231,7 @@ export default function BangjeffDashboardPage() {
           <p className="text-4xl font-bold tracking-tight">
             {highlights.gamesWithInputs}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            {highlights.gamesWithInputs} game sudah memiliki skema input untuk validasi transaksi
+          <p className="mt-2 text-sm text-white/80"> 
           </p>
         </Card>
       </div>

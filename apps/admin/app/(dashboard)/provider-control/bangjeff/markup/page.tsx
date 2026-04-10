@@ -140,7 +140,7 @@ export default function BangjeffMarkupPage() {
     <div className="space-y-6">
       <SectionTitle
         title="Markup Variant"
-        subtitle="Halaman khusus untuk mengelola sinkronisasi markup massal BangJeff tanpa menumpuk aksi bulk di halaman variant harian."
+        subtitle="Update Variant."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -148,18 +148,11 @@ export default function BangjeffMarkupPage() {
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.totalVariants}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            {loading ? 0 : stats.activeVariants} variant aktif siap menerima
-            pembaruan markup
-          </p>
         </Card>
 
         <Card title="Total Games" variant="success">
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.totalGames}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            {loading ? 0 : stats.activeGames} game aktif tersimpan di katalog
           </p>
         </Card>
 
@@ -167,17 +160,10 @@ export default function BangjeffMarkupPage() {
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.coveredGames}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            Jumlah game yang saat ini sudah memiliki variant di database
-          </p>
         </Card>
 
         <Card title="Mode Operasional" variant="danger">
           <p className="text-base font-semibold">Bulk Markup</p>
-          <p className="mt-2 text-sm text-white/80">
-            Gunakan untuk penyesuaian margin cepat saat strategi harga berubah
-            secara menyeluruh atau per game tertentu.
-          </p>
         </Card>
       </div>
 

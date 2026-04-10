@@ -91,7 +91,7 @@ export default function BangjeffSyncLogsPage() {
     <div className="space-y-6">
       <SectionTitle
         title="BangJeff Sync Logs"
-        subtitle="Riwayat sinkronisasi BangJeff dan aksi markup yang dijalankan dari panel admin, lengkap dengan status, waktu, dan actor pelaksana."
+        subtitle="Riwayat sync."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -99,17 +99,11 @@ export default function BangjeffSyncLogsPage() {
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.total}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            Total riwayat aktivitas sinkronisasi yang tercatat
-          </p>
         </Card>
 
         <Card title="Success" variant="success">
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.success}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Aktivitas yang selesai tanpa error
           </p>
         </Card>
 
@@ -117,17 +111,11 @@ export default function BangjeffSyncLogsPage() {
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.failed}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            Aktivitas yang gagal dan perlu diperiksa
-          </p>
         </Card>
 
         <Card title="Markup Logs" variant="warning">
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.markup}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Aktivitas bulk markup yang tercatat untuk katalog BangJeff
           </p>
         </Card>
       </div>

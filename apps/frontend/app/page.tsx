@@ -1,4 +1,5 @@
 import { getPublicSiteSetting, getStorefrontGames, type StorefrontGame } from "@/lib/siteData";
+import SiteBannerCarousel from "@/components/SiteBannerCarousel";
 
 function GameCard({ game }: { game: StorefrontGame }) {
   const initials = game.name
@@ -57,25 +58,30 @@ export default async function HomePage() {
     getPublicSiteSetting(),
     getStorefrontGames(),
   ]);
+  const hasBanner = siteSetting.banners.some((banner) => banner.imageUrl);
 
   return (
-    <main className="px-4 pb-10 sm:px-6 sm:pb-12 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <section className="rounded-[34px] border border-white/8 bg-[#171922] px-5 py-8 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:py-10 lg:px-10 lg:py-12">
-          <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/45">
-              {siteSetting.siteName}
-            </p>
-            <h1 className="mt-4 font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.04] tracking-tight text-white sm:text-5xl lg:text-6xl">
-              {siteSetting.siteTitle}
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-white/58 sm:text-lg">
-              {siteSetting.siteDescription}
-            </p>
-          </div>
-        </section>
+    <main className="pb-10 sm:pb-12">
+      <div className="site-shell">
+        <SiteBannerCarousel siteSetting={siteSetting} />
 
-        <section id="trending-games" className="pt-10 sm:pt-12">
+        {!hasBanner ? (
+          <section className="rounded-[28px] border border-white/8 bg-[#171922] px-5 py-8 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:rounded-[32px] sm:px-7 sm:py-10 lg:rounded-[34px] lg:px-10 lg:py-12">
+            <div className="max-w-3xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/45">
+                {siteSetting.siteName}
+              </p>
+              <h1 className="mt-4 font-[family-name:var(--font-display)] text-4xl font-bold leading-[1.04] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                {siteSetting.siteTitle}
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-white/58 sm:text-lg">
+                {siteSetting.siteDescription}
+              </p>
+            </div>
+          </section>
+        ) : null}
+
+        <section id="trending-games" className="pt-6 sm:pt-7 lg:pt-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/45">
@@ -91,11 +97,11 @@ export default async function HomePage() {
           </div>
 
           {storefront.trendingGames.length === 0 ? (
-            <div className="mt-6 rounded-[28px] border border-dashed border-white/10 bg-[#171922] px-6 py-10 text-center text-sm text-white/45">
+            <div className="mt-6 rounded-[24px] border border-dashed border-white/10 bg-[#171922] px-6 py-10 text-center text-sm text-white/45 sm:rounded-[28px]">
               Belum ada game yang dimasukkan ke Trending Games dari panel admin.
             </div>
           ) : (
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {storefront.trendingGames.map((game) => (
                 <GameCard key={game._id} game={game} />
               ))}
@@ -103,7 +109,7 @@ export default async function HomePage() {
           )}
         </section>
 
-        <section id="all-games" className="pt-10 sm:pt-12">
+        <section id="all-games" className="pt-8 sm:pt-10 lg:pt-12">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/45">
@@ -119,7 +125,7 @@ export default async function HomePage() {
           </div>
 
           {storefront.allGames.length === 0 ? (
-            <div className="mt-6 rounded-[28px] border border-dashed border-white/10 bg-[#171922] px-6 py-10 text-center text-sm text-white/45">
+            <div className="mt-6 rounded-[24px] border border-dashed border-white/10 bg-[#171922] px-6 py-10 text-center text-sm text-white/45 sm:rounded-[28px]">
               Belum ada game aktif yang tersedia untuk frontend user.
             </div>
           ) : (

@@ -6,25 +6,21 @@ const summaryCards = [
   {
     title: "Total Order",
     value: 0,
-    note: "Jumlah seluruh order yang tercatat pada sistem transaksi.",
     variant: "info" as const,
   },
   {
     title: "Sukses",
     value: 0,
-    note: "Order yang selesai diproses dan valid untuk direkonsiliasi.",
     variant: "success" as const,
   },
   {
     title: "Failed",
     value: 0,
-    note: "Order yang gagal diproses dan memerlukan tindak lanjut.",
     variant: "danger" as const,
   },
   {
     title: "Process",
     value: 0,
-    note: "Order yang masih menunggu penyelesaian dari sistem atau provider.",
     variant: "warning" as const,
   },
 ];
@@ -49,12 +45,6 @@ export default function DashboardPage() {
       description:
         "Masuk ke katalog game BangJeff untuk mengelola metadata internal seperti provider, logo, dan status katalog.",
     },
-    {
-      title: "Admin Management",
-      href: "/admins",
-      description:
-        "Kelola akun admin, role, password, dan status aktif dari satu halaman operasional.",
-    },
   ];
 
   return (
@@ -68,7 +58,6 @@ export default function DashboardPage() {
         {summaryCards.map((item) => (
           <Card key={item.title} title={item.title} variant={item.variant}>
             <p className="text-4xl font-bold tracking-tight">{item.value}</p>
-            <p className="mt-2 text-sm text-white/80">{item.note}</p>
           </Card>
         ))}
       </div>

@@ -5,6 +5,10 @@ import SectionTitle from "../../components/ui/SectionTitle";
 import Card from "../../components/ui/Card";
 import type { SiteSetting } from "@/app/types/SiteSetting";
 
+const DEFAULT_BANNER_COUNT = 3;
+const MAX_BANNER_COUNT = 10;
+const DEFAULT_AUTO_SLIDE_SECONDS = 5;
+
 const defaultForm: SiteSetting = {
   siteName: "WebTopup",
   siteLogoUrl: "",
@@ -13,7 +17,60 @@ const defaultForm: SiteSetting = {
   siteTitle: "WebTopup - Top Up Game Realtime",
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
+  bannerCount: DEFAULT_BANNER_COUNT,
+  bannerAutoSlideSeconds: DEFAULT_AUTO_SLIDE_SECONDS,
+  banners: Array.from({ length: DEFAULT_BANNER_COUNT }, () => ({
+    title: "",
+    imageUrl: "",
+  })),
 };
+
+function clampNumber(value: number, min: number, max: number, fallback: number) {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.min(Math.max(value, min), max);
+}
+
+function syncBannerLength(
+  banners: SiteSetting["banners"],
+  bannerCount: number
+): SiteSetting["banners"] {
+  return Array.from({ length: bannerCount }, (_, index) => ({
+    title: banners[index]?.title || "",
+    imageUrl: banners[index]?.imageUrl || "",
+  }));
+}
+
+function normalizeSiteSetting(
+  value?: Partial<SiteSetting> | null
+): SiteSetting {
+  const bannerCount = clampNumber(
+    Number(value?.bannerCount ?? defaultForm.bannerCount),
+    0,
+    MAX_BANNER_COUNT,
+    defaultForm.bannerCount
+  );
+
+  return {
+    ...defaultForm,
+    ...value,
+    bannerCount,
+    bannerAutoSlideSeconds: clampNumber(
+      Number(
+        value?.bannerAutoSlideSeconds ?? defaultForm.bannerAutoSlideSeconds
+      ),
+      1,
+      30,
+      defaultForm.bannerAutoSlideSeconds
+    ),
+    banners: syncBannerLength(
+      Array.isArray(value?.banners) ? value.banners : defaultForm.banners,
+      bannerCount
+    ),
+  };
+}
 
 function formatDate(value?: string | null) {
   if (!value) {
@@ -50,7 +107,7 @@ export default function WebsiteSettingsPage() {
         );
       }
 
-      setForm(payload.siteSetting || defaultForm);
+      setForm(normalizeSiteSetting(payload.siteSetting));
     } catch (fetchError) {
       setError(
         fetchError instanceof Error
@@ -85,6 +142,9 @@ export default function WebsiteSettingsPage() {
           siteDomain: form.siteDomain,
           siteTitle: form.siteTitle,
           siteDescription: form.siteDescription,
+          bannerCount: form.bannerCount,
+          bannerAutoSlideSeconds: form.bannerAutoSlideSeconds,
+          banners: form.banners,
         }),
       });
       const payload = await response.json();
@@ -96,7 +156,7 @@ export default function WebsiteSettingsPage() {
       }
 
       setSuccess(payload.message || "Pengaturan website berhasil diperbarui");
-      setForm(payload.siteSetting || form);
+      setForm(normalizeSiteSetting(payload.siteSetting));
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -112,60 +172,8 @@ export default function WebsiteSettingsPage() {
     <div className="space-y-6">
       <SectionTitle
         title="Website Settings"
-        subtitle="Atur nama web, logo, favicon, domain utama, site title, dan site description yang dipakai oleh frontend user."
+        subtitle="Atur Website."
       />
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card title="Brand Name" variant="info">
-          <p className="text-2xl font-bold tracking-tight">
-            {loading ? "..." : form.siteName}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Nama brand yang tampil di header frontend user
-          </p>
-        </Card>
-
-        <Card title="Site Title" variant="success">
-          <p className="text-lg font-semibold tracking-tight">
-            {loading ? "..." : form.siteTitle}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Dipakai untuk judul browser dan metadata utama
-          </p>
-        </Card>
-
-        <Card title="Asset Status" variant="warning">
-          <p className="text-2xl font-bold tracking-tight">
-            {loading
-              ? "..."
-              : form.siteLogoUrl || form.siteFaviconUrl
-              ? "Ready"
-              : "Empty"}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Logo dan favicon akan dipakai jika URL aset sudah diisi
-          </p>
-        </Card>
-
-        <Card title="Site Domain" variant="danger">
-          <p className="break-all text-base font-semibold">
-            {loading ? "..." : form.siteDomain || "Belum diatur"}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Dipakai untuk canonical URL dan identitas domain website
-          </p>
-        </Card>
-
-        <Card title="Last Update" variant="default">
-          <p className="text-base font-semibold">
-            {loading ? "..." : formatDate(form.updatedAt)}
-          </p>
-          <p className="mt-2 text-sm text-gray-600">
-            Waktu pembaruan pengaturan website terakhir
-          </p>
-        </Card>
-      </div>
-
       {success ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {success}
@@ -283,6 +291,140 @@ export default function WebsiteSettingsPage() {
               className="min-h-[140px] w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Jumlah Banner
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={MAX_BANNER_COUNT}
+              value={form.bannerCount}
+              onChange={(event) => {
+                const nextBannerCount = clampNumber(
+                  Number(event.target.value),
+                  0,
+                  MAX_BANNER_COUNT,
+                  defaultForm.bannerCount
+                );
+
+                setForm((current) => ({
+                  ...current,
+                  bannerCount: nextBannerCount,
+                  banners: syncBannerLength(current.banners, nextBannerCount),
+                }));
+              }}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            />
+            <p className="text-xs leading-6 text-gray-500">
+              Atur berapa slide banner yang ingin ditampilkan di homepage user.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Auto Slide Banner (detik)
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={form.bannerAutoSlideSeconds}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  bannerAutoSlideSeconds: clampNumber(
+                    Number(event.target.value),
+                    1,
+                    30,
+                    defaultForm.bannerAutoSlideSeconds
+                  ),
+                }))
+              }
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            />
+            <p className="text-xs leading-6 text-gray-500">
+              Interval perpindahan otomatis antar banner di frontend user.
+            </p>
+          </div>
+
+          <div className="space-y-4 lg:col-span-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Banner Homepage
+              </label>
+              <p className="mt-1 text-xs leading-6 text-gray-500">
+                Isi judul dan URL gambar untuk setiap banner yang akan diputar
+                otomatis di bawah header website.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {form.banners.map((banner, index) => (
+                <div
+                  key={`banner-${index}`}
+                  className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4"
+                >
+                  <p className="text-sm font-semibold text-gray-800">
+                    Banner {index + 1}
+                  </p>
+
+                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Judul Banner
+                      </label>
+                      <input
+                        value={banner.title}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            banners: current.banners.map(
+                              (currentBanner, bannerIndex) =>
+                                bannerIndex === index
+                                  ? {
+                                      ...currentBanner,
+                                      title: event.target.value,
+                                    }
+                                  : currentBanner
+                            ),
+                          }))
+                        }
+                        placeholder="Contoh: Promo Top Up MLBB Hari Ini"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Banner URL
+                      </label>
+                      <input
+                        value={banner.imageUrl}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            banners: current.banners.map(
+                              (currentBanner, bannerIndex) =>
+                                bannerIndex === index
+                                  ? {
+                                      ...currentBanner,
+                                      imageUrl: event.target.value,
+                                    }
+                                  : currentBanner
+                            ),
+                          }))
+                        }
+                        placeholder="https://..."
+                        className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="lg:col-span-2">

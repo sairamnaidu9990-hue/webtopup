@@ -33,6 +33,35 @@ const siteSettingSchema = new mongoose.Schema(
         "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
       trim: true,
     },
+    bannerCount: {
+      type: Number,
+      default: 3,
+      min: 0,
+      max: 10,
+    },
+    bannerAutoSlideSeconds: {
+      type: Number,
+      default: 5,
+      min: 1,
+      max: 30,
+    },
+    banners: [
+      new mongoose.Schema(
+        {
+          title: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+          imageUrl: {
+            type: String,
+            default: "",
+            trim: true,
+          },
+        },
+        { _id: false }
+      ),
+    ],
     updatedBy: {
       adminId: {
         type: mongoose.Schema.Types.ObjectId,

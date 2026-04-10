@@ -280,47 +280,8 @@ export default function AdminsPage() {
     <div className="space-y-6">
       <SectionTitle
         title="Admin Management"
-        subtitle="Kelola akun admin, role, status aktif, serta keamanan password dari satu halaman operasional."
+        subtitle="Kelola akun admin."
       />
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card title="Total Admin" variant="info">
-          <p className="text-4xl font-bold tracking-tight">
-            {loading ? 0 : admins.length}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Jumlah akun admin yang terdaftar di sistem
-          </p>
-        </Card>
-
-        <Card title="Admin Aktif" variant="success">
-          <p className="text-4xl font-bold tracking-tight">
-            {loading ? 0 : activeAdmins}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Akun admin yang saat ini dapat mengakses panel
-          </p>
-        </Card>
-
-        <Card title="Super Admin" variant="warning">
-          <p className="text-4xl font-bold tracking-tight">
-            {loading ? 0 : superAdmins}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Akun dengan tanggung jawab pengelolaan penuh
-          </p>
-        </Card>
-
-        <Card title="Admin Login" variant="danger">
-          <p className="text-base font-semibold">
-            {currentAdmin?.name || "Memuat..."}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            {currentAdmin?.email || "Akun aktif sedang dibaca dari sesi login"}
-          </p>
-        </Card>
-      </div>
-
       {feedback ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {feedback}

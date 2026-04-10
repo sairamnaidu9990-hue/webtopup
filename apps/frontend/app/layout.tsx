@@ -29,6 +29,10 @@ function getMetadataBase(siteDomain: string) {
 export async function generateMetadata(): Promise<Metadata> {
   const siteSetting = await getPublicSiteSetting();
   const metadataBase = getMetadataBase(siteSetting.siteDomain);
+  const primaryBannerImage =
+    siteSetting.banners.find((banner) => banner.imageUrl)?.imageUrl ||
+    siteSetting.siteLogoUrl ||
+    undefined;
 
   return {
     title: siteSetting.siteTitle,
@@ -51,6 +55,16 @@ export async function generateMetadata(): Promise<Metadata> {
       title: siteSetting.siteTitle,
       description: siteSetting.siteDescription,
       siteName: siteSetting.siteName,
+      ...(primaryBannerImage
+        ? {
+            images: [
+              {
+                url: primaryBannerImage,
+                alt: siteSetting.siteTitle,
+              },
+            ],
+          }
+        : {}),
       ...(metadataBase
         ? {
             url: metadataBase.toString(),

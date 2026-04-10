@@ -5,6 +5,11 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:4000";
 
+export type SiteBanner = {
+  title: string;
+  imageUrl: string;
+};
+
 export type PublicSiteSetting = {
   siteName: string;
   siteLogoUrl: string;
@@ -12,6 +17,9 @@ export type PublicSiteSetting = {
   siteDomain: string;
   siteTitle: string;
   siteDescription: string;
+  bannerCount: number;
+  bannerAutoSlideSeconds: number;
+  banners: SiteBanner[];
   updatedAt?: string | null;
 };
 
@@ -35,7 +43,49 @@ const defaultSiteSetting: PublicSiteSetting = {
   siteTitle: "WebTopup - Top Up Game Realtime",
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
+  bannerCount: 3,
+  bannerAutoSlideSeconds: 5,
+  banners: [],
 };
+
+function syncBannerLength(
+  banners: SiteBanner[],
+  bannerCount: number
+): SiteBanner[] {
+  return Array.from({ length: bannerCount }, (_, index) => ({
+    title: banners[index]?.title || "",
+    imageUrl: banners[index]?.imageUrl || "",
+  }));
+}
+
+function normalizeSiteSetting(
+  siteSetting?: Partial<PublicSiteSetting> | null
+): PublicSiteSetting {
+  const bannerCount = Math.min(
+    Math.max(Number(siteSetting?.bannerCount ?? defaultSiteSetting.bannerCount) || 0, 0),
+    10
+  );
+
+  return {
+    ...defaultSiteSetting,
+    ...siteSetting,
+    bannerCount,
+    bannerAutoSlideSeconds: Math.min(
+      Math.max(
+        Number(
+          siteSetting?.bannerAutoSlideSeconds ??
+            defaultSiteSetting.bannerAutoSlideSeconds
+        ) || defaultSiteSetting.bannerAutoSlideSeconds,
+        1
+      ),
+      30
+    ),
+    banners: syncBannerLength(
+      Array.isArray(siteSetting?.banners) ? siteSetting.banners : [],
+      bannerCount
+    ),
+  };
+}
 
 export const getPublicSiteSetting = cache(async (): Promise<PublicSiteSetting> => {
   try {
@@ -48,7 +98,7 @@ export const getPublicSiteSetting = cache(async (): Promise<PublicSiteSetting> =
     }
 
     const payload = await response.json();
-    return payload.siteSetting || defaultSiteSetting;
+    return normalizeSiteSetting(payload.siteSetting);
   } catch {
     return defaultSiteSetting;
   }
