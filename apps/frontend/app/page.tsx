@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getPublicSiteSetting, getStorefrontGames, type StorefrontGame } from "@/lib/siteData";
 import SiteBannerCarousel from "@/components/SiteBannerCarousel";
 import AllGamesSection from "@/components/AllGamesSection";
@@ -12,7 +13,10 @@ function TrendingGameCard({ game }: { game: StorefrontGame }) {
     .toUpperCase();
 
   return (
-    <article className="rounded-[20px] border border-transparent bg-[#1a1c23] p-2.5 transition duration-300 hover:border-[#d33b3b] hover:bg-[#20232c] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.22)] sm:rounded-[22px] sm:p-3 lg:rounded-[24px] lg:p-4">
+    <Link
+      href={`/games/${game.code.toLowerCase()}`}
+      className="block rounded-[20px] border border-transparent bg-[#1a1c23] p-2.5 transition duration-300 hover:border-[#d33b3b] hover:bg-[#20232c] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.22)] sm:rounded-[22px] sm:p-3 lg:rounded-[24px] lg:p-4"
+    >
       <div className="flex items-center gap-2.5 sm:gap-3 lg:gap-4">
         {game.logo ? (
           <img
@@ -35,7 +39,7 @@ function TrendingGameCard({ game }: { game: StorefrontGame }) {
           </p>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 

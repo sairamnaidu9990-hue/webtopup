@@ -4,6 +4,17 @@ const Variant = require("../models/Variant");
 const calculatePrice = require("../utils/calculatePrice");
 const createSyncLog = require("../utils/createSyncLog");
 const {
+  ORDER_PLACEHOLDER,
+  isExplicitOrder,
+  getNextGameOrder,
+  normalizeGameOrders,
+} = require("../utils/gameOrder");
+const {
+  DEFAULT_GAME_CATEGORY,
+  normalizeGameCategory,
+  normalizeGameCategories,
+} = require("../utils/gameCategory");
+const {
   getBangjeffProducts,
   getBangjeffProductDetail,
   getBangjeffVariants,
@@ -48,6 +59,7 @@ async function syncGamesData(region) {
   }
 
   const seenCodes = [];
+  let nextCatalogOrder = await getNextGameOrder("catalogOrder");
   const summary = {
     totalRemote: remoteGames.length,
     created: 0,
@@ -72,6 +84,18 @@ async function syncGamesData(region) {
       existing.inputs = Array.isArray(existing.inputs) ? existing.inputs : [];
       existing.provider = existing.provider || "";
       existing.logo = existing.logo || "";
+      existing.bannerUrl = existing.bannerUrl || "";
+      existing.category = normalizeGameCategory(
+        existing.category,
+        DEFAULT_GAME_CATEGORY
+      );
+      if (!isExplicitOrder(existing.catalogOrder)) {
+        existing.catalogOrder = nextCatalogOrder;
+        nextCatalogOrder += 1;
+      }
+      if (!existing.isTrending) {
+        existing.trendingOrder = ORDER_PLACEHOLDER;
+      }
       await existing.save();
       summary.updated += 1;
       continue;
@@ -83,9 +107,15 @@ async function syncGamesData(region) {
       status: item.status || "INACTIVE",
       provider: "",
       logo: "",
+      bannerUrl: "",
+      category: DEFAULT_GAME_CATEGORY,
+      catalogOrder: nextCatalogOrder,
+      trendingOrder: ORDER_PLACEHOLDER,
       inputs: [],
       syncSource: "bangjeff",
     });
+
+    nextCatalogOrder += 1;
 
     summary.created += 1;
   }
@@ -104,6 +134,9 @@ async function syncGamesData(region) {
 
     summary.markedInactive = staleGames.modifiedCount || 0;
   }
+
+  await normalizeGameOrders();
+  await normalizeGameCategories();
 
   return summary;
 }
@@ -125,6 +158,7 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
   }
 
   const uniqueProductCodes = [...new Set(productCodes.filter(Boolean))];
+  let nextCatalogOrder = await getNextGameOrder("catalogOrder");
   const summary = {
     totalRequested: uniqueProductCodes.length,
     created: 0,
@@ -143,8 +177,12 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
           code: productCode,
           provider: "",
           logo: "",
+          bannerUrl: "",
+          catalogOrder: nextCatalogOrder,
+          trendingOrder: ORDER_PLACEHOLDER,
           syncSource: "bangjeff",
         });
+        nextCatalogOrder += 1;
         summary.created += 1;
       } else {
         summary.updated += 1;
@@ -155,6 +193,18 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
       game.inputs = Array.isArray(detail?.inputs) ? detail.inputs : [];
       game.provider = game.provider || "";
       game.logo = game.logo || "";
+      game.bannerUrl = game.bannerUrl || "";
+      game.category = normalizeGameCategory(
+        game.category,
+        DEFAULT_GAME_CATEGORY
+      );
+      if (!isExplicitOrder(game.catalogOrder)) {
+        game.catalogOrder = nextCatalogOrder;
+        nextCatalogOrder += 1;
+      }
+      if (!game.isTrending) {
+        game.trendingOrder = ORDER_PLACEHOLDER;
+      }
       game.syncSource = "bangjeff";
 
       await game.save();
@@ -168,6 +218,8 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
   }
 
   summary.errors = trimSyncErrors(summary.errors);
+  await normalizeGameOrders();
+  await normalizeGameCategories();
   return summary;
 }
 

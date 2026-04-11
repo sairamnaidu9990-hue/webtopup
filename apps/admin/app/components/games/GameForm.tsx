@@ -1,11 +1,20 @@
 "use client";
 
+const GAME_CATEGORY_OPTIONS = [
+  "Topup Game",
+  "Topup Pulsa",
+  "Voucher",
+  "Live Streaming",
+] as const;
+
 type Props = {
   isOpen: boolean;
   allowCreate?: boolean;
   name: string;
   code: string;
   logo: string;
+  bannerUrl: string;
+  category: string;
   provider: string;
   status: string;
   isTrending: boolean;
@@ -16,6 +25,8 @@ type Props = {
   setName: (v: string) => void;
   setCode: (v: string) => void;
   setLogo: (v: string) => void;
+  setBannerUrl: (v: string) => void;
+  setCategory: (v: string) => void;
   setProvider: (v: string) => void;
   setStatus: (v: string) => void;
   setIsTrending: (v: boolean) => void;
@@ -35,6 +46,8 @@ export default function GameForm({
   name,
   code,
   logo,
+  bannerUrl,
+  category,
   provider,
   status,
   isTrending,
@@ -44,6 +57,8 @@ export default function GameForm({
   setName,
   setCode,
   setLogo,
+  setBannerUrl,
+  setCategory,
   setProvider,
   setStatus,
   setIsTrending,
@@ -106,11 +121,30 @@ export default function GameForm({
             onChange={(e) => setProvider(e.target.value)}
           />
 
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full rounded-xl border px-4 py-2"
+          >
+            {GAME_CATEGORY_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+
           <input
             placeholder="URL logo"
             className="w-full rounded-xl border px-4 py-2"
             value={logo}
             onChange={(e) => setLogo(e.target.value)}
+          />
+
+          <input
+            placeholder="URL banner game"
+            className="w-full rounded-xl border px-4 py-2"
+            value={bannerUrl}
+            onChange={(e) => setBannerUrl(e.target.value)}
           />
 
           <select

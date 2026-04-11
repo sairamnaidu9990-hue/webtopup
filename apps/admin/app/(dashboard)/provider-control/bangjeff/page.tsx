@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import SyncPanel from "@/app/components/bangjeff/SyncPanel";
+import { parseJsonSafely } from "@/app/lib/http";
 import {
   CATALOG_CACHE_TTL_MS,
   GAMES_CACHE_KEY,
@@ -81,8 +82,10 @@ export default function BangjeffDashboardPage() {
 
       if (refreshGames) {
         const gamesResponse = responses[responseIndex++];
-        const gamesPayload = await gamesResponse.json();
-        const nextGames = Array.isArray(gamesPayload) ? gamesPayload : [];
+        const gamesPayload = await parseJsonSafely<unknown[]>(gamesResponse);
+        const nextGames = Array.isArray(gamesPayload)
+          ? (gamesPayload as Game[])
+          : [];
 
         setGames(nextGames);
         writeSessionCache(gamesCacheKey, nextGames);
@@ -90,9 +93,9 @@ export default function BangjeffDashboardPage() {
 
       if (refreshVariants) {
         const variantsResponse = responses[responseIndex++];
-        const variantsPayload = await variantsResponse.json();
+        const variantsPayload = await parseJsonSafely<unknown[]>(variantsResponse);
         const nextVariants = Array.isArray(variantsPayload)
-          ? variantsPayload
+          ? (variantsPayload as Variant[])
           : [];
 
         setVariants(nextVariants);

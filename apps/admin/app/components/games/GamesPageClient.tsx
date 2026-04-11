@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import GameForm from "./GameForm";
 import GameList from "./GameList";
+import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import {
   isSessionCacheFresh,
   readSessionCache,
@@ -15,6 +16,8 @@ type Game = {
   name: string;
   code: string;
   logo?: string;
+  bannerUrl?: string;
+  category?: string;
   provider?: string;
   status?: string;
   isTrending?: boolean;
@@ -36,6 +39,11 @@ type Props = {
   allowCreate?: boolean;
 };
 
+function toOptionalOrderValue(value: string) {
+  const normalized = value.trim();
+  return normalized === "" ? undefined : Number(normalized);
+}
+
 export default function GamesPageClient({
   syncSource,
   allowCreate = true,
@@ -48,6 +56,8 @@ export default function GamesPageClient({
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [logo, setLogo] = useState("");
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [category, setCategory] = useState("Topup Game");
   const [provider, setProvider] = useState("");
   const [status, setStatus] = useState("ACTIVE");
   const [isTrending, setIsTrending] = useState(false);
@@ -66,6 +76,8 @@ export default function GamesPageClient({
     setName("");
     setCode("");
     setLogo("");
+    setBannerUrl("");
+    setCategory("Topup Game");
     setProvider("");
     setStatus("ACTIVE");
     setIsTrending(false);
@@ -76,8 +88,8 @@ export default function GamesPageClient({
   const fetchGames = async () => {
     try {
       const res = await fetch(`${API}/api/games${gamesQuery}`);
-      const data = await res.json();
-      const nextGames = Array.isArray(data) ? data : [];
+      const data = await parseJsonSafely<unknown[]>(res);
+      const nextGames = Array.isArray(data) ? (data as Game[]) : [];
 
       setGames(nextGames);
       writeSessionCache(gamesCacheKey, nextGames);
@@ -124,6 +136,8 @@ export default function GamesPageClient({
     setName(game.name);
     setCode(game.code);
     setLogo(game.logo || "");
+    setBannerUrl(game.bannerUrl || "");
+    setCategory(game.category || "Topup Game");
     setProvider(game.provider || "");
     setStatus(game.status || "ACTIVE");
     setIsTrending(Boolean(game.isTrending));
@@ -155,18 +169,24 @@ export default function GamesPageClient({
           name,
           code,
           logo,
+          bannerUrl,
+          category,
           provider,
           status,
           isTrending,
-          trendingOrder: Number(trendingOrder),
-          catalogOrder: Number(catalogOrder),
+          ...(toOptionalOrderValue(trendingOrder) != null
+            ? { trendingOrder: toOptionalOrderValue(trendingOrder) }
+            : {}),
+          ...(toOptionalOrderValue(catalogOrder) != null
+            ? { catalogOrder: toOptionalOrderValue(catalogOrder) }
+            : {}),
         }),
       });
 
-      const data = await res.json();
+      const data = await parseJsonSafely<{ message?: string }>(res);
 
       if (!res.ok) {
-        throw new Error(data.message || "Gagal simpan game");
+        throw new Error(getResponseMessage(data, "Gagal simpan game"));
       }
 
       setSuccess(
@@ -192,6 +212,8 @@ export default function GamesPageClient({
           name={name}
           code={code}
           logo={logo}
+          bannerUrl={bannerUrl}
+          category={category}
           provider={provider}
           status={status}
           isTrending={isTrending}
@@ -201,6 +223,8 @@ export default function GamesPageClient({
           setName={setName}
           setCode={setCode}
           setLogo={setLogo}
+          setBannerUrl={setBannerUrl}
+          setCategory={setCategory}
           setProvider={setProvider}
           setStatus={setStatus}
           setIsTrending={setIsTrending}

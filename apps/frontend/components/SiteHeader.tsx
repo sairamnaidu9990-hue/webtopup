@@ -62,12 +62,12 @@ export default function SiteHeader({
         </Link>
 
         <nav className="hidden items-center gap-5 text-sm text-white/65 md:flex lg:gap-6">
-          <a href="#trending-games" className="transition hover:text-white">
+          <Link href="/#trending-games" className="transition hover:text-white">
             Trending Games
-          </a>
-          <a href="#all-games" className="transition hover:text-white">
+          </Link>
+          <Link href="/#all-games" className="transition hover:text-white">
             All Games
-          </a>
+          </Link>
         </nav>
       </div>
     </header>

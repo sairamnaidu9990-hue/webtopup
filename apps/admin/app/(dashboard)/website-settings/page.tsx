@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import SectionTitle from "../../components/ui/SectionTitle";
 import Card from "../../components/ui/Card";
+import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import type {
   SiteFooterColumn,
   SiteFooterLink,
@@ -189,15 +190,13 @@ export default function WebsiteSettingsPage() {
       const response = await fetch("/api/site-settings", {
         cache: "no-store",
       });
-      const payload = await response.json();
+      const payload = await parseJsonSafely<{ message?: string; siteSetting?: SiteSetting }>(response);
 
       if (!response.ok) {
-        throw new Error(
-          payload.message || "Gagal mengambil pengaturan website"
-        );
+        throw new Error(getResponseMessage(payload, "Gagal mengambil pengaturan website"));
       }
 
-      setForm(normalizeSiteSetting(payload.siteSetting));
+      setForm(normalizeSiteSetting(payload?.siteSetting));
     } catch (fetchError) {
       setError(
         fetchError instanceof Error
@@ -241,16 +240,14 @@ export default function WebsiteSettingsPage() {
           footerLinkColumns: form.footerLinkColumns,
         }),
       });
-      const payload = await response.json();
+      const payload = await parseJsonSafely<{ message?: string; siteSetting?: SiteSetting }>(response);
 
       if (!response.ok) {
-        throw new Error(
-          payload.message || "Gagal memperbarui pengaturan website"
-        );
+        throw new Error(getResponseMessage(payload, "Gagal memperbarui pengaturan website"));
       }
 
-      setSuccess(payload.message || "Pengaturan website berhasil diperbarui");
-      setForm(normalizeSiteSetting(payload.siteSetting));
+      setSuccess(getResponseMessage(payload, "Pengaturan website berhasil diperbarui"));
+      setForm(normalizeSiteSetting(payload?.siteSetting));
     } catch (submitError) {
       setError(
         submitError instanceof Error

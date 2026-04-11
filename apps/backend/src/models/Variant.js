@@ -42,4 +42,8 @@ const variantSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+variantSchema.index({ game: 1, status: 1, price: 1, name: 1 });
+variantSchema.index({ productCode: 1, status: 1 });
+variantSchema.index({ syncSource: 1, status: 1 });
+
 module.exports = mongoose.model("Variant", variantSchema);

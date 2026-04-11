@@ -1,15 +1,23 @@
 const Game = require("../models/Game");
 const Variant = require("../models/Variant");
+const {
+  ORDER_PLACEHOLDER,
+  isBlank,
+  isExplicitOrder,
+  toOrderNumber,
+  getNextGameOrder,
+  normalizeGameOrders,
+} = require("../utils/gameOrder");
+const {
+  DEFAULT_GAME_CATEGORY,
+  normalizeGameCategory,
+  normalizeGameCategories,
+} = require("../utils/gameCategory");
 
 function normalizeCode(code) {
   return String(code || "")
     .trim()
     .toUpperCase();
-}
-
-function toNumber(value, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function toBoolean(value, fallback = false) {
@@ -31,6 +39,8 @@ function toBoolean(value, fallback = false) {
 // GET ALL GAMES
 exports.getGames = async (req, res) => {
   try {
+    await normalizeGameOrders();
+    await normalizeGameCategories();
     const filter = {};
 
     if (req.query.status) {
@@ -58,6 +68,8 @@ exports.getGames = async (req, res) => {
 
 exports.getStorefrontGames = async (req, res) => {
   try {
+    await normalizeGameOrders();
+    await normalizeGameCategories();
     const baseFilter = { status: "ACTIVE" };
 
     if (req.query.syncSource) {
@@ -74,13 +86,13 @@ exports.getStorefrontGames = async (req, res) => {
           catalogOrder: 1,
           name: 1,
         })
-        .select("name code logo provider status syncSource isTrending trendingOrder catalogOrder"),
+        .select("name code logo bannerUrl provider category status syncSource isTrending trendingOrder catalogOrder"),
       Game.find(baseFilter)
         .sort({
           catalogOrder: 1,
           name: 1,
         })
-        .select("name code logo provider status syncSource isTrending trendingOrder catalogOrder"),
+        .select("name code logo bannerUrl provider category status syncSource isTrending trendingOrder catalogOrder"),
     ]);
 
     return res.status(200).json({
@@ -94,6 +106,54 @@ exports.getStorefrontGames = async (req, res) => {
   }
 };
 
+exports.getStorefrontGameDetail = async (req, res) => {
+  try {
+    await normalizeGameCategories();
+    const code = normalizeCode(req.params.code);
+
+    if (!code) {
+      return res.status(400).json({
+        message: "Code game tidak valid",
+      });
+    }
+
+    const game = await Game.findOne({
+      code,
+      status: "ACTIVE",
+    }).select(
+      "name code logo bannerUrl provider category status syncSource isTrending trendingOrder catalogOrder inputs"
+    );
+
+    if (!game) {
+      return res.status(404).json({
+        message: "Game tidak ditemukan",
+      });
+    }
+
+    const variants = await Variant.find({
+      game: game._id,
+      status: "ACTIVE",
+    })
+      .sort({
+        price: 1,
+        basePrice: 1,
+        name: 1,
+      })
+      .select(
+        "name providerCode productCode basePrice markup price currency duration region logo status syncSource"
+      );
+
+    return res.status(200).json({
+      game,
+      variants,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error ambil detail storefront game",
+    });
+  }
+};
+
 // CREATE GAME
 exports.createGame = async (req, res) => {
   try {
@@ -101,6 +161,8 @@ exports.createGame = async (req, res) => {
       name,
       code,
       logo = "",
+      bannerUrl = "",
+      category = DEFAULT_GAME_CATEGORY,
       provider = "",
       status = "ACTIVE",
       isTrending = false,
@@ -120,20 +182,33 @@ exports.createGame = async (req, res) => {
       return res.status(409).json({ message: "Code game sudah digunakan" });
     }
 
+    const isTrendingValue = toBoolean(isTrending, false);
+    const catalogOrderValue = isBlank(catalogOrder)
+      ? await getNextGameOrder("catalogOrder")
+      : toOrderNumber(catalogOrder, ORDER_PLACEHOLDER);
+    const trendingOrderValue = isTrendingValue
+      ? isBlank(trendingOrder)
+        ? await getNextGameOrder("trendingOrder", { isTrending: true })
+        : toOrderNumber(trendingOrder, ORDER_PLACEHOLDER)
+      : ORDER_PLACEHOLDER;
+
     const game = new Game({
       name,
       code: normalizedCode,
       logo,
+      bannerUrl,
+      category: normalizeGameCategory(category),
       provider,
       status: String(status || "ACTIVE").toUpperCase(),
-      isTrending: toBoolean(isTrending, false),
-      trendingOrder: toNumber(trendingOrder, 9999),
-      catalogOrder: toNumber(catalogOrder, 9999),
+      isTrending: isTrendingValue,
+      trendingOrder: trendingOrderValue,
+      catalogOrder: catalogOrderValue,
       inputs: Array.isArray(inputs) ? inputs : [],
       syncSource: "manual",
     });
 
     await game.save();
+    await normalizeGameOrders();
 
     res.status(201).json({
       message: "Game berhasil dibuat",
@@ -149,6 +224,11 @@ exports.updateGame = async (req, res) => {
   try {
     const { id } = req.params;
     const updatePayload = { ...req.body };
+    const currentGame = await Game.findById(id);
+
+    if (!currentGame) {
+      return res.status(404).json({ message: "Game tidak ditemukan" });
+    }
 
     if (req.body.code) {
       const normalizedCode = normalizeCode(req.body.code);
@@ -168,16 +248,36 @@ exports.updateGame = async (req, res) => {
       updatePayload.status = String(req.body.status).toUpperCase();
     }
 
+    if (Object.prototype.hasOwnProperty.call(req.body, "category")) {
+      updatePayload.category = normalizeGameCategory(
+        req.body.category,
+        currentGame.category || DEFAULT_GAME_CATEGORY
+      );
+    }
+
+    const nextIsTrending =
+      req.body.isTrending != null
+        ? toBoolean(req.body.isTrending, false)
+        : currentGame.isTrending;
+
     if (req.body.isTrending != null) {
-      updatePayload.isTrending = toBoolean(req.body.isTrending, false);
+      updatePayload.isTrending = nextIsTrending;
     }
 
-    if (req.body.trendingOrder != null) {
-      updatePayload.trendingOrder = toNumber(req.body.trendingOrder, 9999);
+    if (Object.prototype.hasOwnProperty.call(req.body, "catalogOrder")) {
+      updatePayload.catalogOrder = isBlank(req.body.catalogOrder)
+        ? currentGame.catalogOrder
+        : toOrderNumber(req.body.catalogOrder, currentGame.catalogOrder);
     }
 
-    if (req.body.catalogOrder != null) {
-      updatePayload.catalogOrder = toNumber(req.body.catalogOrder, 9999);
+    if (!nextIsTrending) {
+      updatePayload.trendingOrder = ORDER_PLACEHOLDER;
+    } else if (Object.prototype.hasOwnProperty.call(req.body, "trendingOrder")) {
+      updatePayload.trendingOrder = isBlank(req.body.trendingOrder)
+        ? isExplicitOrder(currentGame.trendingOrder)
+          ? currentGame.trendingOrder
+          : await getNextGameOrder("trendingOrder", { isTrending: true })
+        : toOrderNumber(req.body.trendingOrder, currentGame.trendingOrder);
     }
 
     if (req.body.inputs && !Array.isArray(req.body.inputs)) {
@@ -187,10 +287,7 @@ exports.updateGame = async (req, res) => {
     const updated = await Game.findByIdAndUpdate(id, updatePayload, {
       new: true,
     });
-
-    if (!updated) {
-      return res.status(404).json({ message: "Game tidak ditemukan" });
-    }
+    await normalizeGameOrders();
 
     res.json({
       message: "Game berhasil diupdate",

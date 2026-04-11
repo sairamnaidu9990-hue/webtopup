@@ -7,6 +7,8 @@ type Game = {
   name: string;
   code: string;
   logo?: string;
+  bannerUrl?: string;
+  category?: string;
   provider?: string;
   status?: string;
   isTrending?: boolean;
@@ -34,12 +36,16 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sourceFilter, setSourceFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
 
   const statusOptions = Array.from(
     new Set(games.map((game) => game.status || "UNKNOWN"))
   );
   const sourceOptions = Array.from(
     new Set(games.map((game) => game.syncSource || "manual"))
+  );
+  const categoryOptions = Array.from(
+    new Set(games.map((game) => game.category || "Topup Game"))
   );
 
   const normalizedSearch = search.trim().toLowerCase();
@@ -48,11 +54,16 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
       statusFilter === "ALL" || (game.status || "UNKNOWN") === statusFilter;
     const matchesSource =
       sourceFilter === "ALL" || (game.syncSource || "manual") === sourceFilter;
+    const matchesCategory =
+      categoryFilter === "ALL" ||
+      (game.category || "Topup Game") === categoryFilter;
 
     const searchableText = [
       game.name,
       game.code,
       game.provider,
+      game.category,
+      game.bannerUrl ? "banner" : "",
       game.status,
       game.syncSource,
       String(game.catalogOrder ?? ""),
@@ -67,7 +78,7 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
       normalizedSearch.length === 0 ||
       searchableText.includes(normalizedSearch);
 
-    return matchesStatus && matchesSource && matchesSearch;
+    return matchesStatus && matchesSource && matchesCategory && matchesSearch;
   });
 
   return (
@@ -80,7 +91,7 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
           </p>
         </div>
 
-        <div className="grid w-full gap-3 md:grid-cols-3 lg:max-w-3xl">
+        <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-4 lg:max-w-5xl">
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Cari game
@@ -125,6 +136,24 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
               {sourceOptions.map((source) => (
                 <option key={source} value={source}>
                   {source}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Kategori
+            </label>
+            <select
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            >
+              <option value="ALL">Semua kategori</option>
+              {categoryOptions.map((category) => (
+                <option key={category} value={category}>
+                  {category}
                 </option>
               ))}
             </select>
@@ -176,6 +205,9 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
                   <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-600">
                     {game.syncSource || "manual"}
                   </span>
+                  <span className="rounded-full bg-violet-50 px-2 py-1 text-violet-700">
+                    {game.category || "Topup Game"}
+                  </span>
                   {game.isTrending ? (
                     <span className="rounded-full bg-rose-50 px-2 py-1 text-rose-700">
                       Trending #{game.trendingOrder ?? 9999}
@@ -187,6 +219,11 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
                   <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">
                     Input: {game.inputs?.length || 0}
                   </span>
+                  {game.bannerUrl ? (
+                    <span className="rounded-full bg-violet-50 px-2 py-1 text-violet-700">
+                      Banner siap
+                    </span>
+                  ) : null}
                 </div>
               </div>
             </div>

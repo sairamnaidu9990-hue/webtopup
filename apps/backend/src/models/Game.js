@@ -11,6 +11,14 @@ const gameSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  bannerUrl: {
+    type: String,
+    default: "",
+  },
+  category: {
+    type: String,
+    default: "Topup Game",
+  },
   status: {
     type: String,
     default: "ACTIVE",
@@ -41,5 +49,9 @@ const gameSchema = new mongoose.Schema({
     },
   ],
 }, { timestamps: true });
+
+gameSchema.index({ status: 1, catalogOrder: 1, name: 1 });
+gameSchema.index({ status: 1, isTrending: 1, trendingOrder: 1, name: 1 });
+gameSchema.index({ code: 1 });
 
 module.exports = mongoose.model("Game", gameSchema);

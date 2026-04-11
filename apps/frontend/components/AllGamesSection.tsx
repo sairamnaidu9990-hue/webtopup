@@ -1,7 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { StorefrontGame } from "@/lib/siteData";
+
+const CATEGORY_OPTIONS = [
+  "Semua",
+  "Topup Game",
+  "Topup Pulsa",
+  "Voucher",
+  "Live Streaming",
+] as const;
 
 function getColumnCount(width: number) {
   if (width >= 1024) {
@@ -25,7 +34,10 @@ function AllGamesCard({ game }: { game: StorefrontGame }) {
     .toUpperCase();
 
   return (
-    <article className="overflow-hidden rounded-[18px] border border-transparent bg-[#1a1c23] transition duration-300 hover:-translate-y-1 hover:border-[#d33b3b] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.22),0_16px_34px_rgba(0,0,0,0.22)] sm:rounded-[20px]">
+    <Link
+      href={`/games/${game.code.toLowerCase()}`}
+      className="block overflow-hidden rounded-[18px] border border-transparent bg-[#1a1c23] transition duration-300 hover:-translate-y-1 hover:border-[#d33b3b] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.22),0_16px_34px_rgba(0,0,0,0.22)] sm:rounded-[20px]"
+    >
       <div className="relative overflow-hidden rounded-[18px] bg-[#10131a] sm:rounded-[20px]">
         {game.logo ? (
           <img
@@ -50,7 +62,7 @@ function AllGamesCard({ game }: { game: StorefrontGame }) {
           </p>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 
@@ -61,6 +73,7 @@ export default function AllGamesSection({
 }) {
   const [chunkSize, setChunkSize] = useState(6);
   const [visibleCount, setVisibleCount] = useState(6);
+  const [activeCategory, setActiveCategory] = useState("Semua");
 
   useEffect(() => {
     const updateGridSize = () => {
@@ -78,31 +91,71 @@ export default function AllGamesSection({
     return () => window.removeEventListener("resize", updateGridSize);
   }, []);
 
-  const visibleGames = games.slice(0, visibleCount);
-  const hasMore = visibleCount < games.length;
+  const filteredGames =
+    activeCategory === "Semua"
+      ? games
+      : games.filter(
+          (game) => (game.category || "Topup Game") === activeCategory
+        );
+  const visibleGames = filteredGames.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredGames.length;
 
   return (
     <div className="mt-6">
-      <div className="grid grid-cols-3 gap-2.5 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
-        {visibleGames.map((game) => (
-          <AllGamesCard key={game._id} game={game} />
-        ))}
+      <div className="mb-5 flex flex-wrap gap-2">
+        {CATEGORY_OPTIONS.map((category) => {
+          const isActive = category === activeCategory;
+
+          return (
+            <button
+              key={category}
+              type="button"
+              onClick={() => {
+                setActiveCategory(category);
+                setVisibleCount(chunkSize);
+              }}
+              className={`rounded-full border px-3.5 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${
+                isActive
+                  ? "border-[#d33b3b] bg-[#27161a] text-white"
+                  : "border-white/10 bg-[#171a21] text-white/72 hover:border-white/18 hover:text-white"
+              }`}
+            >
+              {category}
+            </button>
+          );
+        })}
       </div>
 
-      {hasMore ? (
-        <div className="flex justify-center pt-6 sm:pt-7">
-          <button
-            type="button"
-            onClick={() =>
-              setVisibleCount((current) =>
-                Math.min(current + chunkSize, games.length)
-              )
-            }
-            className="relative z-10 inline-flex cursor-pointer items-center justify-center rounded-full border border-white/12 bg-[#171a21] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-[#d33b3b] hover:bg-[#1d2028] hover:text-white"
-          >
-            Tampilkan Lainnya...
-          </button>
+      {filteredGames.length === 0 ? (
+        <div className="rounded-[24px] border border-dashed border-white/10 bg-[#171922] px-6 py-10 text-center text-sm text-white/45 sm:rounded-[28px]">
+          Belum ada game pada kategori {activeCategory}.
         </div>
+      ) : null}
+
+      {filteredGames.length > 0 ? (
+        <>
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
+            {visibleGames.map((game) => (
+              <AllGamesCard key={game._id} game={game} />
+            ))}
+          </div>
+
+          {hasMore ? (
+            <div className="flex justify-center pt-6 sm:pt-7">
+              <button
+                type="button"
+                onClick={() =>
+                  setVisibleCount((current) =>
+                    Math.min(current + chunkSize, filteredGames.length)
+                  )
+                }
+                className="relative z-10 inline-flex cursor-pointer items-center justify-center rounded-full border border-white/12 bg-[#171a21] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-[#d33b3b] hover:bg-[#1d2028] hover:text-white"
+              >
+                Tampilkan Lainnya...
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

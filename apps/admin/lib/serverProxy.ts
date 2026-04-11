@@ -32,24 +32,34 @@ export async function forwardAdminRequest(
     );
   }
 
-  const response = await fetch(`${BACKEND_URL}${options.endpoint}`, {
-    method: options.method || "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
+  try {
+    const response = await fetch(`${BACKEND_URL}${options.endpoint}`, {
+      method: options.method || "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(options.body !== undefined
+          ? {
+              "Content-Type": "application/json",
+            }
+          : {}),
+      },
       ...(options.body !== undefined
         ? {
-            "Content-Type": "application/json",
+            body: JSON.stringify(options.body),
           }
         : {}),
-    },
-    ...(options.body !== undefined
-      ? {
-          body: JSON.stringify(options.body),
-        }
-      : {}),
-    cache: "no-store",
-  });
+      cache: "no-store",
+    });
 
-  const data = await parseBackendJson(response);
-  return NextResponse.json(data, { status: response.status });
+    const data = await parseBackendJson(response);
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        message: "Backend tidak dapat dihubungi",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 502 }
+    );
+  }
 }

@@ -42,11 +42,48 @@ export type StorefrontGame = {
   name: string;
   code: string;
   logo?: string;
+  bannerUrl?: string;
+  category?: string;
   provider?: string;
   syncSource?: string;
   isTrending?: boolean;
   trendingOrder?: number;
   catalogOrder?: number;
+};
+
+export type StorefrontGameInputOption = {
+  value: string;
+  title: string;
+};
+
+export type StorefrontGameInput = {
+  name: string;
+  type: string;
+  title: string;
+  options: StorefrontGameInputOption[];
+};
+
+export type StorefrontVariant = {
+  _id: string;
+  name: string;
+  providerCode: string;
+  productCode: string;
+  basePrice: number;
+  markup: number;
+  price: number;
+  currency: string;
+  duration: number;
+  region: string;
+  logo?: string;
+  status?: string;
+  syncSource?: string;
+};
+
+export type StorefrontGameDetail = {
+  game: StorefrontGame & {
+    inputs: StorefrontGameInput[];
+  };
+  variants: StorefrontVariant[];
 };
 
 const defaultSiteSetting: PublicSiteSetting = {
@@ -66,6 +103,60 @@ const defaultSiteSetting: PublicSiteSetting = {
   footerSocialLinks: [],
   footerLinkColumns: [],
 };
+
+function normalizeStorefrontGame(
+  game?: Partial<StorefrontGame> | null
+): StorefrontGame {
+  return {
+    _id: String(game?._id || ""),
+    name: String(game?.name || "").trim(),
+    code: String(game?.code || "").trim().toUpperCase(),
+    logo: String(game?.logo || "").trim(),
+    bannerUrl: String(game?.bannerUrl || "").trim(),
+    category: String(game?.category || "Topup Game").trim(),
+    provider: String(game?.provider || "").trim(),
+    syncSource: String(game?.syncSource || "").trim(),
+    isTrending: Boolean(game?.isTrending),
+    trendingOrder: Number(game?.trendingOrder || 0),
+    catalogOrder: Number(game?.catalogOrder || 0),
+  };
+}
+
+function normalizeStorefrontGameInput(
+  input?: Partial<StorefrontGameInput> | null
+): StorefrontGameInput {
+  return {
+    name: String(input?.name || "").trim(),
+    type: String(input?.type || "").trim(),
+    title: String(input?.title || "").trim(),
+    options: Array.isArray(input?.options)
+      ? input.options.map((option) => ({
+          value: String(option?.value || "").trim(),
+          title: String(option?.title || "").trim(),
+        }))
+      : [],
+  };
+}
+
+function normalizeStorefrontVariant(
+  variant?: Partial<StorefrontVariant> | null
+): StorefrontVariant {
+  return {
+    _id: String(variant?._id || ""),
+    name: String(variant?.name || "").trim(),
+    providerCode: String(variant?.providerCode || "").trim(),
+    productCode: String(variant?.productCode || "").trim(),
+    basePrice: Number(variant?.basePrice || 0),
+    markup: Number(variant?.markup || 0),
+    price: Number(variant?.price || 0),
+    currency: String(variant?.currency || "").trim(),
+    duration: Number(variant?.duration || 0),
+    region: String(variant?.region || "").trim(),
+    logo: String(variant?.logo || "").trim(),
+    status: String(variant?.status || "").trim(),
+    syncSource: String(variant?.syncSource || "").trim(),
+  };
+}
 
 function syncBannerLength(
   banners: SiteBanner[],
@@ -166,15 +257,67 @@ export const getStorefrontGames = cache(
 
       return {
         trendingGames: Array.isArray(payload.trendingGames)
-          ? payload.trendingGames
+          ? payload.trendingGames.map((game: StorefrontGame) =>
+              normalizeStorefrontGame(game)
+            )
           : [],
-        allGames: Array.isArray(payload.allGames) ? payload.allGames : [],
+        allGames: Array.isArray(payload.allGames)
+          ? payload.allGames.map((game: StorefrontGame) =>
+              normalizeStorefrontGame(game)
+            )
+          : [],
       };
     } catch {
       return {
         trendingGames: [],
         allGames: [],
       };
+    }
+  }
+);
+
+export const getStorefrontGameDetail = cache(
+  async (code: string): Promise<StorefrontGameDetail | null> => {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+
+    if (!normalizedCode) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/games/storefront/${encodeURIComponent(normalizedCode)}`,
+        {
+          next: {
+            revalidate: 60,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch storefront game detail");
+      }
+
+      const payload = await response.json();
+
+      return {
+        game: {
+          ...normalizeStorefrontGame(payload.game),
+          inputs: Array.isArray(payload.game?.inputs)
+            ? payload.game.inputs.map(
+                (input: StorefrontGameInput) =>
+                  normalizeStorefrontGameInput(input)
+              )
+            : [],
+        },
+        variants: Array.isArray(payload.variants)
+          ? payload.variants.map((variant: StorefrontVariant) =>
+              normalizeStorefrontVariant(variant)
+            )
+          : [],
+      };
+    } catch {
+      return null;
     }
   }
 );
