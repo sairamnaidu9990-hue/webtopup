@@ -5,6 +5,13 @@ const MAX_BANNER_COUNT = 10;
 const DEFAULT_BANNER_SLIDE_SECONDS = 5;
 const MIN_BANNER_SLIDE_SECONDS = 1;
 const MAX_BANNER_SLIDE_SECONDS = 30;
+const DEFAULT_GAME_CATEGORIES = [
+  "Topup Game",
+  "Topup Pulsa",
+  "Voucher",
+  "Live Streaming",
+];
+const MAX_GAME_CATEGORIES = 12;
 const MAX_FOOTER_SOCIAL_LINKS = 12;
 const MAX_FOOTER_COLUMNS = 6;
 const MAX_FOOTER_COLUMN_LINKS = 10;
@@ -17,6 +24,7 @@ const defaultSiteSetting = {
   siteTitle: "WebTopup - Top Up Game Realtime",
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
+  gameCategories: DEFAULT_GAME_CATEGORIES,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_BANNER_SLIDE_SECONDS,
   banners: [
@@ -94,6 +102,29 @@ function normalizeBannerItem(item) {
     title: String(item?.title || "").trim(),
     imageUrl: String(item?.imageUrl || "").trim(),
   };
+}
+
+function normalizeGameCategories(items, fallback = DEFAULT_GAME_CATEGORIES) {
+  const source = Array.isArray(items) ? items : fallback;
+  const deduped = [];
+
+  for (const item of source) {
+    const value = String(item || "").trim();
+
+    if (!value) {
+      continue;
+    }
+
+    if (!deduped.some((entry) => entry.toLowerCase() === value.toLowerCase())) {
+      deduped.push(value);
+    }
+
+    if (deduped.length >= MAX_GAME_CATEGORIES) {
+      break;
+    }
+  }
+
+  return deduped.length > 0 ? deduped : [...DEFAULT_GAME_CATEGORIES];
 }
 
 function normalizeFooterLink(item) {
@@ -180,6 +211,10 @@ function serializeSiteSetting(siteSetting) {
     siteTitle: siteSetting.siteTitle || defaultSiteSetting.siteTitle,
     siteDescription:
       siteSetting.siteDescription || defaultSiteSetting.siteDescription,
+    gameCategories: normalizeGameCategories(
+      siteSetting.gameCategories,
+      defaultSiteSetting.gameCategories
+    ),
     bannerCount,
     bannerAutoSlideSeconds: normalizeBannerAutoSlideSeconds(
       siteSetting.bannerAutoSlideSeconds ??
@@ -262,6 +297,12 @@ exports.updateSiteSetting = async (req, res) => {
 
     if (req.body.siteDescription != null) {
       siteSetting.siteDescription = String(req.body.siteDescription).trim();
+    }
+
+    if (Array.isArray(req.body.gameCategories)) {
+      siteSetting.gameCategories = normalizeGameCategories(
+        req.body.gameCategories
+      );
     }
 
     if (req.body.bannerCount != null) {

@@ -4,14 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { StorefrontGame } from "@/lib/siteData";
 
-const CATEGORY_OPTIONS = [
-  "Semua",
-  "Topup Game",
-  "Topup Pulsa",
-  "Voucher",
-  "Live Streaming",
-] as const;
-
 function getColumnCount(width: number) {
   if (width >= 1024) {
     return 6;
@@ -68,12 +60,14 @@ function AllGamesCard({ game }: { game: StorefrontGame }) {
 
 export default function AllGamesSection({
   games,
+  categories,
 }: {
   games: StorefrontGame[];
+  categories: string[];
 }) {
   const [chunkSize, setChunkSize] = useState(6);
   const [visibleCount, setVisibleCount] = useState(6);
-  const [activeCategory, setActiveCategory] = useState("Semua");
+  const [activeCategory, setActiveCategory] = useState(categories[0] || "Topup Game");
 
   useEffect(() => {
     const updateGridSize = () => {
@@ -91,19 +85,27 @@ export default function AllGamesSection({
     return () => window.removeEventListener("resize", updateGridSize);
   }, []);
 
+  useEffect(() => {
+    if (categories.length === 0) {
+      return;
+    }
+
+    setActiveCategory((current) =>
+      categories.includes(current) ? current : categories[0]
+    );
+  }, [categories]);
+
   const filteredGames =
-    activeCategory === "Semua"
-      ? games
-      : games.filter(
-          (game) => (game.category || "Topup Game") === activeCategory
-        );
+    games.filter(
+      (game) => (game.category || "Topup Game") === activeCategory
+    );
   const visibleGames = filteredGames.slice(0, visibleCount);
   const hasMore = visibleCount < filteredGames.length;
 
   return (
     <div className="mt-6">
       <div className="mb-5 flex flex-wrap gap-2">
-        {CATEGORY_OPTIONS.map((category) => {
+        {categories.map((category) => {
           const isActive = category === activeCategory;
 
           return (

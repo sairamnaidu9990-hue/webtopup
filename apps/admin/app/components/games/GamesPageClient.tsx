@@ -33,6 +33,12 @@ type Game = {
 };
 
 const API = process.env.NEXT_PUBLIC_API_URL;
+const DEFAULT_CATEGORY_OPTIONS = [
+  "Topup Game",
+  "Topup Pulsa",
+  "Voucher",
+  "Live Streaming",
+];
 
 type Props = {
   syncSource?: "bangjeff" | "manual";
@@ -58,6 +64,9 @@ export default function GamesPageClient({
   const [logo, setLogo] = useState("");
   const [bannerUrl, setBannerUrl] = useState("");
   const [category, setCategory] = useState("Topup Game");
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(
+    DEFAULT_CATEGORY_OPTIONS
+  );
   const [provider, setProvider] = useState("");
   const [status, setStatus] = useState("ACTIVE");
   const [isTrending, setIsTrending] = useState(false);
@@ -77,7 +86,7 @@ export default function GamesPageClient({
     setCode("");
     setLogo("");
     setBannerUrl("");
-    setCategory("Topup Game");
+    setCategory(categoryOptions[0] || "Topup Game");
     setProvider("");
     setStatus("ACTIVE");
     setIsTrending(false);
@@ -100,6 +109,31 @@ export default function GamesPageClient({
     }
   };
 
+  const fetchCategoryOptions = async () => {
+    try {
+      const response = await fetch("/api/site-settings", {
+        cache: "no-store",
+      });
+      const payload = await parseJsonSafely<{
+        siteSetting?: { gameCategories?: string[] };
+      }>(response);
+      const nextOptions = Array.isArray(payload?.siteSetting?.gameCategories)
+        ? payload.siteSetting.gameCategories
+            .map((item) => String(item || "").trim())
+            .filter(Boolean)
+        : [];
+
+      if (nextOptions.length > 0) {
+        setCategoryOptions(nextOptions);
+        setCategory((current) =>
+          nextOptions.includes(current) ? current : nextOptions[0]
+        );
+      }
+    } catch (error) {
+      console.error("Category fetch error:", error);
+    }
+  };
+
   useEffect(() => {
     const cachedGames = readSessionCache<Game[]>(gamesCacheKey);
 
@@ -116,6 +150,10 @@ export default function GamesPageClient({
 
     fetchGames();
   }, [gamesCacheKey, gamesQuery]);
+
+  useEffect(() => {
+    fetchCategoryOptions();
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Yakin ingin menghapus game ini?")) return;
@@ -214,6 +252,7 @@ export default function GamesPageClient({
           logo={logo}
           bannerUrl={bannerUrl}
           category={category}
+          categoryOptions={categoryOptions}
           provider={provider}
           status={status}
           isTrending={isTrending}

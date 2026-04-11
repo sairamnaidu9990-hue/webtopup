@@ -10,6 +10,7 @@ const {
 } = require("../utils/gameOrder");
 const {
   DEFAULT_GAME_CATEGORY,
+  getConfiguredGameCategories,
   normalizeGameCategory,
   normalizeGameCategories,
 } = require("../utils/gameCategory");
@@ -177,6 +178,7 @@ exports.createGame = async (req, res) => {
 
     const normalizedCode = normalizeCode(code);
     const existing = await Game.findOne({ code: normalizedCode });
+    const configuredCategories = await getConfiguredGameCategories();
 
     if (existing) {
       return res.status(409).json({ message: "Code game sudah digunakan" });
@@ -197,7 +199,11 @@ exports.createGame = async (req, res) => {
       code: normalizedCode,
       logo,
       bannerUrl,
-      category: normalizeGameCategory(category),
+      category: normalizeGameCategory(
+        category,
+        configuredCategories,
+        configuredCategories[0] || DEFAULT_GAME_CATEGORY
+      ),
       provider,
       status: String(status || "ACTIVE").toUpperCase(),
       isTrending: isTrendingValue,
@@ -225,6 +231,7 @@ exports.updateGame = async (req, res) => {
     const { id } = req.params;
     const updatePayload = { ...req.body };
     const currentGame = await Game.findById(id);
+    const configuredCategories = await getConfiguredGameCategories();
 
     if (!currentGame) {
       return res.status(404).json({ message: "Game tidak ditemukan" });
@@ -251,7 +258,8 @@ exports.updateGame = async (req, res) => {
     if (Object.prototype.hasOwnProperty.call(req.body, "category")) {
       updatePayload.category = normalizeGameCategory(
         req.body.category,
-        currentGame.category || DEFAULT_GAME_CATEGORY
+        configuredCategories,
+        currentGame.category || configuredCategories[0] || DEFAULT_GAME_CATEGORY
       );
     }
 

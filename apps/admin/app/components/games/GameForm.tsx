@@ -1,12 +1,5 @@
 "use client";
 
-const GAME_CATEGORY_OPTIONS = [
-  "Topup Game",
-  "Topup Pulsa",
-  "Voucher",
-  "Live Streaming",
-] as const;
-
 type Props = {
   isOpen: boolean;
   allowCreate?: boolean;
@@ -15,6 +8,7 @@ type Props = {
   logo: string;
   bannerUrl: string;
   category: string;
+  categoryOptions: string[];
   provider: string;
   status: string;
   isTrending: boolean;
@@ -48,6 +42,7 @@ export default function GameForm({
   logo,
   bannerUrl,
   category,
+  categoryOptions,
   provider,
   status,
   isTrending,
@@ -126,7 +121,7 @@ export default function GameForm({
             onChange={(e) => setCategory(e.target.value)}
             className="w-full rounded-xl border px-4 py-2"
           >
-            {GAME_CATEGORY_OPTIONS.map((option) => (
+            {categoryOptions.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>

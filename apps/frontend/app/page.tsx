@@ -98,21 +98,15 @@ export default async function HomePage() {
         </section>
 
         <section id="all-games" className="scroll-mt-20 pt-8 sm:scroll-mt-24 sm:pt-10 lg:pt-12">
-          <div className="space-y-1.5">
-            <p className="text-lg font-semibold uppercase tracking-[0.14em] text-white">
-              All Games
-            </p>
-            <p className="text-sm leading-6 text-white/88">
-                Pilih Game Favorite kamu.
-              </p>
-          </div>
-
           {storefront.allGames.length === 0 ? (
             <div className="mt-6 rounded-[24px] border border-dashed border-white/10 bg-[#171922] px-6 py-10 text-center text-sm text-white/45 sm:rounded-[28px]">
               Belum ada game aktif yang tersedia untuk frontend user.
             </div>
           ) : (
-            <AllGamesSection games={storefront.allGames} />
+            <AllGamesSection
+              games={storefront.allGames}
+              categories={siteSetting.gameCategories}
+            />
           )}
         </section>
       </div>

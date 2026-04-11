@@ -13,6 +13,12 @@ import type {
 const DEFAULT_BANNER_COUNT = 3;
 const MAX_BANNER_COUNT = 10;
 const DEFAULT_AUTO_SLIDE_SECONDS = 5;
+const DEFAULT_GAME_CATEGORIES = [
+  "Topup Game",
+  "Topup Pulsa",
+  "Voucher",
+  "Live Streaming",
+];
 const DEFAULT_FOOTER_SOCIAL_LINKS: SiteFooterLink[] = [
   { label: "Instagram", url: "" },
   { label: "Telegram", url: "" },
@@ -50,6 +56,7 @@ const defaultForm: SiteSetting = {
   siteTitle: "WebTopup - Top Up Game Realtime",
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
+  gameCategories: DEFAULT_GAME_CATEGORIES,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_AUTO_SLIDE_SECONDS,
   banners: Array.from({ length: DEFAULT_BANNER_COUNT }, () => ({
@@ -121,6 +128,17 @@ function normalizeSiteSetting(
   return {
     ...defaultForm,
     ...value,
+    gameCategories: (() => {
+      const nextCategories = Array.isArray(value?.gameCategories)
+        ? value.gameCategories
+            .map((item) => String(item || "").trim())
+            .filter(Boolean)
+        : [];
+
+      return nextCategories.length > 0
+        ? nextCategories
+        : defaultForm.gameCategories;
+    })(),
     bannerCount,
     bannerAutoSlideSeconds: clampNumber(
       Number(
@@ -231,6 +249,7 @@ export default function WebsiteSettingsPage() {
           siteDomain: form.siteDomain,
           siteTitle: form.siteTitle,
           siteDescription: form.siteDescription,
+          gameCategories: form.gameCategories,
           bannerCount: form.bannerCount,
           bannerAutoSlideSeconds: form.bannerAutoSlideSeconds,
           banners: form.banners,
@@ -513,6 +532,72 @@ export default function WebsiteSettingsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </SettingsSubsection>
+
+          <SettingsSubsection
+            title="Category"
+            description="Kelola daftar kategori katalog yang dipakai untuk game di admin dan filter All Games di storefront user."
+          >
+            <div className="space-y-3 lg:col-span-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Daftar Kategori Game
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((current) => ({
+                      ...current,
+                      gameCategories: [...current.gameCategories, ""],
+                    }))
+                  }
+                  className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-white"
+                >
+                  Tambah Category
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {form.gameCategories.map((category, index) => (
+                  <div
+                    key={`game-category-${index}`}
+                    className="flex flex-col gap-3 sm:flex-row"
+                  >
+                    <input
+                      value={category}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          gameCategories: current.gameCategories.map((item, itemIndex) =>
+                            itemIndex === index ? event.target.value : item
+                          ),
+                        }))
+                      }
+                      placeholder={`Category ${index + 1}`}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          gameCategories:
+                            current.gameCategories.length <= 1
+                              ? current.gameCategories
+                              : current.gameCategories.filter(
+                                  (_, itemIndex) => itemIndex !== index
+                                ),
+                        }))
+                      }
+                      className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={form.gameCategories.length <= 1}
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </SettingsSubsection>
 

@@ -11,6 +11,7 @@ const {
 } = require("../utils/gameOrder");
 const {
   DEFAULT_GAME_CATEGORY,
+  getConfiguredGameCategories,
   normalizeGameCategory,
   normalizeGameCategories,
 } = require("../utils/gameCategory");
@@ -59,6 +60,7 @@ async function syncGamesData(region) {
   }
 
   const seenCodes = [];
+  const configuredCategories = await getConfiguredGameCategories();
   let nextCatalogOrder = await getNextGameOrder("catalogOrder");
   const summary = {
     totalRemote: remoteGames.length,
@@ -87,7 +89,8 @@ async function syncGamesData(region) {
       existing.bannerUrl = existing.bannerUrl || "";
       existing.category = normalizeGameCategory(
         existing.category,
-        DEFAULT_GAME_CATEGORY
+        configuredCategories,
+        configuredCategories[0] || DEFAULT_GAME_CATEGORY
       );
       if (!isExplicitOrder(existing.catalogOrder)) {
         existing.catalogOrder = nextCatalogOrder;
@@ -108,7 +111,7 @@ async function syncGamesData(region) {
       provider: "",
       logo: "",
       bannerUrl: "",
-      category: DEFAULT_GAME_CATEGORY,
+      category: configuredCategories[0] || DEFAULT_GAME_CATEGORY,
       catalogOrder: nextCatalogOrder,
       trendingOrder: ORDER_PLACEHOLDER,
       inputs: [],
@@ -158,6 +161,7 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
   }
 
   const uniqueProductCodes = [...new Set(productCodes.filter(Boolean))];
+  const configuredCategories = await getConfiguredGameCategories();
   let nextCatalogOrder = await getNextGameOrder("catalogOrder");
   const summary = {
     totalRequested: uniqueProductCodes.length,
@@ -196,7 +200,8 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
       game.bannerUrl = game.bannerUrl || "";
       game.category = normalizeGameCategory(
         game.category,
-        DEFAULT_GAME_CATEGORY
+        configuredCategories,
+        configuredCategories[0] || DEFAULT_GAME_CATEGORY
       );
       if (!isExplicitOrder(game.catalogOrder)) {
         game.catalogOrder = nextCatalogOrder;

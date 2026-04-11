@@ -20,6 +20,7 @@ export type SiteSetting = {
   siteDomain: string;
   siteTitle: string;
   siteDescription: string;
+  gameCategories: string[];
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   banners: SiteBanner[];

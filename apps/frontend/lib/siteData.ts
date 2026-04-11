@@ -27,6 +27,7 @@ export type PublicSiteSetting = {
   siteDomain: string;
   siteTitle: string;
   siteDescription: string;
+  gameCategories: string[];
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   banners: SiteBanner[];
@@ -94,6 +95,7 @@ const defaultSiteSetting: PublicSiteSetting = {
   siteTitle: "WebTopup - Top Up Game Realtime",
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
+  gameCategories: ["Topup Game", "Topup Pulsa", "Voucher", "Live Streaming"],
   bannerCount: 3,
   bannerAutoSlideSeconds: 5,
   banners: [],
@@ -179,6 +181,18 @@ function normalizeSiteSetting(
   return {
     ...defaultSiteSetting,
     ...siteSetting,
+    gameCategories: (() => {
+      const nextCategories =
+        Array.isArray(siteSetting?.gameCategories)
+          ? siteSetting.gameCategories
+              .map((item) => String(item || "").trim())
+              .filter(Boolean)
+          : [];
+
+      return nextCategories.length > 0
+        ? nextCategories
+        : defaultSiteSetting.gameCategories;
+    })(),
     bannerCount,
     bannerAutoSlideSeconds: Math.min(
       Math.max(
