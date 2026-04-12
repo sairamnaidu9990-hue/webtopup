@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { PublicSiteSetting } from "@/lib/siteData";
 
@@ -58,12 +59,15 @@ export default function SiteBannerCarousel({
                 key={`${banner.imageUrl}-${index}`}
                 className="relative aspect-[16/8.2] w-full shrink-0 sm:aspect-[16/7.8] lg:h-[490px] lg:aspect-auto"
               >
-                <img
+                <Image
                   src={banner.imageUrl}
                   alt={
                     banner.title || `${siteSetting.siteName} banner ${index + 1}`
                   }
-                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  fill
+                  priority={index === 0}
+                  sizes="(max-width: 640px) calc(100vw - 1.25rem), (max-width: 1024px) calc(100vw - 3rem), 1260px"
+                  className="object-cover object-center"
                 />
               </div>
             ))}

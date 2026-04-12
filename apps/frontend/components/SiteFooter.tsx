@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { PublicSiteSetting } from "@/lib/siteData";
 
 function getInitials(value: string) {
@@ -57,9 +58,12 @@ export default function SiteFooter({
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               {siteSetting.siteLogoUrl ? (
-                <img
+                <Image
                   src={siteSetting.siteLogoUrl}
                   alt={siteSetting.siteName}
+                  width={56}
+                  height={56}
+                  sizes="56px"
                   className="h-14 w-14 rounded-2xl object-cover ring-1 ring-white/10"
                 />
               ) : (

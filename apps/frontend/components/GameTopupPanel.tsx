@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import type {
   StorefrontGameDetail,
@@ -58,7 +59,7 @@ function renderInputControl(
   onChange: (nextValue: string) => void
 ) {
   const commonClassName =
-    "h-11 w-full rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-[13px] text-white outline-none transition placeholder:text-white/28 focus:border-[#ff7a1a] focus:ring-2 focus:ring-[#ff7a1a]/18 sm:h-[42px]";
+    "h-11 w-full rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-base text-white outline-none transition placeholder:text-white/28 focus:border-[#ff7a1a] focus:ring-2 focus:ring-[#ff7a1a]/18 sm:h-[42px] sm:text-[13px]";
 
   if (gameInput.type === "select") {
     return (
@@ -98,7 +99,7 @@ function renderInputControl(
       maxLength={gameInput.maxLength > 0 ? gameInput.maxLength : undefined}
       pattern={gameInput.regexValidation || undefined}
       inputMode={type === "number" ? "numeric" : undefined}
-      className={commonClassName}
+      className={`${commonClassName} ${type === "number" ? "topup-number-input" : ""}`}
     />
   );
 }
@@ -135,6 +136,9 @@ export default function GameTopupPanel({
   variants,
 }: GameTopupPanelProps) {
   const resolvedInputs = getBangjeffInputs(game);
+  const isVoucherCategory =
+    String(game.category || "").trim().toLowerCase() === "voucher";
+  const showAccountStep = !isVoucherCategory;
   const [accountValues, setAccountValues] = useState<Record<string, string>>(
     () => createInitialInputValues(resolvedInputs)
   );
@@ -151,58 +155,60 @@ export default function GameTopupPanel({
     <div className="site-shell pt-8 sm:pt-10">
       <div className="xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] xl:items-start xl:gap-7">
         <div className="space-y-6">
-          <StepPanel number={1} title="Masukkan Data Akun">
-            {resolvedInputs.length > 0 ? (
-              <div
-                className={`grid gap-4 ${
-                  resolvedInputs.length > 1 ? "md:grid-cols-2" : ""
-                }`}
-              >
-                {resolvedInputs.map((gameInput) => {
-                  const key = gameInput.name || gameInput.title;
+          {showAccountStep ? (
+            <StepPanel number={1} title="Masukkan Data Akun">
+              {resolvedInputs.length > 0 ? (
+                <div
+                  className={`grid gap-3 ${
+                    resolvedInputs.length > 1 ? "grid-cols-2" : ""
+                  }`}
+                >
+                  {resolvedInputs.map((gameInput) => {
+                    const key = gameInput.name || gameInput.title;
 
-                  return (
-                  <label key={key} className="block">
-                    <span className="mb-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-white/88">
-                      {gameInput.title || gameInput.name}
-                      <span className="text-[11px] text-white/45">ⓘ</span>
-                    </span>
-                      {renderInputControl(
-                        gameInput,
-                        accountValues[key] || "",
-                        (nextValue) =>
-                          setAccountValues((current) => ({
-                            ...current,
-                            [key]: nextValue,
-                          }))
-                      )}
-                    </label>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="rounded-[16px] border border-dashed border-white/10 bg-[#242429] px-4 py-4 text-[13px] leading-6 text-white/58">
-                Input akun untuk game ini belum tersedia di database storefront.
-                Jalankan <span className="font-semibold text-white/82">Sync Details</span>{" "}
-                dari provider BangJeff agar field input asli dari BangJeff masuk ke
-                game ini.
-              </div>
-            )}
-          </StepPanel>
+                    return (
+                    <label key={key} className="block">
+                      <span className="mb-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-white/88">
+                        {gameInput.title || gameInput.name}
+                        <span className="text-[11px] text-white/45">ⓘ</span>
+                      </span>
+                        {renderInputControl(
+                          gameInput,
+                          accountValues[key] || "",
+                          (nextValue) =>
+                            setAccountValues((current) => ({
+                              ...current,
+                              [key]: nextValue,
+                            }))
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-[16px] border border-dashed border-white/10 bg-[#242429] px-4 py-4 text-[13px] leading-6 text-white/58">
+                  Input akun untuk game ini belum tersedia di database storefront.
+                  Jalankan <span className="font-semibold text-white/82">Sync Details</span>{" "}
+                  dari provider BangJeff agar field input asli dari BangJeff masuk ke
+                  game ini.
+                </div>
+              )}
+            </StepPanel>
+          ) : null}
 
-          <StepPanel number={2} title="Pilih Nominal">
+          <StepPanel number={showAccountStep ? 2 : 1} title="Pilih Nominal">
             {variants.length > 0 ? (
-              <div className="grid gap-2.5 sm:grid-cols-2 2xl:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
                 {variants.map((variant) => {
                   const isSelected = selectedVariant?._id === variant._id;
-                  const variantLogo = variant.logo || game.logo || "";
+                  const variantLogo = variant.logo || "";
 
                   return (
                     <button
                       key={variant._id}
                       type="button"
                       onClick={() => setSelectedVariantId(variant._id)}
-                      className={`group relative overflow-hidden rounded-[18px] border text-left transition ${
+                      className={`group relative overflow-hidden rounded-[16px] border text-left transition ${
                         isSelected
                           ? "border-[#ff7a1a] bg-[#34353b] shadow-[0_0_0_1px_rgba(255,122,26,0.18)]"
                           : "border-white/8 bg-[#34353b] hover:border-[#ff7a1a]/60"
@@ -210,34 +216,36 @@ export default function GameTopupPanel({
                     >
                       <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:10px_10px]" />
 
-                      <div className="relative p-3.5 sm:p-4">
-                        <p className="line-clamp-2 min-h-[2.15rem] text-[12px] font-medium leading-[1.35rem] text-white/92 sm:text-[13px]">
+                      <div className="relative p-3 sm:p-3.5">
+                        <p className="line-clamp-2 min-h-[1.8rem] text-[10px] font-medium leading-[1.12rem] text-white/92 sm:min-h-[1.95rem] sm:text-[12px] sm:leading-[1.22rem]">
                           {variant.name}
                         </p>
 
-                        <div className="mt-2.5 flex items-center gap-2.5">
+                        <div className="mt-2 flex items-center gap-2">
                           {variantLogo ? (
-                            <img
+                            <Image
                               src={variantLogo}
                               alt={variant.name}
-                              className="h-8 w-8 shrink-0 rounded-[10px] object-cover object-center sm:h-9 sm:w-9"
+                              width={32}
+                              height={32}
+                              sizes="(max-width: 640px) 28px, 32px"
+                              className="h-7 w-7 shrink-0 rounded-[9px] object-cover object-center sm:h-8 sm:w-8"
                             />
                           ) : (
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-base text-white/84 sm:h-9 sm:w-9 sm:text-lg">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] bg-white/10 text-sm text-white/84 sm:h-8 sm:w-8 sm:text-base">
                               ◆
                             </div>
                           )}
 
                           <div className="min-w-0">
-                            <p className="text-lg font-bold leading-none text-[#ff8d2a] sm:text-[1.75rem]">
+                            <p className="text-[0.95rem] font-bold leading-none text-[#ff8d2a] sm:text-[1.18rem]">
                               {formatCurrency(variant.price, variant.currency)}
                             </p>
                           </div>
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-white/48 sm:text-[11px]">
-                          <span>{variant.region || "ID"}</span>
-                          <span className="rounded-[9px] bg-white px-2.5 py-1 font-semibold text-[#3f3f3f]">
+                        <div className="mt-2.5 flex justify-end">
+                          <span className="rounded-[8px] bg-white px-2 py-1 text-[9px] font-semibold text-[#3f3f3f] sm:text-[10px]">
                             {variant.duration > 0
                               ? `${variant.duration} min`
                               : "Instant"}

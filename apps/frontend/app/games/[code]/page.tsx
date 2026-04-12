@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import GameTopupPanel from "@/components/GameTopupPanel";
@@ -63,10 +64,13 @@ export default async function GameVariantsPage({
       <section className="relative left-1/2 right-1/2 w-screen -translate-x-1/2 overflow-hidden bg-[#171922]">
         <div className="relative min-h-[180px] overflow-hidden bg-[#12141b] sm:min-h-[220px] lg:min-h-[300px]">
           {heroBanner ? (
-            <img
+            <Image
               src={heroBanner}
               alt={game.name}
-              className="absolute inset-0 h-full w-full object-cover object-center"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center"
             />
           ) : (
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(211,59,59,0.24),transparent_36%),linear-gradient(180deg,#1d2129_0%,#12151c_100%)]" />
@@ -84,9 +88,12 @@ export default async function GameVariantsPage({
               <div className="-mt-14 w-[108px] shrink-0 sm:-mt-16 sm:w-[128px] lg:-mt-[88px] lg:w-[154px]">
                 <div className="overflow-hidden rounded-[22px] bg-[#10131a] shadow-[0_18px_36px_rgba(0,0,0,0.3)]">
                   {heroPoster ? (
-                    <img
+                    <Image
                       src={heroPoster}
                       alt={game.name}
+                      width={154}
+                      height={182}
+                      sizes="(max-width: 640px) 108px, (max-width: 1024px) 128px, 154px"
                       className="aspect-[4/4.72] w-full object-cover object-center"
                     />
                   ) : (

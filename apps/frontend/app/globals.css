@@ -42,6 +42,17 @@ img {
   max-width: 100%;
 }
 
+.topup-number-input::-webkit-outer-spin-button,
+.topup-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.topup-number-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 .site-shell {
   width: min(calc(100% - 1.25rem), 1260px);
   margin-inline: auto;

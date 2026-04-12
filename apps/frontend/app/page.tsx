@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getPublicSiteSetting, getStorefrontGames, type StorefrontGame } from "@/lib/siteData";
 import SiteBannerCarousel from "@/components/SiteBannerCarousel";
@@ -19,9 +20,12 @@ function TrendingGameCard({ game }: { game: StorefrontGame }) {
     >
       <div className="flex items-center gap-2.5 sm:gap-3 lg:gap-4">
         {game.logo ? (
-          <img
+          <Image
             src={game.logo}
             alt={game.name}
+            width={72}
+            height={72}
+            sizes="(max-width: 640px) 52px, (max-width: 1024px) 60px, 72px"
             className="h-[52px] w-[52px] rounded-[14px] object-cover ring-1 ring-white/10 sm:h-[60px] sm:w-[60px] sm:rounded-[16px] lg:h-[72px] lg:w-[72px] lg:rounded-[18px]"
           />
         ) : (

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { PublicSiteSetting } from "@/lib/siteData";
@@ -43,9 +44,12 @@ export default function SiteHeader({
       <div className="site-shell flex items-center justify-between py-2.5 sm:py-4">
         <Link href="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           {siteSetting.siteLogoUrl ? (
-            <img
+            <Image
               src={siteSetting.siteLogoUrl}
               alt={siteSetting.siteName}
+              width={44}
+              height={44}
+              sizes="(max-width: 640px) 36px, 44px"
               className="h-9 w-9 rounded-2xl object-cover ring-1 ring-white/10 sm:h-11 sm:w-11"
             />
           ) : (

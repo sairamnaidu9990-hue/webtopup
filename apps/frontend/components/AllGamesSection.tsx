@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { StorefrontGame } from "@/lib/siteData";
@@ -31,17 +32,21 @@ function AllGamesCard({ game }: { game: StorefrontGame }) {
       className="block overflow-hidden rounded-[18px] border border-transparent bg-[#1a1c23] transition duration-300 hover:-translate-y-1 hover:border-[#d33b3b] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.22),0_16px_34px_rgba(0,0,0,0.22)] sm:rounded-[20px]"
     >
       <div className="relative overflow-hidden rounded-[18px] bg-[#10131a] sm:rounded-[20px]">
-        {game.logo ? (
-          <img
-            src={game.logo}
-            alt={game.name}
-            className="aspect-[3/4.35] w-full object-cover object-center"
-          />
-        ) : (
-          <div className="flex aspect-[3/4.35] w-full items-center justify-center bg-white/10 text-lg font-semibold tracking-[0.18em] text-white">
-            {initials || "GM"}
-          </div>
-        )}
+        <div className="relative aspect-[3/4.35] w-full">
+          {game.logo ? (
+            <Image
+              src={game.logo}
+              alt={game.name}
+              fill
+              sizes="(max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+              className="object-cover object-center"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-white/10 text-lg font-semibold tracking-[0.18em] text-white">
+              {initials || "GM"}
+            </div>
+          )}
+        </div>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] bg-[linear-gradient(180deg,rgba(8,10,14,0)_0%,rgba(8,10,14,0.14)_18%,rgba(8,10,14,0.88)_100%)]" />
 
@@ -85,19 +90,14 @@ export default function AllGamesSection({
     return () => window.removeEventListener("resize", updateGridSize);
   }, []);
 
-  useEffect(() => {
-    if (categories.length === 0) {
-      return;
-    }
-
-    setActiveCategory((current) =>
-      categories.includes(current) ? current : categories[0]
-    );
-  }, [categories]);
+  const resolvedActiveCategory =
+    categories.length > 0 && categories.includes(activeCategory)
+      ? activeCategory
+      : (categories[0] || "Topup Game");
 
   const filteredGames =
     games.filter(
-      (game) => (game.category || "Topup Game") === activeCategory
+      (game) => (game.category || "Topup Game") === resolvedActiveCategory
     );
   const visibleGames = filteredGames.slice(0, visibleCount);
   const hasMore = visibleCount < filteredGames.length;
@@ -106,7 +106,7 @@ export default function AllGamesSection({
     <div className="mt-6">
       <div className="mb-5 flex flex-wrap gap-2">
         {categories.map((category) => {
-          const isActive = category === activeCategory;
+          const isActive = category === resolvedActiveCategory;
 
           return (
             <button
