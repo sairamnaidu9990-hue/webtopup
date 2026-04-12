@@ -62,6 +62,10 @@ export type StorefrontGameInput = {
   type: string;
   title: string;
   options: StorefrontGameInputOption[];
+  placeholder: string;
+  minLength: number;
+  maxLength: number;
+  regexValidation: string;
 };
 
 export type StorefrontVariant = {
@@ -137,6 +141,10 @@ function normalizeStorefrontGameInput(
           title: String(option?.title || "").trim(),
         }))
       : [],
+    placeholder: String(input?.placeholder || "").trim(),
+    minLength: Number(input?.minLength || 0),
+    maxLength: Number(input?.maxLength || 0),
+    regexValidation: String(input?.regexValidation || "").trim(),
   };
 }
 

@@ -14,6 +14,7 @@ const {
   normalizeGameCategory,
   normalizeGameCategories,
 } = require("../utils/gameCategory");
+const { normalizeGameInputs } = require("../utils/gameInput");
 
 function normalizeCode(code) {
   return String(code || "")
@@ -209,7 +210,7 @@ exports.createGame = async (req, res) => {
       isTrending: isTrendingValue,
       trendingOrder: trendingOrderValue,
       catalogOrder: catalogOrderValue,
-      inputs: Array.isArray(inputs) ? inputs : [],
+      inputs: normalizeGameInputs(inputs),
       syncSource: "manual",
     });
 
@@ -290,6 +291,10 @@ exports.updateGame = async (req, res) => {
 
     if (req.body.inputs && !Array.isArray(req.body.inputs)) {
       return res.status(400).json({ message: "Inputs harus berupa array" });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "inputs")) {
+      updatePayload.inputs = normalizeGameInputs(req.body.inputs);
     }
 
     const updated = await Game.findByIdAndUpdate(id, updatePayload, {

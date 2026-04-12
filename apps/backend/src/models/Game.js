@@ -1,5 +1,57 @@
 const mongoose = require("mongoose");
 
+const gameInputOptionSchema = new mongoose.Schema(
+  {
+    value: {
+      type: String,
+      default: "",
+    },
+    title: {
+      type: String,
+      default: "",
+    },
+  },
+  { _id: false }
+);
+
+const gameInputSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      default: "",
+    },
+    type: {
+      type: String,
+      default: "text",
+    },
+    title: {
+      type: String,
+      default: "",
+    },
+    options: {
+      type: [gameInputOptionSchema],
+      default: [],
+    },
+    placeholder: {
+      type: String,
+      default: "",
+    },
+    minLength: {
+      type: Number,
+      default: 0,
+    },
+    maxLength: {
+      type: Number,
+      default: 0,
+    },
+    regexValidation: {
+      type: String,
+      default: "",
+    },
+  },
+  { _id: false }
+);
+
 const gameSchema = new mongoose.Schema({
   name: String,
   code: String,
@@ -40,14 +92,10 @@ const gameSchema = new mongoose.Schema({
     enum: ["manual", "bangjeff"],
     default: "manual",
   },
-  inputs: [
-    {
-      name: String,
-      type: String,
-      title: String,
-      options: Array,
-    },
-  ],
+  inputs: {
+    type: [gameInputSchema],
+    default: [],
+  },
 }, { timestamps: true });
 
 gameSchema.index({ status: 1, catalogOrder: 1, name: 1 });

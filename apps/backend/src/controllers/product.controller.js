@@ -15,6 +15,7 @@ const {
   normalizeGameCategory,
   normalizeGameCategories,
 } = require("../utils/gameCategory");
+const { normalizeGameInputs } = require("../utils/gameInput");
 const {
   getBangjeffProducts,
   getBangjeffProductDetail,
@@ -167,14 +168,19 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
     totalRequested: uniqueProductCodes.length,
     created: 0,
     updated: 0,
+    withInputs: 0,
+    withoutInputs: 0,
     failed: 0,
     errors: [],
+    warnings: [],
   };
 
   for (const productCode of uniqueProductCodes) {
     try {
       const detail = await getBangjeffProductDetail(region, productCode);
       let game = await Game.findOne({ code: productCode });
+      const inputs = normalizeGameInputs(detail?.inputs);
+      const isCreate = !game;
 
       if (!game) {
         game = new Game({
@@ -187,14 +193,11 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
           syncSource: "bangjeff",
         });
         nextCatalogOrder += 1;
-        summary.created += 1;
-      } else {
-        summary.updated += 1;
       }
 
       game.name = detail?.name || game.name || productCode;
       game.status = detail?.status || game.status || "INACTIVE";
-      game.inputs = Array.isArray(detail?.inputs) ? detail.inputs : [];
+      game.inputs = inputs;
       game.provider = game.provider || "";
       game.logo = game.logo || "";
       game.bannerUrl = game.bannerUrl || "";
@@ -213,6 +216,22 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
       game.syncSource = "bangjeff";
 
       await game.save();
+
+      if (isCreate) {
+        summary.created += 1;
+      } else {
+        summary.updated += 1;
+      }
+
+      if (inputs.length > 0) {
+        summary.withInputs += 1;
+      } else {
+        summary.withoutInputs += 1;
+        summary.warnings.push({
+          productCode,
+          message: "BangJeff product detail tidak mengembalikan input.",
+        });
+      }
     } catch (error) {
       summary.failed += 1;
       summary.errors.push({
@@ -223,6 +242,7 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
   }
 
   summary.errors = trimSyncErrors(summary.errors);
+  summary.warnings = trimSyncErrors(summary.warnings);
   await normalizeGameOrders();
   await normalizeGameCategories();
   return summary;
@@ -383,6 +403,8 @@ async function syncGameDetails(req, res) {
     const region = getRegion(req);
     const productCode = getRequestedProductCode(req);
     const summary = await syncGameDetailsData(region, productCode);
+    const allFailed =
+      summary.totalRequested > 0 && summary.failed >= summary.totalRequested;
 
     await createSyncLog({
       provider: "bangjeff",
@@ -396,8 +418,10 @@ async function syncGameDetails(req, res) {
       admin: req.admin || null,
     });
 
-    return res.status(200).json({
-      message: "Sync product detail selesai",
+    return res.status(allFailed ? 502 : 200).json({
+      message: allFailed
+        ? "Sync product detail gagal"
+        : "Sync product detail selesai",
       region,
       productCode: productCode || null,
       summary,

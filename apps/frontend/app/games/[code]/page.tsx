@@ -1,26 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import GameTopupPanel from "@/components/GameTopupPanel";
 import {
   getPublicSiteSetting,
   getStorefrontGameDetail,
-  type StorefrontVariant,
 } from "@/lib/siteData";
-
-function formatCurrency(value: number, currency: string) {
-  try {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: currency || "IDR",
-      maximumFractionDigits: 0,
-    }).format(value);
-  } catch {
-    return `${currency || "IDR"} ${value}`;
-  }
-}
-
-function getVariantLogo(variant: StorefrontVariant, fallbackLogo: string) {
-  return variant.logo || fallbackLogo || "";
-}
 
 export async function generateMetadata({
   params,
@@ -139,100 +123,11 @@ export default async function GameVariantsPage({
               </div>
             </div>
 
-            {game.inputs.length > 0 ? (
-              <div className="relative mt-5 rounded-[22px] border border-white/8 bg-[#11141b] px-4 py-4 sm:mt-6 sm:px-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/52">
-                  Input Yang Dibutuhkan
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {game.inputs.map((input) => (
-                    <span
-                      key={`${input.name}-${input.title}`}
-                      className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-white/78"
-                    >
-                      {input.title || input.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
       </section>
 
-      <div className="site-shell pt-8 sm:pt-10">
-        <section>
-          <div className="space-y-1.5">
-            <p className="text-lg font-semibold uppercase tracking-[0.14em] text-white">
-              Variant
-            </p>
-            <p className="text-sm leading-6 text-white/84">
-              Berikut daftar variant aktif untuk {game.name}.
-            </p>
-          </div>
-
-          {variants.length === 0 ? (
-            <div className="mt-6 rounded-[24px] border border-dashed border-white/10 bg-[#171922] px-6 py-10 text-center text-sm text-white/45">
-              Belum ada variant aktif untuk game ini.
-            </div>
-          ) : (
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-              {variants.map((variant) => {
-                const variantLogo = getVariantLogo(variant, game.logo || "");
-
-                return (
-                  <article
-                    key={variant._id}
-                    className="overflow-hidden rounded-[24px] border border-white/8 bg-[#171922] transition hover:border-[#d33b3b] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.18)]"
-                  >
-                    <div className="flex items-start gap-3 p-4 sm:gap-4 sm:p-5">
-                      {variantLogo ? (
-                        <img
-                          src={variantLogo}
-                          alt={variant.name}
-                          className="h-16 w-16 shrink-0 rounded-[18px] object-cover object-center ring-1 ring-white/10 sm:h-[72px] sm:w-[72px]"
-                        />
-                      ) : (
-                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-white/10 text-sm font-semibold tracking-[0.16em] text-white/84 ring-1 ring-white/10 sm:h-[72px] sm:w-[72px]">
-                          {game.name.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
-
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#ff8552]">
-                          {variant.currency || "IDR"}
-                        </p>
-                        <h2 className="mt-2 line-clamp-2 font-[family-name:var(--font-display)] text-lg font-semibold leading-tight text-white">
-                          {variant.name}
-                        </h2>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/72">
-                            {variant.region || "ID"}
-                          </span>
-                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/72">
-                            {variant.duration > 0
-                              ? `${variant.duration} min`
-                              : "Instant"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-white/8 bg-[#14171d] px-4 py-4 sm:px-5">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/42">
-                        Harga
-                      </p>
-                      <p className="mt-2 text-xl font-semibold text-white">
-                        {formatCurrency(variant.price, variant.currency)}
-                      </p>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      </div>
+      <GameTopupPanel game={game} variants={variants} />
     </main>
   );
 }
