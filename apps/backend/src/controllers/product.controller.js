@@ -88,6 +88,9 @@ async function syncGamesData(region) {
       existing.provider = existing.provider || "";
       existing.logo = existing.logo || "";
       existing.bannerUrl = existing.bannerUrl || "";
+      existing.variantCategories = Array.isArray(existing.variantCategories)
+        ? existing.variantCategories
+        : [];
       existing.category = normalizeGameCategory(
         existing.category,
         configuredCategories,
@@ -116,6 +119,7 @@ async function syncGamesData(region) {
       catalogOrder: nextCatalogOrder,
       trendingOrder: ORDER_PLACEHOLDER,
       inputs: [],
+      variantCategories: [],
       syncSource: "bangjeff",
     });
 
@@ -190,6 +194,7 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
           bannerUrl: "",
           catalogOrder: nextCatalogOrder,
           trendingOrder: ORDER_PLACEHOLDER,
+          variantCategories: [],
           syncSource: "bangjeff",
         });
         nextCatalogOrder += 1;
@@ -201,6 +206,9 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
       game.provider = game.provider || "";
       game.logo = game.logo || "";
       game.bannerUrl = game.bannerUrl || "";
+      game.variantCategories = Array.isArray(game.variantCategories)
+        ? game.variantCategories
+        : [];
       game.category = normalizeGameCategory(
         game.category,
         configuredCategories,
@@ -309,6 +317,7 @@ async function syncVariantsData(region, requestedProductCode = "") {
           duration: toNumber(item?.duration),
           region: item?.region || region,
           logo: existing?.logo || "",
+          variantCategoryId: existing?.variantCategoryId || "",
           isActive: item?.status === "ACTIVE",
           status: item?.status || "INACTIVE",
           syncSource: "bangjeff",

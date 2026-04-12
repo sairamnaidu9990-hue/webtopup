@@ -24,6 +24,10 @@ const variantSchema = new mongoose.Schema(
       type: String,
       default: "ID",
     },
+    variantCategoryId: {
+      type: String,
+      default: "",
+    },
 
     logo: String,
 
@@ -43,6 +47,7 @@ const variantSchema = new mongoose.Schema(
 );
 
 variantSchema.index({ game: 1, status: 1, price: 1, name: 1 });
+variantSchema.index({ game: 1, variantCategoryId: 1, status: 1, price: 1 });
 variantSchema.index({ productCode: 1, status: 1 });
 variantSchema.index({ syncSource: 1, status: 1 });
 

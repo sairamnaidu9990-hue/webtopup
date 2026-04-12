@@ -2,6 +2,11 @@ export type VariantGame = {
   _id: string;
   name: string;
   code?: string;
+  variantCategories?: Array<{
+    _id: string;
+    name: string;
+    order: number;
+  }>;
 };
 
 export type Variant = {
@@ -18,5 +23,6 @@ export type Variant = {
   logo?: string;
   status?: string;
   syncSource?: string;
+  variantCategoryId?: string;
   game?: VariantGame;
 };

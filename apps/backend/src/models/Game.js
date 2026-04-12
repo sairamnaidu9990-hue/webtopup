@@ -52,6 +52,20 @@ const gameInputSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const variantCategorySchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      default: "",
+    },
+    order: {
+      type: Number,
+      default: 1,
+    },
+  },
+  { _id: true }
+);
+
 const gameSchema = new mongoose.Schema({
   name: String,
   code: String,
@@ -94,6 +108,10 @@ const gameSchema = new mongoose.Schema({
   },
   inputs: {
     type: [gameInputSchema],
+    default: [],
+  },
+  variantCategories: {
+    type: [variantCategorySchema],
     default: [],
   },
 }, { timestamps: true });

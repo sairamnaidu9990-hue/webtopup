@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Variant } from "@/app/types/Variant";
+import PaginationControls from "@/app/components/ui/PaginationControls";
 
 type Props = {
   games: Array<{
@@ -9,6 +9,16 @@ type Props = {
     name: string;
   }>;
   variants: Variant[];
+  search: string;
+  gameFilter: string;
+  statusFilter: string;
+  totalItems: number;
+  page: number;
+  totalPages: number;
+  onSearchChange: (value: string) => void;
+  onGameFilterChange: (value: string) => void;
+  onStatusFilterChange: (value: string) => void;
+  onPageChange: (page: number) => void;
   onEdit: (variant: Variant) => void;
   onDelete: (id: string) => void;
 };
@@ -16,43 +26,25 @@ type Props = {
 export default function VariantList({
   games,
   variants,
+  search,
+  gameFilter,
+  statusFilter,
+  totalItems,
+  page,
+  totalPages,
+  onSearchChange,
+  onGameFilterChange,
+  onStatusFilterChange,
+  onPageChange,
   onEdit,
   onDelete,
 }: Props) {
-  const [search, setSearch] = useState("");
-  const [gameFilter, setGameFilter] = useState("ALL");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const getVariantCategoryName = (variant: Variant) =>
+    variant.game?.variantCategories?.find(
+      (category) => category._id === variant.variantCategoryId
+    )?.name || "Tanpa kategori";
 
-  const normalizedSearch = search.trim().toLowerCase();
-  const filteredVariants = variants.filter((variant) => {
-    const matchesGame =
-      gameFilter === "ALL" || variant.game?._id === gameFilter;
-    const matchesStatus =
-      statusFilter === "ALL" ||
-      (variant.status || "UNKNOWN") === statusFilter;
-
-    const searchableText = [
-      variant.name,
-      variant.providerCode,
-      variant.game?.name,
-      variant.region,
-      variant.status,
-      variant.currency,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    const matchesSearch =
-      normalizedSearch.length === 0 ||
-      searchableText.includes(normalizedSearch);
-
-    return matchesGame && matchesStatus && matchesSearch;
-  });
-
-  const statusOptions = Array.from(
-    new Set(variants.map((variant) => variant.status || "UNKNOWN"))
-  );
+  const statusOptions = ["ACTIVE", "INACTIVE"];
 
   return (
     <div className="rounded-2xl border bg-white p-5 sm:p-6">
@@ -60,7 +52,7 @@ export default function VariantList({
         <div>
           <h2 className="text-lg font-semibold">Daftar Variant</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Menampilkan {filteredVariants.length} dari {variants.length} variant.
+            Menampilkan {variants.length} dari {totalItems} variant.
           </p>
         </div>
 
@@ -72,7 +64,7 @@ export default function VariantList({
             <input
               type="text"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Cari nama variant, game, kode provider, atau region"
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
             />
@@ -84,7 +76,7 @@ export default function VariantList({
             </label>
             <select
               value={gameFilter}
-              onChange={(event) => setGameFilter(event.target.value)}
+              onChange={(event) => onGameFilterChange(event.target.value)}
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
             >
               <option value="ALL">Semua game</option>
@@ -102,7 +94,7 @@ export default function VariantList({
             </label>
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) => onStatusFilterChange(event.target.value)}
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
             >
               <option value="ALL">Semua status</option>
@@ -117,26 +109,26 @@ export default function VariantList({
       </div>
 
       <div className="space-y-3">
-        {variants.length === 0 ? (
+        {totalItems === 0 ? (
           <p className="text-sm text-gray-500">
             Belum ada data variant yang tersimpan.
           </p>
         ) : null}
 
-        {variants.length > 0 && filteredVariants.length === 0 ? (
+        {totalItems > 0 && variants.length === 0 ? (
           <p className="text-sm text-gray-500">
             Tidak ada variant yang cocok dengan pencarian.
           </p>
         ) : null}
 
-        {filteredVariants.map((variant, index) => (
+        {variants.map((variant, index) => (
           <div
             key={variant._id}
             className="flex flex-col gap-4 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex min-w-0 items-start gap-3">
               <p className="w-6 shrink-0 pt-1 text-sm text-gray-500">
-                {index + 1}.
+                {(page - 1) * 20 + index + 1}.
               </p>
 
               {variant.logo ? (
@@ -166,6 +158,9 @@ export default function VariantList({
                   <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">
                     {variant.region || "ID"} • {variant.duration || 0} min
                   </span>
+                  <span className="rounded-full bg-fuchsia-50 px-2 py-1 text-fuchsia-700">
+                    {getVariantCategoryName(variant)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -187,6 +182,15 @@ export default function VariantList({
             </div>
           </div>
         ))}
+
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          limit={20}
+          itemLabel="variant"
+          onPageChange={onPageChange}
+        />
       </div>
     </div>
   );

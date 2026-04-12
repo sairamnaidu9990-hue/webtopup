@@ -50,6 +50,13 @@ export type StorefrontGame = {
   isTrending?: boolean;
   trendingOrder?: number;
   catalogOrder?: number;
+  variantCategories?: StorefrontVariantCategory[];
+};
+
+export type StorefrontVariantCategory = {
+  _id: string;
+  name: string;
+  order: number;
 };
 
 export type StorefrontGameInputOption = {
@@ -82,6 +89,7 @@ export type StorefrontVariant = {
   logo?: string;
   status?: string;
   syncSource?: string;
+  variantCategoryId?: string;
 };
 
 export type StorefrontGameDetail = {
@@ -125,6 +133,15 @@ function normalizeStorefrontGame(
     isTrending: Boolean(game?.isTrending),
     trendingOrder: Number(game?.trendingOrder || 0),
     catalogOrder: Number(game?.catalogOrder || 0),
+    variantCategories: Array.isArray(game?.variantCategories)
+      ? game.variantCategories
+          .map((category) => ({
+            _id: String(category?._id || "").trim(),
+            name: String(category?.name || "").trim(),
+            order: Number(category?.order || 0),
+          }))
+          .filter((category) => category._id && category.name)
+      : [],
   };
 }
 
@@ -165,6 +182,7 @@ function normalizeStorefrontVariant(
     logo: String(variant?.logo || "").trim(),
     status: String(variant?.status || "").trim(),
     syncSource: String(variant?.syncSource || "").trim(),
+    variantCategoryId: String(variant?.variantCategoryId || "").trim(),
   };
 }
 

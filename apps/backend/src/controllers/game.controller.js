@@ -15,6 +15,10 @@ const {
   normalizeGameCategories,
 } = require("../utils/gameCategory");
 const { normalizeGameInputs } = require("../utils/gameInput");
+const {
+  normalizeVariantCategories,
+  extractVariantCategoryIds,
+} = require("../utils/variantCategory");
 
 function normalizeCode(code) {
   return String(code || "")
@@ -38,12 +42,39 @@ function toBoolean(value, fallback = false) {
   return fallback;
 }
 
+function toPositiveInteger(value, fallback) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return Math.floor(parsed);
+}
+
+function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // GET ALL GAMES
 exports.getGames = async (req, res) => {
   try {
     await normalizeGameOrders();
     await normalizeGameCategories();
     const filter = {};
+    const sort = {
+      catalogOrder: 1,
+      name: 1,
+      createdAt: -1,
+    };
+    const search = String(req.query.search || "").trim();
+    const page = toPositiveInteger(req.query.page, 1);
+    const limit = Math.min(toPositiveInteger(req.query.limit, 20), 100);
+    const usePagination =
+      req.query.page != null ||
+      req.query.limit != null ||
+      req.query.search != null ||
+      req.query.category != null;
 
     if (req.query.status) {
       filter.status = String(req.query.status).trim().toUpperCase();
@@ -57,12 +88,43 @@ exports.getGames = async (req, res) => {
       filter.isTrending = String(req.query.isTrending).trim().toLowerCase() === "true";
     }
 
-    const games = await Game.find(filter).sort({
-      catalogOrder: 1,
-      name: 1,
-      createdAt: -1,
+    if (req.query.category) {
+      filter.category = String(req.query.category).trim();
+    }
+
+    if (search) {
+      const regex = new RegExp(escapeRegex(search), "i");
+      filter.$or = [
+        { name: regex },
+        { code: regex },
+        { provider: regex },
+        { category: regex },
+        { "variantCategories.name": regex },
+      ];
+    }
+
+    if (!usePagination) {
+      const games = await Game.find(filter).sort(sort);
+      return res.json(games);
+    }
+
+    const totalItems = await Game.countDocuments(filter);
+    const totalPages = Math.max(Math.ceil(totalItems / limit), 1);
+    const safePage = Math.min(page, totalPages);
+    const games = await Game.find(filter)
+      .sort(sort)
+      .skip((safePage - 1) * limit)
+      .limit(limit);
+
+    return res.json({
+      items: games,
+      page: safePage,
+      limit,
+      totalItems,
+      totalPages,
+      hasPreviousPage: safePage > 1,
+      hasNextPage: safePage < totalPages,
     });
-    res.json(games);
   } catch (err) {
     res.status(500).json({ message: "Error ambil game" });
   }
@@ -88,13 +150,13 @@ exports.getStorefrontGames = async (req, res) => {
           catalogOrder: 1,
           name: 1,
         })
-        .select("name code logo bannerUrl provider category status syncSource isTrending trendingOrder catalogOrder"),
+        .select("name code logo bannerUrl provider category status syncSource isTrending trendingOrder catalogOrder variantCategories"),
       Game.find(baseFilter)
         .sort({
           catalogOrder: 1,
           name: 1,
         })
-        .select("name code logo bannerUrl provider category status syncSource isTrending trendingOrder catalogOrder"),
+        .select("name code logo bannerUrl provider category status syncSource isTrending trendingOrder catalogOrder variantCategories"),
     ]);
 
     return res.status(200).json({
@@ -123,7 +185,7 @@ exports.getStorefrontGameDetail = async (req, res) => {
       code,
       status: "ACTIVE",
     }).select(
-      "name code logo bannerUrl provider category status syncSource isTrending trendingOrder catalogOrder inputs"
+      "name code logo bannerUrl provider category status syncSource isTrending trendingOrder catalogOrder inputs variantCategories"
     );
 
     if (!game) {
@@ -142,7 +204,7 @@ exports.getStorefrontGameDetail = async (req, res) => {
         name: 1,
       })
       .select(
-        "name providerCode productCode basePrice markup price currency duration region logo status syncSource"
+        "name providerCode productCode basePrice markup price currency duration region logo status syncSource variantCategoryId"
       );
 
     return res.status(200).json({
@@ -171,6 +233,7 @@ exports.createGame = async (req, res) => {
       trendingOrder = 9999,
       catalogOrder = 9999,
       inputs = [],
+      variantCategories = [],
     } = req.body;
 
     if (!name || !code) {
@@ -211,6 +274,7 @@ exports.createGame = async (req, res) => {
       trendingOrder: trendingOrderValue,
       catalogOrder: catalogOrderValue,
       inputs: normalizeGameInputs(inputs),
+      variantCategories: normalizeVariantCategories(variantCategories),
       syncSource: "manual",
     });
 
@@ -297,9 +361,43 @@ exports.updateGame = async (req, res) => {
       updatePayload.inputs = normalizeGameInputs(req.body.inputs);
     }
 
+    const currentVariantCategoryIds = extractVariantCategoryIds(
+      currentGame.variantCategories
+    );
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "variantCategories")) {
+      updatePayload.variantCategories = normalizeVariantCategories(
+        req.body.variantCategories
+      );
+    }
+
     const updated = await Game.findByIdAndUpdate(id, updatePayload, {
       new: true,
     });
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "variantCategories")) {
+      const nextVariantCategoryIds = extractVariantCategoryIds(
+        updated?.variantCategories
+      );
+      const removedVariantCategoryIds = currentVariantCategoryIds.filter(
+        (categoryId) => !nextVariantCategoryIds.includes(categoryId)
+      );
+
+      if (removedVariantCategoryIds.length > 0) {
+        await Variant.updateMany(
+          {
+            game: id,
+            variantCategoryId: { $in: removedVariantCategoryIds },
+          },
+          {
+            $set: {
+              variantCategoryId: "",
+            },
+          }
+        );
+      }
+    }
+
     await normalizeGameOrders();
 
     res.json({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import PaginationControls from "@/app/components/ui/PaginationControls";
 
 type Game = {
   _id: string;
@@ -24,62 +24,47 @@ type Game = {
       title: string;
     }>;
   }>;
+  variantCategories?: Array<{
+    _id?: string;
+    name: string;
+    order: number;
+  }>;
 };
 
 type Props = {
   games: Game[];
+  search: string;
+  statusFilter: string;
+  categoryFilter: string;
+  categoryOptions: string[];
+  totalItems: number;
+  page: number;
+  totalPages: number;
+  onSearchChange: (value: string) => void;
+  onStatusFilterChange: (value: string) => void;
+  onCategoryFilterChange: (value: string) => void;
+  onPageChange: (page: number) => void;
   onEdit: (game: Game) => void;
   onDelete: (id: string) => void;
 };
 
-export default function GameList({ games, onEdit, onDelete }: Props) {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [sourceFilter, setSourceFilter] = useState("ALL");
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
-
-  const statusOptions = Array.from(
-    new Set(games.map((game) => game.status || "UNKNOWN"))
-  );
-  const sourceOptions = Array.from(
-    new Set(games.map((game) => game.syncSource || "manual"))
-  );
-  const categoryOptions = Array.from(
-    new Set(games.map((game) => game.category || "Topup Game"))
-  );
-
-  const normalizedSearch = search.trim().toLowerCase();
-  const filteredGames = games.filter((game) => {
-    const matchesStatus =
-      statusFilter === "ALL" || (game.status || "UNKNOWN") === statusFilter;
-    const matchesSource =
-      sourceFilter === "ALL" || (game.syncSource || "manual") === sourceFilter;
-    const matchesCategory =
-      categoryFilter === "ALL" ||
-      (game.category || "Topup Game") === categoryFilter;
-
-    const searchableText = [
-      game.name,
-      game.code,
-      game.provider,
-      game.category,
-      game.bannerUrl ? "banner" : "",
-      game.status,
-      game.syncSource,
-      String(game.catalogOrder ?? ""),
-      game.isTrending ? "trending" : "",
-      String(game.trendingOrder ?? ""),
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    const matchesSearch =
-      normalizedSearch.length === 0 ||
-      searchableText.includes(normalizedSearch);
-
-    return matchesStatus && matchesSource && matchesCategory && matchesSearch;
-  });
+export default function GameList({
+  games,
+  search,
+  statusFilter,
+  categoryFilter,
+  categoryOptions,
+  totalItems,
+  page,
+  totalPages,
+  onSearchChange,
+  onStatusFilterChange,
+  onCategoryFilterChange,
+  onPageChange,
+  onEdit,
+  onDelete,
+}: Props) {
+  const statusOptions = ["ACTIVE", "INACTIVE"];
 
   return (
     <div className="rounded-2xl border bg-white p-5 sm:p-6">
@@ -87,11 +72,11 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
         <div>
           <h2 className="text-lg font-semibold">Daftar Game</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Menampilkan {filteredGames.length} dari {games.length} game.
+            Menampilkan {games.length} dari {totalItems} game.
           </p>
         </div>
 
-        <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-4 lg:max-w-5xl">
+        <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-3 lg:max-w-4xl">
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Cari game
@@ -99,7 +84,7 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
             <input
               type="text"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Cari nama game, kode, provider, atau status"
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
             />
@@ -111,7 +96,7 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
             </label>
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) => onStatusFilterChange(event.target.value)}
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
             >
               <option value="ALL">Semua status</option>
@@ -125,29 +110,11 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
 
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Sumber Data
-            </label>
-            <select
-              value={sourceFilter}
-              onChange={(event) => setSourceFilter(event.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
-            >
-              <option value="ALL">Semua sumber</option>
-              {sourceOptions.map((source) => (
-                <option key={source} value={source}>
-                  {source}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
               Kategori
             </label>
             <select
               value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
+              onChange={(event) => onCategoryFilterChange(event.target.value)}
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
             >
               <option value="ALL">Semua kategori</option>
@@ -162,26 +129,26 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
       </div>
 
       <div className="space-y-3">
-        {games.length === 0 ? (
+        {totalItems === 0 ? (
           <p className="text-sm text-gray-500">
             Belum ada data game yang tersimpan.
           </p>
         ) : null}
 
-        {games.length > 0 && filteredGames.length === 0 ? (
+        {totalItems > 0 && games.length === 0 ? (
           <p className="text-sm text-gray-500">
             Tidak ada game yang cocok dengan pencarian.
           </p>
         ) : null}
 
-        {filteredGames.map((game, index) => (
+        {games.map((game, index) => (
           <div
             key={game._id}
             className="flex flex-col gap-4 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex min-w-0 items-start gap-3">
               <p className="w-6 shrink-0 pt-1 text-sm text-gray-500">
-                {index + 1}.
+                {(page - 1) * 20 + index + 1}.
               </p>
 
               {game.logo && (
@@ -219,12 +186,24 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
                   <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">
                     Input: {game.inputs?.length || 0}
                   </span>
+                  <span className="rounded-full bg-cyan-50 px-2 py-1 text-cyan-700">
+                    Kategori Variant: {game.variantCategories?.length || 0}
+                  </span>
                   {game.bannerUrl ? (
                     <span className="rounded-full bg-violet-50 px-2 py-1 text-violet-700">
                       Banner siap
                     </span>
                   ) : null}
                 </div>
+                {game.variantCategories?.length ? (
+                  <p className="mt-2 text-xs text-gray-500">
+                    {game.variantCategories
+                      .slice()
+                      .sort((a, b) => (a.order || 0) - (b.order || 0))
+                      .map((item) => item.name)
+                      .join(" • ")}
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -245,6 +224,15 @@ export default function GameList({ games, onEdit, onDelete }: Props) {
             </div>
           </div>
         ))}
+
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          limit={20}
+          itemLabel="game"
+          onPageChange={onPageChange}
+        />
       </div>
     </div>
   );

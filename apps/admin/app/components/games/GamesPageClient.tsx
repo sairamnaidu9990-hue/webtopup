@@ -1,15 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import GameForm from "./GameForm";
 import GameList from "./GameList";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
-import {
-  isSessionCacheFresh,
-  readSessionCache,
-  writeSessionCache,
-} from "@/app/lib/sessionCache";
-import { CATALOG_CACHE_TTL_MS, GAMES_CACHE_KEY } from "@/app/lib/catalogCache";
 
 type Game = {
   _id: string;
@@ -30,6 +24,11 @@ type Game = {
     title?: string;
     options?: Array<{ value: string; title: string }>;
   }>;
+  variantCategories?: Array<{
+    _id?: string;
+    name: string;
+    order: number;
+  }>;
 };
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -39,6 +38,7 @@ const DEFAULT_CATEGORY_OPTIONS = [
   "Voucher",
   "Live Streaming",
 ];
+const PAGE_LIMIT = 20;
 
 type Props = {
   syncSource?: "bangjeff" | "manual";
@@ -55,6 +55,12 @@ export default function GamesPageClient({
   allowCreate = true,
 }: Props) {
   const [games, setGames] = useState<Game[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -72,13 +78,17 @@ export default function GamesPageClient({
   const [isTrending, setIsTrending] = useState(false);
   const [trendingOrder, setTrendingOrder] = useState("9999");
   const [catalogOrder, setCatalogOrder] = useState("9999");
+  const [variantCategories, setVariantCategories] = useState<
+    Array<{
+      _id?: string;
+      name: string;
+      order: number;
+    }>
+  >([]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
-  const gamesCacheKey = syncSource
-    ? `${GAMES_CACHE_KEY}:${syncSource}`
-    : GAMES_CACHE_KEY;
-  const gamesQuery = syncSource ? `?syncSource=${syncSource}` : "";
+  const deferredSearch = useDeferredValue(search);
 
   const resetForm = () => {
     setEditingId(null);
@@ -92,18 +102,55 @@ export default function GamesPageClient({
     setIsTrending(false);
     setTrendingOrder("9999");
     setCatalogOrder("9999");
+    setVariantCategories([]);
   };
 
   const fetchGames = async () => {
     try {
-      const res = await fetch(`${API}/api/games${gamesQuery}`);
-      const data = await parseJsonSafely<unknown[]>(res);
-      const nextGames = Array.isArray(data) ? (data as Game[]) : [];
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(PAGE_LIMIT),
+      });
 
-      setGames(nextGames);
-      writeSessionCache(gamesCacheKey, nextGames);
+      if (syncSource) {
+        params.set("syncSource", syncSource);
+      }
+
+      if (deferredSearch.trim()) {
+        params.set("search", deferredSearch.trim());
+      }
+
+      if (statusFilter !== "ALL") {
+        params.set("status", statusFilter);
+      }
+
+      if (categoryFilter !== "ALL") {
+        params.set("category", categoryFilter);
+      }
+
+      const res = await fetch(`${API}/api/games?${params.toString()}`, {
+        cache: "no-store",
+      });
+      const data = await parseJsonSafely<{
+        items?: Game[];
+        totalItems?: number;
+        totalPages?: number;
+        page?: number;
+      }>(res);
+
+      if (!res.ok) {
+        throw new Error(getResponseMessage(data, "Gagal ambil data game"));
+      }
+
+      setGames(Array.isArray(data?.items) ? data.items : []);
+      setTotalItems(Number(data?.totalItems || 0));
+      setTotalPages(Number(data?.totalPages || 1));
+      setPage(Number(data?.page || 1));
     } catch (err) {
       console.error("Fetch error:", err);
+      setGames([]);
+      setTotalItems(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -135,21 +182,9 @@ export default function GamesPageClient({
   };
 
   useEffect(() => {
-    const cachedGames = readSessionCache<Game[]>(gamesCacheKey);
-
-    if (cachedGames?.data && Array.isArray(cachedGames.data)) {
-      setGames(cachedGames.data);
-      setLoading(false);
-
-      if (!isSessionCacheFresh(cachedGames.savedAt, CATALOG_CACHE_TTL_MS)) {
-        fetchGames();
-      }
-
-      return;
-    }
-
+    setLoading(true);
     fetchGames();
-  }, [gamesCacheKey, gamesQuery]);
+  }, [page, syncSource, deferredSearch, statusFilter, categoryFilter]);
 
   useEffect(() => {
     fetchCategoryOptions();
@@ -162,10 +197,30 @@ export default function GamesPageClient({
       await fetch(`${API}/api/games/${id}`, {
         method: "DELETE",
       });
-      fetchGames();
+
+      if (games.length === 1 && page > 1) {
+        setPage((current) => current - 1);
+      } else {
+        fetchGames();
+      }
     } catch (err) {
       console.error("Delete error:", err);
     }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
+  const handleCategoryFilterChange = (value: string) => {
+    setCategoryFilter(value);
+    setPage(1);
   };
 
   const handleEdit = (game: Game) => {
@@ -181,6 +236,18 @@ export default function GamesPageClient({
     setIsTrending(Boolean(game.isTrending));
     setTrendingOrder(String(game.trendingOrder ?? 9999));
     setCatalogOrder(String(game.catalogOrder ?? 9999));
+    setVariantCategories(
+      Array.isArray(game.variantCategories)
+        ? [...game.variantCategories]
+            .map((item, index) => ({
+              _id: item._id,
+              name: String(item.name || "").trim(),
+              order: Number(item.order || index + 1),
+            }))
+            .filter((item) => item.name)
+            .sort((a, b) => a.order - b.order)
+        : []
+    );
     setFormOpen(true);
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -218,6 +285,7 @@ export default function GamesPageClient({
           ...(toOptionalOrderValue(catalogOrder) != null
             ? { catalogOrder: toOptionalOrderValue(catalogOrder) }
             : {}),
+          variantCategories,
         }),
       });
 
@@ -258,6 +326,7 @@ export default function GamesPageClient({
           isTrending={isTrending}
           trendingOrder={trendingOrder}
           catalogOrder={catalogOrder}
+          variantCategories={variantCategories}
           editingId={editingId}
           setName={setName}
           setCode={setCode}
@@ -269,6 +338,7 @@ export default function GamesPageClient({
           setIsTrending={setIsTrending}
           setTrendingOrder={setTrendingOrder}
           setCatalogOrder={setCatalogOrder}
+          setVariantCategories={setVariantCategories}
           onSubmit={handleSubmit}
           success={success}
           submitting={submitting}
@@ -287,7 +357,22 @@ export default function GamesPageClient({
       {loading ? (
         <p className="text-sm text-gray-500">Memuat data game...</p>
       ) : (
-        <GameList games={games} onEdit={handleEdit} onDelete={handleDelete} />
+        <GameList
+          games={games}
+          search={search}
+          statusFilter={statusFilter}
+          categoryFilter={categoryFilter}
+          categoryOptions={categoryOptions}
+          totalItems={totalItems}
+          page={page}
+          totalPages={totalPages}
+          onSearchChange={handleSearchChange}
+          onStatusFilterChange={handleStatusFilterChange}
+          onCategoryFilterChange={handleCategoryFilterChange}
+          onPageChange={setPage}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       )}
     </div>
   );

@@ -2,6 +2,9 @@ const Variant = require("../models/Variant");
 const Game = require("../models/Game");
 const calculatePrice = require("../utils/calculatePrice");
 const createSyncLog = require("../utils/createSyncLog");
+const {
+  resolveVariantCategoryId,
+} = require("../utils/variantCategory");
 
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
@@ -30,6 +33,20 @@ function getSyncSourceValue(value) {
   }
 
   return null;
+}
+
+function toPositiveInteger(value, fallback) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return Math.floor(parsed);
+}
+
+function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function applyMarkupToVariants(filter, markup) {
@@ -62,6 +79,13 @@ async function applyMarkupToVariants(filter, markup) {
 exports.getVariants = async (req, res) => {
   try {
     const filter = {};
+    const search = String(req.query.search || "").trim();
+    const page = toPositiveInteger(req.query.page, 1);
+    const limit = Math.min(toPositiveInteger(req.query.limit, 20), 100);
+    const usePagination =
+      req.query.page != null ||
+      req.query.limit != null ||
+      req.query.search != null;
 
     if (req.query.game) {
       filter.game = req.query.game;
@@ -79,11 +103,44 @@ exports.getVariants = async (req, res) => {
       filter.syncSource = String(req.query.syncSource).trim().toLowerCase();
     }
 
-    const variants = await Variant.find(filter)
-      .populate("game")
+    if (search) {
+      const regex = new RegExp(escapeRegex(search), "i");
+      filter.$or = [
+        { name: regex },
+        { providerCode: regex },
+        { productCode: regex },
+        { region: regex },
+        { currency: regex },
+      ];
+    }
+
+    const baseQuery = Variant.find(filter)
+      .populate("game", "name code variantCategories")
       .sort({ createdAt: -1 });
 
-    return res.status(200).json(variants);
+    if (!usePagination) {
+      const variants = await baseQuery;
+      return res.status(200).json(variants);
+    }
+
+    const totalItems = await Variant.countDocuments(filter);
+    const totalPages = Math.max(Math.ceil(totalItems / limit), 1);
+    const safePage = Math.min(page, totalPages);
+    const variants = await Variant.find(filter)
+      .populate("game", "name code variantCategories")
+      .sort({ createdAt: -1 })
+      .skip((safePage - 1) * limit)
+      .limit(limit);
+
+    return res.status(200).json({
+      items: variants,
+      page: safePage,
+      limit,
+      totalItems,
+      totalPages,
+      hasPreviousPage: safePage > 1,
+      hasNextPage: safePage < totalPages,
+    });
   } catch (error) {
     return res.status(500).json({
       message: "Error ambil variant",
@@ -105,6 +162,7 @@ exports.createVariant = async (req, res) => {
       region = "ID",
       currency = "IDR",
       duration = 0,
+      variantCategoryId = "",
     } = req.body;
 
     if (!game || !name || !providerCode || basePrice == null) {
@@ -115,6 +173,17 @@ exports.createVariant = async (req, res) => {
 
     if (!gameDoc) {
       return res.status(404).json({ message: "Game tidak ditemukan" });
+    }
+
+    const resolvedVariantCategoryId = resolveVariantCategoryId(
+      gameDoc,
+      variantCategoryId
+    );
+
+    if (resolvedVariantCategoryId === null) {
+      return res.status(400).json({
+        message: "Kategori variant tidak valid untuk game ini",
+      });
     }
 
     const normalizedProviderCode = String(providerCode).trim();
@@ -140,6 +209,7 @@ exports.createVariant = async (req, res) => {
       region: String(region).toUpperCase(),
       currency: String(currency).toUpperCase(),
       duration: toNumber(duration),
+      variantCategoryId: resolvedVariantCategoryId,
       syncSource: "manual",
     });
 
@@ -184,6 +254,41 @@ exports.updateVariant = async (req, res) => {
       }
 
       updatePayload.productCode = gameDoc.code;
+      const resolvedVariantCategoryId = resolveVariantCategoryId(
+        gameDoc,
+        Object.prototype.hasOwnProperty.call(req.body, "variantCategoryId")
+          ? req.body.variantCategoryId
+          : variant.variantCategoryId
+      );
+
+      if (resolvedVariantCategoryId === null) {
+        return res.status(400).json({
+          message: "Kategori variant tidak valid untuk game ini",
+        });
+      }
+
+      updatePayload.variantCategoryId = resolvedVariantCategoryId;
+    } else if (
+      Object.prototype.hasOwnProperty.call(req.body, "variantCategoryId")
+    ) {
+      const gameDoc = await Game.findById(variant.game);
+
+      if (!gameDoc) {
+        return res.status(404).json({ message: "Game tidak ditemukan" });
+      }
+
+      const resolvedVariantCategoryId = resolveVariantCategoryId(
+        gameDoc,
+        req.body.variantCategoryId
+      );
+
+      if (resolvedVariantCategoryId === null) {
+        return res.status(400).json({
+          message: "Kategori variant tidak valid untuk game ini",
+        });
+      }
+
+      updatePayload.variantCategoryId = resolvedVariantCategoryId;
     }
 
     if (req.body.status) {

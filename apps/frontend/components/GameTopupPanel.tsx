@@ -53,6 +53,75 @@ function buildInputPlaceholder(title: string) {
   return `Masukkan ${cleanTitle}`;
 }
 
+function getSortedVariantCategories(game: GameDetail) {
+  return Array.isArray(game.variantCategories)
+    ? [...game.variantCategories]
+        .filter(
+          (category) =>
+            String(category?._id || "").trim() &&
+            String(category?.name || "").trim()
+        )
+        .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+    : [];
+}
+
+function buildVariantGroups(
+  game: GameDetail,
+  variants: StorefrontVariant[]
+): Array<{
+  id: string;
+  name: string;
+  variants: StorefrontVariant[];
+}> {
+  if (variants.length === 0) {
+    return [];
+  }
+
+  const categories = getSortedVariantCategories(game);
+
+  if (categories.length === 0) {
+    return [
+      {
+        id: "default",
+        name: "",
+        variants,
+      },
+    ];
+  }
+
+  const groups = categories.map((category) => ({
+    id: category._id,
+    name: category.name,
+    variants: [] as StorefrontVariant[],
+  }));
+  const groupMap = new Map(groups.map((group) => [group.id, group]));
+  const ungroupedVariants: StorefrontVariant[] = [];
+
+  variants.forEach((variant) => {
+    const categoryId = String(variant.variantCategoryId || "").trim();
+    const targetGroup = categoryId ? groupMap.get(categoryId) : null;
+
+    if (targetGroup) {
+      targetGroup.variants.push(variant);
+      return;
+    }
+
+    ungroupedVariants.push(variant);
+  });
+
+  const visibleGroups = groups.filter((group) => group.variants.length > 0);
+
+  if (ungroupedVariants.length > 0) {
+    visibleGroups.push({
+      id: "ungrouped",
+      name: "Lainnya",
+      variants: ungroupedVariants,
+    });
+  }
+
+  return visibleGroups;
+}
+
 function renderInputControl(
   gameInput: GameDetail["inputs"][number],
   value: string,
@@ -150,6 +219,7 @@ export default function GameTopupPanel({
     variants.find((variant) => variant._id === selectedVariantId) ||
     variants[0] ||
     null;
+  const variantGroups = buildVariantGroups(game, variants);
 
   return (
     <div className="site-shell pt-8 sm:pt-10">
@@ -197,64 +267,79 @@ export default function GameTopupPanel({
           ) : null}
 
           <StepPanel number={showAccountStep ? 2 : 1} title="Pilih Nominal">
-            {variants.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
-                {variants.map((variant) => {
-                  const isSelected = selectedVariant?._id === variant._id;
-                  const variantLogo = variant.logo || "";
-
-                  return (
-                    <button
-                      key={variant._id}
-                      type="button"
-                      onClick={() => setSelectedVariantId(variant._id)}
-                      className={`group relative overflow-hidden rounded-[16px] border text-left transition ${
-                        isSelected
-                          ? "border-[#ff7a1a] bg-[#34353b] shadow-[0_0_0_1px_rgba(255,122,26,0.18)]"
-                          : "border-white/8 bg-[#34353b] hover:border-[#ff7a1a]/60"
-                      }`}
-                    >
-                      <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:10px_10px]" />
-
-                      <div className="relative p-3 sm:p-3.5">
-                        <p className="line-clamp-2 min-h-[1.8rem] text-[10px] font-medium leading-[1.12rem] text-white/92 sm:min-h-[1.95rem] sm:text-[12px] sm:leading-[1.22rem]">
-                          {variant.name}
-                        </p>
-
-                        <div className="mt-2 flex items-center gap-2">
-                          {variantLogo ? (
-                            <Image
-                              src={variantLogo}
-                              alt={variant.name}
-                              width={32}
-                              height={32}
-                              sizes="(max-width: 640px) 28px, 32px"
-                              className="h-7 w-7 shrink-0 rounded-[9px] object-cover object-center sm:h-8 sm:w-8"
-                            />
-                          ) : (
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] bg-white/10 text-sm text-white/84 sm:h-8 sm:w-8 sm:text-base">
-                              ◆
-                            </div>
-                          )}
-
-                          <div className="min-w-0">
-                            <p className="text-[0.95rem] font-bold leading-none text-[#ff8d2a] sm:text-[1.18rem]">
-                              {formatCurrency(variant.price, variant.currency)}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-2.5 flex justify-end">
-                          <span className="rounded-[8px] bg-white px-2 py-1 text-[9px] font-semibold text-[#3f3f3f] sm:text-[10px]">
-                            {variant.duration > 0
-                              ? `${variant.duration} min`
-                              : "Instant"}
-                          </span>
-                        </div>
+            {variantGroups.length > 0 ? (
+              <div className="space-y-4">
+                {variantGroups.map((group) => (
+                  <div key={group.id} className="space-y-2.5">
+                    {group.name ? (
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-[#ff7a1a]" />
+                        <h3 className="text-[13px] font-semibold text-white/92 sm:text-sm">
+                          {group.name}
+                        </h3>
                       </div>
-                    </button>
-                  );
-                })}
+                    ) : null}
+
+                    <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
+                      {group.variants.map((variant) => {
+                        const isSelected = selectedVariant?._id === variant._id;
+                        const variantLogo = variant.logo || "";
+
+                        return (
+                          <button
+                            key={variant._id}
+                            type="button"
+                            onClick={() => setSelectedVariantId(variant._id)}
+                            className={`group relative overflow-hidden rounded-[16px] border text-left transition ${
+                              isSelected
+                                ? "border-[#ff7a1a] bg-[#34353b] shadow-[0_0_0_1px_rgba(255,122,26,0.18)]"
+                                : "border-white/8 bg-[#34353b] hover:border-[#ff7a1a]/60"
+                            }`}
+                          >
+                            <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:10px_10px]" />
+
+                            <div className="relative p-3 sm:p-3.5">
+                              <p className="line-clamp-2 min-h-[1.8rem] text-[10px] font-medium leading-[1.12rem] text-white/92 sm:min-h-[1.95rem] sm:text-[12px] sm:leading-[1.22rem]">
+                                {variant.name}
+                              </p>
+
+                              <div className="mt-2 flex items-center gap-2">
+                                {variantLogo ? (
+                                  <Image
+                                    src={variantLogo}
+                                    alt={variant.name}
+                                    width={32}
+                                    height={32}
+                                    sizes="(max-width: 640px) 28px, 32px"
+                                    className="h-7 w-7 shrink-0 rounded-[9px] object-cover object-center sm:h-8 sm:w-8"
+                                  />
+                                ) : (
+                                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] bg-white/10 text-sm text-white/84 sm:h-8 sm:w-8 sm:text-base">
+                                    ◆
+                                  </div>
+                                )}
+
+                                <div className="min-w-0">
+                                  <p className="text-[0.95rem] font-bold leading-none text-[#ff8d2a] sm:text-[1.18rem]">
+                                    {formatCurrency(variant.price, variant.currency)}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="mt-2.5 flex justify-end">
+                                <span className="rounded-[8px] bg-white px-2 py-1 text-[9px] font-semibold text-[#3f3f3f] sm:text-[10px]">
+                                  {variant.duration > 0
+                                    ? `${variant.duration} min`
+                                    : "Instant"}
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="rounded-[16px] border border-dashed border-white/10 bg-[#242429] px-4 py-4 text-[13px] text-white/52">
