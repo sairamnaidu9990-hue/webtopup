@@ -20,6 +20,7 @@ const {
   getBangjeffProducts,
   getBangjeffProductDetail,
   getBangjeffVariants,
+  getBangjeffBalance,
 } = require("../services/bangjeff.service");
 
 const DEFAULT_REGION = String(process.env.BANGJEFF_REGION || "ID").toUpperCase();
@@ -276,8 +277,10 @@ async function syncVariantsData(region, requestedProductCode = "") {
     created: 0,
     updated: 0,
     markedInactive: 0,
+    withoutVariants: 0,
     failedGames: 0,
     errors: [],
+    warnings: [],
   };
 
   for (const game of games) {
@@ -293,6 +296,14 @@ async function syncVariantsData(region, requestedProductCode = "") {
       }
 
       const seenCodes = [];
+
+       if (remoteVariants.length === 0) {
+        summary.withoutVariants += 1;
+        summary.warnings.push({
+          productCode: game.code,
+          message: "BangJeff tidak mengembalikan variant untuk product ini.",
+        });
+      }
 
       for (const item of remoteVariants) {
         if (!item?.code) {
@@ -336,24 +347,27 @@ async function syncVariantsData(region, requestedProductCode = "") {
         summary.created += 1;
       }
 
-      if (seenCodes.length > 0) {
-        const staleVariants = await Variant.updateMany(
-          {
-            game: game._id,
-            syncSource: "bangjeff",
-            providerCode: { $nin: seenCodes },
-            status: { $ne: "INACTIVE" },
-          },
-          {
-            $set: {
-              status: "INACTIVE",
-              isActive: false,
-            },
-          }
-        );
+      const staleFilter = {
+        game: game._id,
+        syncSource: "bangjeff",
+        status: { $ne: "INACTIVE" },
+      };
 
-        summary.markedInactive += staleVariants.modifiedCount || 0;
+      if (seenCodes.length > 0) {
+        staleFilter.providerCode = { $nin: seenCodes };
       }
+
+      const staleVariants = await Variant.updateMany(
+        staleFilter,
+        {
+          $set: {
+            status: "INACTIVE",
+            isActive: false,
+          },
+        }
+      );
+
+      summary.markedInactive += staleVariants.modifiedCount || 0;
     } catch (error) {
       summary.failedGames += 1;
       summary.errors.push({
@@ -364,6 +378,7 @@ async function syncVariantsData(region, requestedProductCode = "") {
   }
 
   summary.errors = trimSyncErrors(summary.errors);
+  summary.warnings = trimSyncErrors(summary.warnings);
   return summary;
 }
 
@@ -556,6 +571,32 @@ async function syncCatalog(req, res) {
   }
 }
 
+async function getBalance(req, res) {
+  try {
+    const region = getRegion(req);
+    const balanceData = await getBangjeffBalance(region);
+
+    return res.status(200).json({
+      message: "Saldo BangJeff berhasil diambil",
+      region,
+      data: {
+        membership: balanceData?.membership || "",
+        region: balanceData?.region || region,
+        balance: {
+          currency: balanceData?.balance?.currency || "IDR",
+          value: toNumber(balanceData?.balance?.value),
+        },
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error ambil saldo BangJeff",
+      error: getErrorMessage(error, "Ambil saldo BangJeff gagal"),
+      response: error.bangjeff || null,
+    });
+  }
+}
+
 async function getProducts(req, res) {
   try {
     const filter = {};
@@ -668,6 +709,7 @@ module.exports = {
   syncGameDetails,
   syncVariants,
   syncCatalog,
+  getBalance,
   getProducts,
   createProduct,
   updateProduct,

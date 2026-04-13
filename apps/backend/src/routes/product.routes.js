@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const {
+  getBalance,
   getProducts,
   createProduct,
   updateProduct,
@@ -18,6 +19,7 @@ router.post("/sync/games", protectAdmin, syncGames);
 router.post("/sync/details", protectAdmin, syncGameDetails);
 router.post("/sync/variants", protectAdmin, syncVariants);
 router.post("/sync/all", protectAdmin, syncCatalog);
+router.get("/balance", protectAdmin, getBalance);
 
 
 // GET all products

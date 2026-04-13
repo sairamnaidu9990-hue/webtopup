@@ -3,6 +3,7 @@ const cors = require("cors");
 const authRoutes = require("./src/routes/authRoutes");
 const adminRoutes = require("./src/routes/admin.routes");
 const gameRoutes = require("./src/routes/game.routes");
+const orderRoutes = require("./src/routes/order.routes");
 const productRoutes = require("./src/routes/product.routes");
 const siteSettingRoutes = require("./src/routes/siteSetting.routes");
 const syncLogRoutes = require("./src/routes/syncLog.routes");
@@ -42,6 +43,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/games", gameRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/site-settings", siteSettingRoutes);
 app.use("/api/sync-logs", syncLogRoutes);
