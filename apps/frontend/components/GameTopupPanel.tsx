@@ -82,8 +82,8 @@ function buildVariantGroups(
   if (categories.length === 0) {
     return [
       {
-        id: "default",
-        name: "",
+        id: "topup",
+        name: "Topup",
         variants,
       },
     ];
@@ -95,6 +95,13 @@ function buildVariantGroups(
     variants: [] as StorefrontVariant[],
   }));
   const groupMap = new Map(groups.map((group) => [group.id, group]));
+  const fallbackGroupName =
+    categories.find((category) =>
+      String(category.name || "")
+        .trim()
+        .toLowerCase()
+        .includes("topup")
+    )?.name || "Topup";
   const ungroupedVariants: StorefrontVariant[] = [];
 
   variants.forEach((variant) => {
@@ -113,8 +120,8 @@ function buildVariantGroups(
 
   if (ungroupedVariants.length > 0) {
     visibleGroups.push({
-      id: "ungrouped",
-      name: "Lainnya",
+      id: "topup-fallback",
+      name: fallbackGroupName,
       variants: ungroupedVariants,
     });
   }
@@ -128,7 +135,7 @@ function renderInputControl(
   onChange: (nextValue: string) => void
 ) {
   const commonClassName =
-    "h-11 w-full rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-base text-white outline-none transition placeholder:text-white/28 focus:border-[#ff7a1a] focus:ring-2 focus:ring-[#ff7a1a]/18 sm:h-[42px] sm:text-[13px]";
+    "h-11 w-full rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-base text-white outline-none transition placeholder:text-white/28 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] sm:h-[42px] sm:text-[13px]";
 
   if (gameInput.type === "select") {
     return (
@@ -183,19 +190,19 @@ function StepPanel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-[20px] border border-white/8 bg-[#2a2a2f] shadow-[0_14px_30px_rgba(0,0,0,0.16)]">
-      <div className="flex min-h-[46px] items-stretch border-b border-white/8 bg-[#474747] sm:min-h-[48px]">
-        <div className="flex w-9 shrink-0 items-center justify-center bg-[#ff7a1a] text-sm font-bold text-white sm:w-10 sm:text-[15px]">
+    <section className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
+      <div className="flex min-h-[39px] items-stretch border-b border-white/8 bg-[#474747] sm:min-h-[40px]">
+        <div className="flex w-8 shrink-0 items-center justify-center bg-[var(--accent)] text-[12px] font-bold text-white sm:w-9 sm:text-[13px]">
           {number}
         </div>
-        <div className="flex min-w-0 items-center px-3.5 sm:px-4">
-          <h2 className="truncate text-[13px] font-semibold text-white sm:text-sm">
+        <div className="flex min-w-0 items-center px-3 sm:px-3.5">
+          <h2 className="truncate text-[11px] font-semibold text-white sm:text-[12px]">
             {title}
           </h2>
         </div>
       </div>
 
-      <div className="bg-[#2d2d31] p-3.5 sm:p-4">{children}</div>
+      <div className="bg-[#2d2d31] p-3 sm:p-3.5">{children}</div>
     </section>
   );
 }
@@ -223,7 +230,7 @@ export default function GameTopupPanel({
 
   return (
     <div className="site-shell pt-8 sm:pt-10">
-      <div className="xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] xl:items-start xl:gap-7">
+      <div className="xl:grid xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)] xl:items-start xl:gap-8">
         <div className="space-y-6">
           {showAccountStep ? (
             <StepPanel number={1} title="Masukkan Data Akun">
@@ -238,7 +245,7 @@ export default function GameTopupPanel({
 
                     return (
                     <label key={key} className="block">
-                      <span className="mb-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-white/88">
+                      <span className="mb-2 inline-flex items-center gap-1.5 text-[12px] font-medium text-white/88">
                         {gameInput.title || gameInput.name}
                         <span className="text-[11px] text-white/45">ⓘ</span>
                       </span>
@@ -257,9 +264,9 @@ export default function GameTopupPanel({
                 </div>
               ) : (
                 <div className="rounded-[16px] border border-dashed border-white/10 bg-[#242429] px-4 py-4 text-[13px] leading-6 text-white/58">
-                  Input akun untuk game ini belum tersedia di database storefront.
+                  Input akun untuk game ini belum tersedia 
                   Jalankan <span className="font-semibold text-white/82">Sync Details</span>{" "}
-                  dari provider BangJeff agar field input asli dari BangJeff masuk ke
+                  dari provider  agar field input asli   masuk ke
                   game ini.
                 </div>
               )}
@@ -268,13 +275,12 @@ export default function GameTopupPanel({
 
           <StepPanel number={showAccountStep ? 2 : 1} title="Pilih Nominal">
             {variantGroups.length > 0 ? (
-              <div className="space-y-4">
+                <div className="space-y-3.5">
                 {variantGroups.map((group) => (
-                  <div key={group.id} className="space-y-2.5">
+                  <div key={group.id} className="space-y-2">
                     {group.name ? (
-                      <div className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-[#ff7a1a]" />
-                        <h3 className="text-[13px] font-semibold text-white/92 sm:text-sm">
+                      <div className="flex items-center">
+                        <h3 className="text-[12px] font-semibold text-white/92 sm:text-[13px]">
                           {group.name}
                         </h3>
                       </div>
@@ -290,44 +296,44 @@ export default function GameTopupPanel({
                             key={variant._id}
                             type="button"
                             onClick={() => setSelectedVariantId(variant._id)}
-                            className={`group relative overflow-hidden rounded-[16px] border text-left transition ${
+                            className={`group relative overflow-hidden rounded-[14px] border text-left transition ${
                               isSelected
-                                ? "border-[#ff7a1a] bg-[#34353b] shadow-[0_0_0_1px_rgba(255,122,26,0.18)]"
-                                : "border-white/8 bg-[#34353b] hover:border-[#ff7a1a]/60"
+                                ? "border-[var(--accent)] bg-[#34353b] shadow-[0_0_0_1px_var(--accent-glow)]"
+                                : "border-white/8 bg-[#34353b] hover:border-[rgba(211,59,59,0.6)]"
                             }`}
                           >
                             <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:10px_10px]" />
 
-                            <div className="relative p-3 sm:p-3.5">
-                              <p className="line-clamp-2 min-h-[1.8rem] text-[10px] font-medium leading-[1.12rem] text-white/92 sm:min-h-[1.95rem] sm:text-[12px] sm:leading-[1.22rem]">
+                            <div className="relative p-2.5 sm:p-3">
+                              <p className="line-clamp-2 min-h-[1.65rem] text-[9.5px] font-medium leading-[1.04rem] text-white/92 sm:min-h-[1.8rem] sm:text-[11px] sm:leading-[1.12rem]">
                                 {variant.name}
                               </p>
 
-                              <div className="mt-2 flex items-center gap-2">
+                              <div className="mt-1.5 flex items-center gap-2">
                                 {variantLogo ? (
                                   <Image
                                     src={variantLogo}
                                     alt={variant.name}
-                                    width={32}
-                                    height={32}
-                                    sizes="(max-width: 640px) 28px, 32px"
-                                    className="h-7 w-7 shrink-0 rounded-[9px] object-cover object-center sm:h-8 sm:w-8"
+                                    width={28}
+                                    height={28}
+                                    sizes="(max-width: 640px) 24px, 28px"
+                                    className="h-6 w-6 shrink-0 rounded-[8px] object-cover object-center sm:h-7 sm:w-7"
                                   />
                                 ) : (
-                                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] bg-white/10 text-sm text-white/84 sm:h-8 sm:w-8 sm:text-base">
+                                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] bg-white/10 text-[11px] text-white/84 sm:h-7 sm:w-7 sm:text-xs">
                                     ◆
                                   </div>
                                 )}
 
                                 <div className="min-w-0">
-                                  <p className="text-[0.95rem] font-bold leading-none text-[#ff8d2a] sm:text-[1.18rem]">
+                                  <p className="text-[0.88rem] font-bold leading-none text-[var(--accent-strong)] sm:text-[1.04rem]">
                                     {formatCurrency(variant.price, variant.currency)}
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="mt-2.5 flex justify-end">
-                                <span className="rounded-[8px] bg-white px-2 py-1 text-[9px] font-semibold text-[#3f3f3f] sm:text-[10px]">
+                              <div className="mt-2 flex justify-end">
+                                <span className="rounded-[7px] bg-white px-2 py-[5px] text-[8px] font-semibold text-[#3f3f3f] sm:text-[9px]">
                                   {variant.duration > 0
                                     ? `${variant.duration} min`
                                     : "Instant"}

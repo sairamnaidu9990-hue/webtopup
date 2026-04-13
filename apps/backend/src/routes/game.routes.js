@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   getGames,
   getStorefrontGames,
+  searchStorefrontGames,
   getStorefrontGameDetail,
   createGame,
   updateGame,
@@ -11,6 +12,7 @@ const {
 } = require("../controllers/game.controller");
 
 router.get("/storefront", getStorefrontGames);
+router.get("/storefront/search", searchStorefrontGames);
 router.get("/storefront/:code", getStorefrontGameDetail);
 router.get("/", getGames);
 router.post("/", createGame);

@@ -92,7 +92,7 @@ export default function SiteFooter({
                     {...getLinkProps(item.url)}
                     className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white transition hover:border-[#d33b3b] hover:bg-white/8"
                   >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#d33b3b]/16 text-[11px] font-semibold text-[#ff8d8d]">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-glow)] text-[11px] font-semibold text-[var(--accent-soft)]">
                       {getSocialBadge(item.label)}
                     </span>
                     <span>{item.label}</span>
@@ -106,7 +106,7 @@ export default function SiteFooter({
             <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
               {footerColumns.map((column, columnIndex) => (
                 <div key={`${column.title}-${columnIndex}`} className="space-y-4">
-                  <p className="text-base font-semibold text-[#ff8d57]">
+                  <p className="text-base font-semibold text-[var(--accent-soft)]">
                     {column.title}
                   </p>
 

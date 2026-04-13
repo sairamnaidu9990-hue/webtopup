@@ -170,6 +170,53 @@ exports.getStorefrontGames = async (req, res) => {
   }
 };
 
+exports.searchStorefrontGames = async (req, res) => {
+  try {
+    await normalizeGameCategories();
+    const search = String(req.query.q || "").trim();
+    const limit = Math.min(toPositiveInteger(req.query.limit, 8), 20);
+
+    if (search.length < 2) {
+      return res.status(200).json({
+        items: [],
+      });
+    }
+
+    const regex = new RegExp(escapeRegex(search), "i");
+    const filter = {
+      status: "ACTIVE",
+      $or: [
+        { name: regex },
+        { code: regex },
+        { provider: regex },
+        { category: regex },
+      ],
+    };
+
+    if (req.query.syncSource) {
+      filter.syncSource = String(req.query.syncSource).trim().toLowerCase();
+    }
+
+    const games = await Game.find(filter)
+      .sort({
+        isTrending: -1,
+        trendingOrder: 1,
+        catalogOrder: 1,
+        name: 1,
+      })
+      .limit(limit)
+      .select("name code logo provider category");
+
+    return res.status(200).json({
+      items: games,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Error cari storefront games",
+    });
+  }
+};
+
 exports.getStorefrontGameDetail = async (req, res) => {
   try {
     await normalizeGameCategories();

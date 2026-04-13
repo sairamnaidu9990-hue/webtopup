@@ -3,6 +3,10 @@
 :root {
   --background: #111217;
   --foreground: #ffffff;
+  --accent: #d33b3b;
+  --accent-strong: #e24b4b;
+  --accent-soft: #ff9b9b;
+  --accent-glow: rgba(211, 59, 59, 0.18);
 }
 
 @theme inline {
