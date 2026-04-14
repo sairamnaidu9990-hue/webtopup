@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type {
   StorefrontGameDetail,
+  StorefrontPaymentMethod,
   StorefrontVariant,
 } from "@/lib/siteData";
 
@@ -12,16 +13,8 @@ type GameDetail = StorefrontGameDetail["game"];
 type GameTopupPanelProps = {
   game: GameDetail;
   variants: StorefrontVariant[];
+  paymentMethods: StorefrontPaymentMethod[];
 };
-
-const PAYMENT_METHOD_OPTIONS = [
-  { code: "BCA_VA", name: "BCA Virtual Account" },
-  { code: "MANDIRI_VA", name: "Mandiri Virtual Account" },
-  { code: "BNI_VA", name: "BNI Virtual Account" },
-  { code: "BRI_VA", name: "BRI Virtual Account" },
-  { code: "PERMATA_VA", name: "Permata Virtual Account" },
-  { code: "QRIS", name: "QRIS" },
-];
 
 function getBangjeffInputs(game: GameDetail) {
   return Array.isArray(game.inputs)
@@ -240,6 +233,7 @@ function StepPanel({
 export default function GameTopupPanel({
   game,
   variants,
+  paymentMethods,
 }: GameTopupPanelProps) {
   const resolvedInputs = getBangjeffInputs(game);
   const isVoucherCategory =
@@ -273,11 +267,18 @@ export default function GameTopupPanel({
   const variantStepNumber = showAccountStep ? 2 : 1;
   const paymentStepNumber = variantStepNumber + 1;
   const contactStepNumber = paymentStepNumber + 1;
-  const paymentFee = 0;
-  const totalPayment = (selectedVariant?.price || 0) + paymentFee;
   const selectedPaymentMethod =
-    PAYMENT_METHOD_OPTIONS.find((method) => method.code === paymentMethodCode) ||
+    paymentMethods.find((method) => method.code === paymentMethodCode) ||
     null;
+  const paymentFee = selectedVariant
+    ? selectedPaymentMethod?.feeType === "percent"
+      ? Math.ceil(
+          (selectedVariant.price * Number(selectedPaymentMethod.feeValue || 0)) /
+            100
+        )
+      : Number(selectedPaymentMethod?.feeValue || 0)
+    : 0;
+  const totalPayment = (selectedVariant?.price || 0) + paymentFee;
   const isAccountDataReady =
     !showAccountStep ||
     (resolvedInputs.length > 0 &&
@@ -386,6 +387,12 @@ export default function GameTopupPanel({
     if (!selectedVariant) {
       showAlert("Silakan pilih nominal terlebih dahulu.");
       focusStep("variant", variantStepRef);
+      return;
+    }
+
+    if (paymentMethods.length === 0) {
+      showAlert("Metode pembayaran belum tersedia.");
+      focusStep("payment", paymentStepRef);
       return;
     }
 
@@ -569,28 +576,34 @@ export default function GameTopupPanel({
                   : ""
               }
             >
-              <div className="space-y-3">
-                <label className="block">
-                  <span className="mb-2 inline-flex items-center gap-1.5 text-[12px] font-medium text-white/88">
-                    Bank Pembayaran
-                  </span>
-                  <select
-                    value={paymentMethodCode}
-                    onChange={(event) => {
-                      setSelectionAlert(null);
-                      setPaymentMethodCode(event.target.value);
-                    }}
-                    className="h-11 w-full rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-base text-white outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] sm:h-[42px] sm:text-[13px]"
-                  >
-                    <option value="">Pilih metode pembayaran</option>
-                    {PAYMENT_METHOD_OPTIONS.map((method) => (
-                      <option key={method.code} value={method.code}>
-                        {method.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+              {paymentMethods.length > 0 ? (
+                <div className="space-y-3">
+                  <label className="block">
+                    <span className="mb-2 inline-flex items-center gap-1.5 text-[12px] font-medium text-white/88">
+                      Bank Pembayaran
+                    </span>
+                    <select
+                      value={paymentMethodCode}
+                      onChange={(event) => {
+                        setSelectionAlert(null);
+                        setPaymentMethodCode(event.target.value);
+                      }}
+                      className="h-11 w-full rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-base text-white outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] sm:h-[42px] sm:text-[13px]"
+                    >
+                      <option value="">Pilih metode pembayaran</option>
+                      {paymentMethods.map((method) => (
+                        <option key={method.code} value={method.code}>
+                          {method.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              ) : (
+                <div className="rounded-[16px] border border-dashed border-white/10 bg-[#242429] px-4 py-4 text-[13px] text-white/58">
+                  Belum ada metode pembayaran aktif yang tersedia.
+                </div>
+              )}
             </StepPanel>
           </div>
 

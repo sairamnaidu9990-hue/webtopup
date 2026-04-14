@@ -139,9 +139,6 @@ export default function VariantForm(props: Props) {
                 </option>
               ))}
             </select>
-            <span className="mt-2 block text-xs text-gray-500">
-              Tambah, ubah, atau hapus kategori variant dari halaman Game.
-            </span>
           </label>
 
           <label className="block">

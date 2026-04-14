@@ -99,6 +99,20 @@ export type StorefrontGameDetail = {
   variants: StorefrontVariant[];
 };
 
+export type StorefrontPaymentMethod = {
+  _id: string;
+  name: string;
+  code: string;
+  logo?: string;
+  type: string;
+  feeType: "fixed" | "percent";
+  feeValue: number;
+  currency: string;
+  gatewayChannelCode?: string;
+  description?: string;
+  order: number;
+};
+
 const defaultSiteSetting: PublicSiteSetting = {
   siteName: "WebTopup",
   siteLogoUrl: "",
@@ -183,6 +197,24 @@ function normalizeStorefrontVariant(
     status: String(variant?.status || "").trim(),
     syncSource: String(variant?.syncSource || "").trim(),
     variantCategoryId: String(variant?.variantCategoryId || "").trim(),
+  };
+}
+
+function normalizeStorefrontPaymentMethod(
+  paymentMethod?: Partial<StorefrontPaymentMethod> | null
+): StorefrontPaymentMethod {
+  return {
+    _id: String(paymentMethod?._id || ""),
+    name: String(paymentMethod?.name || "").trim(),
+    code: String(paymentMethod?.code || "").trim().toUpperCase(),
+    logo: String(paymentMethod?.logo || "").trim(),
+    type: String(paymentMethod?.type || "bank_transfer").trim(),
+    feeType: paymentMethod?.feeType === "percent" ? "percent" : "fixed",
+    feeValue: Number(paymentMethod?.feeValue || 0),
+    currency: String(paymentMethod?.currency || "IDR").trim().toUpperCase(),
+    gatewayChannelCode: String(paymentMethod?.gatewayChannelCode || "").trim(),
+    description: String(paymentMethod?.description || "").trim(),
+    order: Number(paymentMethod?.order || 9999),
   };
 }
 
@@ -358,6 +390,30 @@ export const getStorefrontGameDetail = cache(
       };
     } catch {
       return null;
+    }
+  }
+);
+
+export const getPublicPaymentMethods = cache(
+  async (): Promise<StorefrontPaymentMethod[]> => {
+    try {
+      const response = await fetch(`${API_BASE}/api/payment-methods/public`, {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch payment methods");
+      }
+
+      const payload = await response.json();
+
+      return Array.isArray(payload.items)
+        ? payload.items.map((paymentMethod: StorefrontPaymentMethod) =>
+            normalizeStorefrontPaymentMethod(paymentMethod)
+          )
+        : [];
+    } catch {
+      return [];
     }
   }
 );

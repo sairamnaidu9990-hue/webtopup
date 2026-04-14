@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import GameTopupPanel from "@/components/GameTopupPanel";
 import {
+  getPublicPaymentMethods,
   getPublicSiteSetting,
   getStorefrontGameDetail,
 } from "@/lib/siteData";
@@ -49,7 +50,10 @@ export default async function GameVariantsPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const detail = await getStorefrontGameDetail(code);
+  const [detail, paymentMethods] = await Promise.all([
+    getStorefrontGameDetail(code),
+    getPublicPaymentMethods(),
+  ]);
 
   if (!detail) {
     notFound();
@@ -134,7 +138,11 @@ export default async function GameVariantsPage({
         </div>
       </section>
 
-      <GameTopupPanel game={game} variants={variants} />
+      <GameTopupPanel
+        game={game}
+        variants={variants}
+        paymentMethods={paymentMethods}
+      />
     </main>
   );
 }

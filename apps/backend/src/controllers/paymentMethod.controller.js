@@ -1,0 +1,311 @@
+const PaymentMethod = require("../models/PaymentMethod");
+
+const PAYMENT_METHOD_TYPES = [
+  "bank_transfer",
+  "ewallet",
+  "qris",
+  "retail",
+  "virtual_account",
+];
+const PAYMENT_FEE_TYPES = ["fixed", "percent"];
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toPositiveInteger(value, fallback) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return Math.floor(parsed);
+}
+
+function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeType(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return PAYMENT_METHOD_TYPES.includes(normalized)
+    ? normalized
+    : "bank_transfer";
+}
+
+function normalizeFeeType(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return PAYMENT_FEE_TYPES.includes(normalized) ? normalized : "fixed";
+}
+
+function normalizeCode(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function normalizeCurrency(value) {
+  return String(value || "IDR").trim().toUpperCase() || "IDR";
+}
+
+exports.getPaymentMethods = async (req, res) => {
+  try {
+    const filter = {};
+    const search = String(req.query.search || "").trim();
+    const status = String(req.query.status || "ALL").trim().toUpperCase();
+    const type = String(req.query.type || "ALL").trim().toLowerCase();
+    const page = toPositiveInteger(req.query.page, 1);
+    const limit = Math.min(toPositiveInteger(req.query.limit, 20), 100);
+    const usePagination =
+      req.query.page != null ||
+      req.query.limit != null ||
+      req.query.search != null ||
+      req.query.status != null ||
+      req.query.type != null;
+
+    if (search) {
+      const regex = new RegExp(escapeRegex(search), "i");
+      filter.$or = [
+        { name: regex },
+        { code: regex },
+        { gatewayChannelCode: regex },
+        { description: regex },
+      ];
+    }
+
+    if (status === "ACTIVE") {
+      filter.isActive = true;
+    } else if (status === "INACTIVE") {
+      filter.isActive = false;
+    }
+
+    if (PAYMENT_METHOD_TYPES.includes(type)) {
+      filter.type = type;
+    }
+
+    const baseQuery = PaymentMethod.find(filter).sort({
+      order: 1,
+      createdAt: -1,
+    });
+
+    if (!usePagination) {
+      const items = await baseQuery;
+      return res.status(200).json(items);
+    }
+
+    const totalItems = await PaymentMethod.countDocuments(filter);
+    const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+    const safePage = Math.min(page, totalPages);
+    const items = await PaymentMethod.find(filter)
+      .sort({ order: 1, createdAt: -1 })
+      .skip((safePage - 1) * limit)
+      .limit(limit);
+
+    return res.status(200).json({
+      items,
+      page: safePage,
+      limit,
+      totalItems,
+      totalPages,
+      hasPreviousPage: safePage > 1,
+      hasNextPage: safePage < totalPages,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error ambil metode pembayaran",
+      error: error.message,
+    });
+  }
+};
+
+exports.getPublicPaymentMethods = async (req, res) => {
+  try {
+    const items = await PaymentMethod.find({ isActive: true })
+      .sort({ order: 1, createdAt: -1 })
+      .select(
+        "name code logo type feeType feeValue currency gatewayChannelCode description order"
+      );
+
+    return res.status(200).json({
+      items,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error ambil metode pembayaran publik",
+      error: error.message,
+    });
+  }
+};
+
+exports.createPaymentMethod = async (req, res) => {
+  try {
+    const {
+      name,
+      code,
+      provider = "manual",
+      logo = "",
+      type = "bank_transfer",
+      feeType = "fixed",
+      feeValue = 0,
+      currency = "IDR",
+      gatewayChannelCode = "",
+      description = "",
+      isActive = true,
+      order = 9999,
+    } = req.body;
+
+    if (!String(name || "").trim() || !String(code || "").trim()) {
+      return res.status(400).json({
+        message: "Nama dan kode metode pembayaran wajib diisi",
+      });
+    }
+
+    const normalizedCode = normalizeCode(code);
+    const duplicate = await PaymentMethod.findOne({ code: normalizedCode });
+
+    if (duplicate) {
+      return res.status(409).json({
+        message: "Kode metode pembayaran sudah digunakan",
+      });
+    }
+
+    const item = await PaymentMethod.create({
+      name: String(name).trim(),
+      code: normalizedCode,
+      provider: String(provider || "manual").trim(),
+      logo: String(logo || "").trim(),
+      type: normalizeType(type),
+      feeType: normalizeFeeType(feeType),
+      feeValue: toNumber(feeValue),
+      currency: normalizeCurrency(currency),
+      gatewayChannelCode: String(gatewayChannelCode || "").trim(),
+      description: String(description || "").trim(),
+      isActive: Boolean(isActive),
+      order: toNumber(order, 9999),
+    });
+
+    return res.status(201).json(item);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error create metode pembayaran",
+      error: error.message,
+    });
+  }
+};
+
+exports.updatePaymentMethod = async (req, res) => {
+  try {
+    const currentItem = await PaymentMethod.findById(req.params.id);
+
+    if (!currentItem) {
+      return res.status(404).json({
+        message: "Metode pembayaran tidak ditemukan",
+      });
+    }
+
+    const updatePayload = { ...req.body };
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "name")) {
+      updatePayload.name = String(req.body.name || "").trim();
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "code")) {
+      const normalizedCode = normalizeCode(req.body.code);
+
+      if (!normalizedCode) {
+        return res.status(400).json({
+          message: "Kode metode pembayaran wajib diisi",
+        });
+      }
+
+      const duplicate = await PaymentMethod.findOne({
+        code: normalizedCode,
+        _id: { $ne: req.params.id },
+      });
+
+      if (duplicate) {
+        return res.status(409).json({
+          message: "Kode metode pembayaran sudah digunakan",
+        });
+      }
+
+      updatePayload.code = normalizedCode;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "type")) {
+      updatePayload.type = normalizeType(req.body.type);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "feeType")) {
+      updatePayload.feeType = normalizeFeeType(req.body.feeType);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "feeValue")) {
+      updatePayload.feeValue = toNumber(req.body.feeValue);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "currency")) {
+      updatePayload.currency = normalizeCurrency(req.body.currency);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "order")) {
+      updatePayload.order = toNumber(req.body.order, currentItem.order || 9999);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "isActive")) {
+      updatePayload.isActive = Boolean(req.body.isActive);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "provider")) {
+      updatePayload.provider = String(req.body.provider || "manual").trim();
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "logo")) {
+      updatePayload.logo = String(req.body.logo || "").trim();
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "gatewayChannelCode")) {
+      updatePayload.gatewayChannelCode = String(
+        req.body.gatewayChannelCode || ""
+      ).trim();
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "description")) {
+      updatePayload.description = String(req.body.description || "").trim();
+    }
+
+    const updated = await PaymentMethod.findByIdAndUpdate(
+      req.params.id,
+      updatePayload,
+      { new: true }
+    );
+
+    return res.status(200).json(updated);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error update metode pembayaran",
+      error: error.message,
+    });
+  }
+};
+
+exports.deletePaymentMethod = async (req, res) => {
+  try {
+    const deleted = await PaymentMethod.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        message: "Metode pembayaran tidak ditemukan",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Metode pembayaran berhasil dihapus",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error hapus metode pembayaran",
+      error: error.message,
+    });
+  }
+};

@@ -41,6 +41,7 @@ const primaryItems = [{ label: "Dashboard", href: "/dashboard" }];
 
 const menuItems = [
   { label: "Orders", href: "/orders" },
+  { label: "Payment Methods", href: "/payment-methods" },
   { label: "Admin Management", href: "/admins" },
   { label: "Website Settings", href: "/website-settings" },
 ];
