@@ -43,6 +43,11 @@ export type Order = {
     value?: string;
   }>;
   customerDisplay?: string;
+  contactDetail?: {
+    email?: string;
+    phoneCountryCode?: string;
+    phoneNumber?: string;
+  };
   region?: string;
   price?: {
     currency?: string;

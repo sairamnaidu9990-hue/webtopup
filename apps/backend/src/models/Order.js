@@ -100,6 +100,24 @@ const variantSnapshotSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const contactDetailSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      default: "",
+    },
+    phoneCountryCode: {
+      type: String,
+      default: "+62",
+    },
+    phoneNumber: {
+      type: String,
+      default: "",
+    },
+  },
+  { _id: false }
+);
+
 const ORDER_STATUSES = [
   "UNPAID",
   "PAID",
@@ -181,6 +199,10 @@ const orderSchema = new mongoose.Schema(
       default: "",
       index: true,
     },
+    contactDetail: {
+      type: contactDetailSchema,
+      default: () => ({}),
+    },
     region: {
       type: String,
       default: "ID",
@@ -252,5 +274,6 @@ orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ providerStatus: 1, createdAt: -1 });
 orderSchema.index({ paymentStatus: 1, createdAt: -1 });
 orderSchema.index({ "gameSnapshot.code": 1, createdAt: -1 });
+orderSchema.index({ "contactDetail.phoneNumber": 1, createdAt: -1 });
 
 module.exports = mongoose.model("Order", orderSchema);
