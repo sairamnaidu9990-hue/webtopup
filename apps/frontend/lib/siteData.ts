@@ -105,6 +105,12 @@ export type StorefrontPaymentMethod = {
   code: string;
   logo?: string;
   type: string;
+  category?: {
+    _id: string;
+    name: string;
+    code: string;
+    order: number;
+  } | null;
   feeType: "fixed" | "percent";
   feeValue: number;
   currency: string;
@@ -209,6 +215,17 @@ function normalizeStorefrontPaymentMethod(
     code: String(paymentMethod?.code || "").trim().toUpperCase(),
     logo: String(paymentMethod?.logo || "").trim(),
     type: String(paymentMethod?.type || "bank_transfer").trim(),
+    category:
+      paymentMethod?.category &&
+      typeof paymentMethod.category === "object" &&
+      String(paymentMethod.category._id || "").trim()
+        ? {
+            _id: String(paymentMethod.category._id || "").trim(),
+            name: String(paymentMethod.category.name || "").trim(),
+            code: String(paymentMethod.category.code || "").trim().toUpperCase(),
+            order: Number(paymentMethod.category.order || 9999),
+          }
+        : null,
     feeType: paymentMethod?.feeType === "percent" ? "percent" : "fixed",
     feeValue: Number(paymentMethod?.feeValue || 0),
     currency: String(paymentMethod?.currency || "IDR").trim().toUpperCase(),

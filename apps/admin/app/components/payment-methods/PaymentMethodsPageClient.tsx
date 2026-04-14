@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useState } from "react";
+import PaymentMethodCategoryManager from "./PaymentMethodCategoryManager";
 import PaymentMethodForm from "./PaymentMethodForm";
 import PaymentMethodList from "./PaymentMethodList";
 import SectionTitle from "@/app/components/ui/SectionTitle";
@@ -8,6 +9,7 @@ import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import type {
   PaymentFeeType,
   PaymentMethod,
+  PaymentMethodCategory,
   PaymentMethodType,
 } from "@/app/types/PaymentMethod";
 
@@ -19,6 +21,15 @@ function resetNumber(value: string, fallback: string) {
 }
 
 export default function PaymentMethodsPageClient() {
+  const [categories, setCategories] = useState<PaymentMethodCategory[]>([]);
+  const [categoryFormOpen, setCategoryFormOpen] = useState(false);
+  const [categoryEditingId, setCategoryEditingId] = useState<string | null>(null);
+  const [categorySuccess, setCategorySuccess] = useState("");
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryCode, setCategoryCode] = useState("");
+  const [categoryOrder, setCategoryOrder] = useState("9999");
+  const [categoryDescription, setCategoryDescription] = useState("");
+  const [categoryIsActive, setCategoryIsActive] = useState(true);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -26,6 +37,7 @@ export default function PaymentMethodsPageClient() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [typeFilter, setTypeFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -35,6 +47,7 @@ export default function PaymentMethodsPageClient() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [provider, setProvider] = useState("manual");
+  const [categoryId, setCategoryId] = useState("");
   const [logo, setLogo] = useState("");
   const [type, setType] = useState<PaymentMethodType>("bank_transfer");
   const [feeType, setFeeType] = useState<PaymentFeeType>("fixed");
@@ -48,11 +61,21 @@ export default function PaymentMethodsPageClient() {
 
   const deferredSearch = useDeferredValue(search);
 
+  const resetCategoryForm = () => {
+    setCategoryEditingId(null);
+    setCategoryName("");
+    setCategoryCode("");
+    setCategoryOrder("9999");
+    setCategoryDescription("");
+    setCategoryIsActive(true);
+  };
+
   const resetForm = () => {
     setEditingId(null);
     setName("");
     setCode("");
     setProvider("manual");
+    setCategoryId("");
     setLogo("");
     setType("bank_transfer");
     setFeeType("fixed");
@@ -62,6 +85,26 @@ export default function PaymentMethodsPageClient() {
     setDescription("");
     setIsActive(true);
     setOrder("9999");
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/payment-method-categories", {
+        cache: "no-store",
+      });
+      const payload = await parseJsonSafely<PaymentMethodCategory[]>(response);
+
+      if (!response.ok) {
+        throw new Error(
+          getResponseMessage(payload, "Gagal ambil kategori pembayaran")
+        );
+      }
+
+      setCategories(Array.isArray(payload) ? payload : []);
+    } catch (fetchError) {
+      console.error(fetchError);
+      setCategories([]);
+    }
   };
 
   const fetchPaymentMethods = async () => {
@@ -82,6 +125,10 @@ export default function PaymentMethodsPageClient() {
 
       if (typeFilter !== "ALL") {
         params.set("type", typeFilter);
+      }
+
+      if (categoryFilter !== "ALL") {
+        params.set("category", categoryFilter);
       }
 
       const response = await fetch(`/api/payment-methods?${params.toString()}`, {
@@ -122,7 +169,11 @@ export default function PaymentMethodsPageClient() {
   useEffect(() => {
     setLoading(true);
     fetchPaymentMethods();
-  }, [page, deferredSearch, statusFilter, typeFilter]);
+  }, [page, deferredSearch, statusFilter, typeFilter, categoryFilter]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   const handleEdit = (paymentMethod: PaymentMethod) => {
     setSuccess("");
@@ -130,6 +181,7 @@ export default function PaymentMethodsPageClient() {
     setName(paymentMethod.name);
     setCode(paymentMethod.code);
     setProvider(paymentMethod.provider || "manual");
+    setCategoryId(paymentMethod.category?._id || "");
     setLogo(paymentMethod.logo || "");
     setType(paymentMethod.type);
     setFeeType(paymentMethod.feeType);
@@ -140,6 +192,18 @@ export default function PaymentMethodsPageClient() {
     setIsActive(Boolean(paymentMethod.isActive));
     setOrder(String(paymentMethod.order ?? 9999));
     setFormOpen(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCategoryEdit = (category: PaymentMethodCategory) => {
+    setCategorySuccess("");
+    setCategoryEditingId(category._id);
+    setCategoryName(category.name);
+    setCategoryCode(category.code);
+    setCategoryOrder(String(category.order ?? 9999));
+    setCategoryDescription(category.description || "");
+    setCategoryIsActive(Boolean(category.isActive));
+    setCategoryFormOpen(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -172,6 +236,82 @@ export default function PaymentMethodsPageClient() {
     }
   };
 
+  const handleCategoryDelete = async (id: string) => {
+    if (!confirm("Yakin ingin menghapus kategori pembayaran ini?")) return;
+
+    try {
+      const response = await fetch(`/api/payment-method-categories/${id}`, {
+        method: "DELETE",
+      });
+      const payload = await parseJsonSafely<{ message?: string }>(response);
+
+      if (!response.ok) {
+        throw new Error(
+          getResponseMessage(payload, "Gagal hapus kategori pembayaran")
+        );
+      }
+
+      await Promise.all([fetchCategories(), fetchPaymentMethods()]);
+    } catch (deleteError) {
+      alert(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Gagal hapus kategori pembayaran"
+      );
+    }
+  };
+
+  const handleCategorySubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const url = categoryEditingId
+        ? `/api/payment-method-categories/${categoryEditingId}`
+        : "/api/payment-method-categories";
+      const method = categoryEditingId ? "PATCH" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: categoryName,
+          code: categoryCode,
+          description: categoryDescription,
+          isActive: categoryIsActive,
+          order: Number(resetNumber(categoryOrder, "9999")),
+        }),
+      });
+
+      const payload = await parseJsonSafely<{ message?: string }>(response);
+
+      if (!response.ok) {
+        throw new Error(
+          getResponseMessage(payload, "Gagal simpan kategori pembayaran")
+        );
+      }
+
+      setCategorySuccess(
+        categoryEditingId
+          ? "Kategori pembayaran berhasil diperbarui"
+          : "Kategori pembayaran berhasil ditambahkan"
+      );
+      resetCategoryForm();
+      await fetchCategories();
+      setTimeout(() => setCategorySuccess(""), 3000);
+    } catch (submitError) {
+      alert(
+        submitError instanceof Error
+          ? submitError.message
+          : "Gagal simpan kategori pembayaran"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
@@ -191,6 +331,7 @@ export default function PaymentMethodsPageClient() {
           name,
           code,
           provider,
+          category: categoryId,
           logo,
           type,
           feeType,
@@ -234,7 +375,38 @@ export default function PaymentMethodsPageClient() {
     <div className="space-y-6">
       <SectionTitle
         title="Payment Methods"
-        subtitle="Kelola jenis bank, QRIS, e-wallet, logo, biaya, dan urutan metode pembayaran agar storefront siap disambungkan ke payment gateway."
+        subtitle="Kelola kategori pembayaran, logo bank, biaya, dan urutan tampil agar storefront siap mengikuti flow payment gateway yang rapi."
+      />
+
+      <PaymentMethodCategoryManager
+        categories={categories}
+        isOpen={categoryFormOpen}
+        editingId={categoryEditingId}
+        success={categorySuccess}
+        submitting={submitting}
+        name={categoryName}
+        code={categoryCode}
+        order={categoryOrder}
+        description={categoryDescription}
+        isActive={categoryIsActive}
+        setName={setCategoryName}
+        setCode={setCategoryCode}
+        setOrder={setCategoryOrder}
+        setDescription={setCategoryDescription}
+        setIsActive={setCategoryIsActive}
+        onSubmit={handleCategorySubmit}
+        onOpen={() => {
+          setCategorySuccess("");
+          resetCategoryForm();
+          setCategoryFormOpen(true);
+        }}
+        onClose={() => {
+          setCategoryFormOpen(false);
+          setCategorySuccess("");
+          resetCategoryForm();
+        }}
+        onEdit={handleCategoryEdit}
+        onDelete={handleCategoryDelete}
       />
 
       <PaymentMethodForm
@@ -245,6 +417,8 @@ export default function PaymentMethodsPageClient() {
         name={name}
         code={code}
         provider={provider}
+        categoryId={categoryId}
+        categories={categories}
         logo={logo}
         type={type}
         feeType={feeType}
@@ -257,6 +431,7 @@ export default function PaymentMethodsPageClient() {
         setName={setName}
         setCode={setCode}
         setProvider={setProvider}
+        setCategoryId={setCategoryId}
         setLogo={setLogo}
         setType={setType}
         setFeeType={setFeeType}
@@ -289,10 +464,12 @@ export default function PaymentMethodsPageClient() {
         </div>
       ) : (
         <PaymentMethodList
+          categories={categories}
           paymentMethods={paymentMethods}
           search={search}
           statusFilter={statusFilter}
           typeFilter={typeFilter}
+          categoryFilter={categoryFilter}
           totalItems={totalItems}
           page={page}
           totalPages={totalPages}
@@ -306,6 +483,10 @@ export default function PaymentMethodsPageClient() {
           }}
           onTypeFilterChange={(value) => {
             setTypeFilter(value);
+            setPage(1);
+          }}
+          onCategoryFilterChange={(value) => {
+            setCategoryFilter(value);
             setPage(1);
           }}
           onPageChange={setPage}

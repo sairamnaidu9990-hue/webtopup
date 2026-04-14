@@ -1,4 +1,5 @@
 const PaymentMethod = require("../models/PaymentMethod");
+const PaymentMethodCategory = require("../models/PaymentMethodCategory");
 
 const PAYMENT_METHOD_TYPES = [
   "bank_transfer",
@@ -48,12 +49,27 @@ function normalizeCurrency(value) {
   return String(value || "IDR").trim().toUpperCase() || "IDR";
 }
 
+async function resolveCategory(categoryId) {
+  const normalizedId = String(categoryId || "").trim();
+
+  if (!normalizedId) {
+    return null;
+  }
+
+  return PaymentMethodCategory.findById(normalizedId);
+}
+
+function populateCategory(query) {
+  return query.populate("category", "name code order isActive");
+}
+
 exports.getPaymentMethods = async (req, res) => {
   try {
     const filter = {};
     const search = String(req.query.search || "").trim();
     const status = String(req.query.status || "ALL").trim().toUpperCase();
     const type = String(req.query.type || "ALL").trim().toLowerCase();
+    const category = String(req.query.category || "").trim();
     const page = toPositiveInteger(req.query.page, 1);
     const limit = Math.min(toPositiveInteger(req.query.limit, 20), 100);
     const usePagination =
@@ -61,7 +77,8 @@ exports.getPaymentMethods = async (req, res) => {
       req.query.limit != null ||
       req.query.search != null ||
       req.query.status != null ||
-      req.query.type != null;
+      req.query.type != null ||
+      req.query.category != null;
 
     if (search) {
       const regex = new RegExp(escapeRegex(search), "i");
@@ -83,7 +100,11 @@ exports.getPaymentMethods = async (req, res) => {
       filter.type = type;
     }
 
-    const baseQuery = PaymentMethod.find(filter).sort({
+    if (category) {
+      filter.category = category;
+    }
+
+    const baseQuery = populateCategory(PaymentMethod.find(filter)).sort({
       order: 1,
       createdAt: -1,
     });
@@ -96,10 +117,12 @@ exports.getPaymentMethods = async (req, res) => {
     const totalItems = await PaymentMethod.countDocuments(filter);
     const totalPages = Math.max(1, Math.ceil(totalItems / limit));
     const safePage = Math.min(page, totalPages);
-    const items = await PaymentMethod.find(filter)
-      .sort({ order: 1, createdAt: -1 })
-      .skip((safePage - 1) * limit)
-      .limit(limit);
+    const items = await populateCategory(
+      PaymentMethod.find(filter)
+        .sort({ order: 1, createdAt: -1 })
+        .skip((safePage - 1) * limit)
+        .limit(limit)
+    );
 
     return res.status(200).json({
       items,
@@ -120,14 +143,20 @@ exports.getPaymentMethods = async (req, res) => {
 
 exports.getPublicPaymentMethods = async (req, res) => {
   try {
-    const items = await PaymentMethod.find({ isActive: true })
-      .sort({ order: 1, createdAt: -1 })
-      .select(
-        "name code logo type feeType feeValue currency gatewayChannelCode description order"
-      );
+    const items = await populateCategory(
+      PaymentMethod.find({ isActive: true })
+        .sort({ order: 1, createdAt: -1 })
+        .select(
+          "name code logo type feeType feeValue currency gatewayChannelCode description order category"
+        )
+    );
+
+    const visibleItems = items.filter(
+      (item) => !item.category || item.category.isActive !== false
+    );
 
     return res.status(200).json({
-      items,
+      items: visibleItems,
     });
   } catch (error) {
     return res.status(500).json({
@@ -145,6 +174,7 @@ exports.createPaymentMethod = async (req, res) => {
       provider = "manual",
       logo = "",
       type = "bank_transfer",
+      category = "",
       feeType = "fixed",
       feeValue = 0,
       currency = "IDR",
@@ -169,10 +199,19 @@ exports.createPaymentMethod = async (req, res) => {
       });
     }
 
+    const categoryDocument = await resolveCategory(category);
+
+    if (category && !categoryDocument) {
+      return res.status(400).json({
+        message: "Kategori metode pembayaran tidak valid",
+      });
+    }
+
     const item = await PaymentMethod.create({
       name: String(name).trim(),
       code: normalizedCode,
       provider: String(provider || "manual").trim(),
+      category: categoryDocument?._id || null,
       logo: String(logo || "").trim(),
       type: normalizeType(type),
       feeType: normalizeFeeType(feeType),
@@ -184,7 +223,9 @@ exports.createPaymentMethod = async (req, res) => {
       order: toNumber(order, 9999),
     });
 
-    return res.status(201).json(item);
+    const created = await populateCategory(PaymentMethod.findById(item._id));
+
+    return res.status(201).json(created);
   } catch (error) {
     return res.status(500).json({
       message: "Error create metode pembayaran",
@@ -260,6 +301,18 @@ exports.updatePaymentMethod = async (req, res) => {
       updatePayload.provider = String(req.body.provider || "manual").trim();
     }
 
+    if (Object.prototype.hasOwnProperty.call(req.body, "category")) {
+      const categoryDocument = await resolveCategory(req.body.category);
+
+      if (req.body.category && !categoryDocument) {
+        return res.status(400).json({
+          message: "Kategori metode pembayaran tidak valid",
+        });
+      }
+
+      updatePayload.category = categoryDocument?._id || null;
+    }
+
     if (Object.prototype.hasOwnProperty.call(req.body, "logo")) {
       updatePayload.logo = String(req.body.logo || "").trim();
     }
@@ -274,10 +327,10 @@ exports.updatePaymentMethod = async (req, res) => {
       updatePayload.description = String(req.body.description || "").trim();
     }
 
-    const updated = await PaymentMethod.findByIdAndUpdate(
-      req.params.id,
-      updatePayload,
-      { new: true }
+    const updated = await populateCategory(
+      PaymentMethod.findByIdAndUpdate(req.params.id, updatePayload, {
+        new: true,
+      })
     );
 
     return res.status(200).json(updated);

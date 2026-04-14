@@ -1,7 +1,11 @@
 "use client";
 
 import PaginationControls from "@/app/components/ui/PaginationControls";
-import type { PaymentMethod, PaymentMethodType } from "@/app/types/PaymentMethod";
+import type {
+  PaymentMethod,
+  PaymentMethodCategory,
+  PaymentMethodType,
+} from "@/app/types/PaymentMethod";
 
 const PAYMENT_TYPES: PaymentMethodType[] = [
   "bank_transfer",
@@ -12,16 +16,19 @@ const PAYMENT_TYPES: PaymentMethodType[] = [
 ];
 
 type Props = {
+  categories: PaymentMethodCategory[];
   paymentMethods: PaymentMethod[];
   search: string;
   statusFilter: string;
   typeFilter: string;
+  categoryFilter: string;
   totalItems: number;
   page: number;
   totalPages: number;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: string) => void;
   onTypeFilterChange: (value: string) => void;
+  onCategoryFilterChange: (value: string) => void;
   onPageChange: (page: number) => void;
   onEdit: (paymentMethod: PaymentMethod) => void;
   onDelete: (id: string) => void;
@@ -36,16 +43,19 @@ function formatFee(paymentMethod: PaymentMethod) {
 }
 
 export default function PaymentMethodList({
+  categories,
   paymentMethods,
   search,
   statusFilter,
   typeFilter,
+  categoryFilter,
   totalItems,
   page,
   totalPages,
   onSearchChange,
   onStatusFilterChange,
   onTypeFilterChange,
+  onCategoryFilterChange,
   onPageChange,
   onEdit,
   onDelete,
@@ -60,7 +70,7 @@ export default function PaymentMethodList({
           </p>
         </div>
 
-        <div className="grid w-full gap-3 md:grid-cols-3 lg:max-w-3xl">
+        <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-4 lg:max-w-5xl">
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Cari Metode
@@ -102,6 +112,24 @@ export default function PaymentMethodList({
               {PAYMENT_TYPES.map((type) => (
                 <option key={type} value={type}>
                   {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Kategori
+            </label>
+            <select
+              value={categoryFilter}
+              onChange={(event) => onCategoryFilterChange(event.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            >
+              <option value="ALL">Semua kategori</option>
+              {categories.map((category) => (
+                <option key={category._id} value={category._id}>
+                  {category.name}
                 </option>
               ))}
             </select>
@@ -153,6 +181,9 @@ export default function PaymentMethodList({
                   Fee {formatFee(paymentMethod)} • Urutan {paymentMethod.order}
                 </p>
                 <div className="mt-1 flex flex-wrap gap-2 text-[11px]">
+                  <span className="rounded-full bg-fuchsia-50 px-2 py-1 text-fuchsia-700">
+                    {paymentMethod.category?.name || "Tanpa kategori"}
+                  </span>
                   <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600">
                     {paymentMethod.type}
                   </span>

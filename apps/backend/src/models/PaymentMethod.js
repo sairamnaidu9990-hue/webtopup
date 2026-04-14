@@ -19,6 +19,12 @@ const paymentMethodSchema = new mongoose.Schema(
       default: "manual",
       trim: true,
     },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PaymentMethodCategory",
+      default: null,
+      index: true,
+    },
     logo: {
       type: String,
       default: "",
@@ -70,5 +76,6 @@ const paymentMethodSchema = new mongoose.Schema(
 
 paymentMethodSchema.index({ order: 1, name: 1 });
 paymentMethodSchema.index({ isActive: 1, order: 1, name: 1 });
+paymentMethodSchema.index({ category: 1, isActive: 1, order: 1 });
 
 module.exports = mongoose.model("PaymentMethod", paymentMethodSchema);

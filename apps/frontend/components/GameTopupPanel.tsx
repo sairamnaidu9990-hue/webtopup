@@ -37,6 +37,22 @@ function formatCurrency(value: number, currency: string) {
   }
 }
 
+function getPaymentTotal(
+  baseAmount: number,
+  paymentMethod?: StorefrontPaymentMethod | null
+) {
+  if (!paymentMethod) {
+    return baseAmount;
+  }
+
+  const fee =
+    paymentMethod.feeType === "percent"
+      ? Math.ceil((baseAmount * Number(paymentMethod.feeValue || 0)) / 100)
+      : Number(paymentMethod.feeValue || 0);
+
+  return baseAmount + fee;
+}
+
 function createInitialInputValues(inputs: GameDetail["inputs"]) {
   return inputs.reduce<Record<string, string>>((acc, input) => {
     const key = input.name || input.title;
@@ -148,6 +164,89 @@ function buildVariantGroups(
   return visibleGroups;
 }
 
+function buildPaymentMethodGroups(paymentMethods: StorefrontPaymentMethod[]) {
+  const groups = new Map<
+    string,
+    {
+      id: string;
+      title: string;
+      order: number;
+      methods: StorefrontPaymentMethod[];
+    }
+  >();
+
+  paymentMethods.forEach((paymentMethod) => {
+    const categoryId = String(paymentMethod.category?._id || "").trim();
+    const groupId = categoryId || "other";
+    const groupTitle = paymentMethod.category?.name || "Metode Lainnya";
+    const groupOrder = Number(paymentMethod.category?.order || 9999);
+    const currentGroup = groups.get(groupId);
+
+    if (currentGroup) {
+      currentGroup.methods.push(paymentMethod);
+      return;
+    }
+
+    groups.set(groupId, {
+      id: groupId,
+      title: groupTitle,
+      order: groupOrder,
+      methods: [paymentMethod],
+    });
+  });
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      methods: [...group.methods].sort(
+        (a, b) => a.order - b.order || a.name.localeCompare(b.name)
+      ),
+    }))
+    .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
+}
+
+function PaymentMethodLogo({
+  paymentMethod,
+  compact = false,
+}: {
+  paymentMethod: StorefrontPaymentMethod;
+  compact?: boolean;
+}) {
+  const wrapperClassName = compact
+    ? "inline-flex h-6 items-center rounded-[6px] bg-white px-1.5 shadow-[0_6px_12px_rgba(0,0,0,0.12)]"
+    : "inline-flex items-center rounded-[10px] bg-white px-2 py-1.5 shadow-[0_8px_16px_rgba(0,0,0,0.12)]";
+  const imageClassName = compact
+    ? "h-3.5 w-auto max-w-[52px] object-contain object-left"
+    : "h-7 w-auto max-w-[92px] object-contain object-left";
+
+  if (paymentMethod.logo) {
+    return (
+      <div className={wrapperClassName}>
+        <Image
+          src={paymentMethod.logo}
+          alt={paymentMethod.name}
+          width={compact ? 52 : 92}
+          height={compact ? 14 : 28}
+          sizes={compact ? "52px" : "92px"}
+          className={imageClassName}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`inline-flex items-center justify-center bg-white font-semibold text-[#1f2024] ${
+        compact
+          ? "h-6 min-w-[52px] rounded-[6px] px-1.5 text-[9px] shadow-[0_6px_12px_rgba(0,0,0,0.12)]"
+          : "h-10 min-w-[92px] rounded-[10px] px-3 text-[11px] shadow-[0_8px_16px_rgba(0,0,0,0.12)]"
+      }`}
+    >
+      {paymentMethod.name}
+    </div>
+  );
+}
+
 function renderInputControl(
   gameInput: GameDetail["inputs"][number],
   value: string,
@@ -252,6 +351,9 @@ export default function GameTopupPanel({
     message: string;
   } | null>(null);
   const [isMobileSummaryExpanded, setIsMobileSummaryExpanded] = useState(false);
+  const [openPaymentGroups, setOpenPaymentGroups] = useState<
+    Record<string, boolean>
+  >({});
   const [highlightedStep, setHighlightedStep] = useState<
     "account" | "variant" | "payment" | "contact" | null
   >(null);
@@ -264,6 +366,7 @@ export default function GameTopupPanel({
   const selectedVariant =
     variants.find((variant) => variant._id === selectedVariantId) || null;
   const variantGroups = buildVariantGroups(game, variants);
+  const paymentMethodGroups = buildPaymentMethodGroups(paymentMethods);
   const variantStepNumber = showAccountStep ? 2 : 1;
   const paymentStepNumber = variantStepNumber + 1;
   const contactStepNumber = paymentStepNumber + 1;
@@ -271,12 +374,8 @@ export default function GameTopupPanel({
     paymentMethods.find((method) => method.code === paymentMethodCode) ||
     null;
   const paymentFee = selectedVariant
-    ? selectedPaymentMethod?.feeType === "percent"
-      ? Math.ceil(
-          (selectedVariant.price * Number(selectedPaymentMethod.feeValue || 0)) /
-            100
-        )
-      : Number(selectedPaymentMethod?.feeValue || 0)
+    ? getPaymentTotal(selectedVariant.price, selectedPaymentMethod) -
+      selectedVariant.price
     : 0;
   const totalPayment = (selectedVariant?.price || 0) + paymentFee;
   const isAccountDataReady =
@@ -320,6 +419,33 @@ export default function GameTopupPanel({
       }
     };
   }, []);
+
+  useEffect(() => {
+    setOpenPaymentGroups((current) => {
+      const next: Record<string, boolean> = {};
+      let firstOpenAssigned = false;
+
+      paymentMethodGroups.forEach((group) => {
+        const containsSelected = group.methods.some(
+          (paymentMethod) => paymentMethod.code === paymentMethodCode
+        );
+        const defaultOpen = containsSelected || !firstOpenAssigned;
+        next[group.id] = containsSelected ? true : current[group.id] ?? defaultOpen;
+
+        if (next[group.id]) {
+          firstOpenAssigned = true;
+        }
+      });
+
+      const currentKeys = Object.keys(current);
+      const nextKeys = Object.keys(next);
+      const isSameShape =
+        currentKeys.length === nextKeys.length &&
+        nextKeys.every((key) => current[key] === next[key]);
+
+      return isSameShape ? current : next;
+    });
+  }, [paymentMethods, paymentMethodCode]);
 
   const focusStep = (
     step: "account" | "variant" | "payment" | "contact",
@@ -370,6 +496,21 @@ export default function GameTopupPanel({
 
     window.requestAnimationFrame(() => {
       focusStep("payment", paymentStepRef);
+    });
+  };
+
+  const handlePaymentMethodSelect = (methodCode: string) => {
+    if (!selectedVariant) {
+      showAlert("Silakan pilih nominal terlebih dahulu.");
+      focusStep("variant", variantStepRef);
+      return;
+    }
+
+    setSelectionAlert(null);
+    setPaymentMethodCode(methodCode);
+
+    window.requestAnimationFrame(() => {
+      focusStep("contact", contactStepRef);
     });
   };
 
@@ -578,26 +719,109 @@ export default function GameTopupPanel({
             >
               {paymentMethods.length > 0 ? (
                 <div className="space-y-3">
-                  <label className="block">
-                    <span className="mb-2 inline-flex items-center gap-1.5 text-[12px] font-medium text-white/88">
-                      Bank Pembayaran
-                    </span>
-                    <select
-                      value={paymentMethodCode}
-                      onChange={(event) => {
-                        setSelectionAlert(null);
-                        setPaymentMethodCode(event.target.value);
-                      }}
-                      className="h-11 w-full rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-base text-white outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] sm:h-[42px] sm:text-[13px]"
-                    >
-                      <option value="">Pilih metode pembayaran</option>
-                      {paymentMethods.map((method) => (
-                        <option key={method.code} value={method.code}>
-                          {method.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  {paymentMethodGroups.map((group) => {
+                    const isOpen = openPaymentGroups[group.id] ?? false;
+                    const hasSelectedMethod = group.methods.some(
+                      (paymentMethod) => paymentMethod.code === paymentMethodCode
+                    );
+
+                    return (
+                      <div
+                        key={group.id}
+                        className={`overflow-hidden rounded-[16px] border transition ${
+                          hasSelectedMethod
+                            ? "border-[var(--accent)] bg-[#3a3a3f] shadow-[0_0_0_1px_var(--accent-glow)]"
+                            : "border-white/8 bg-[#333338]"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenPaymentGroups((current) => ({
+                              ...current,
+                              [group.id]: !isOpen,
+                            }))
+                          }
+                          className="flex w-full items-center justify-between gap-4 bg-[#26262b] px-4 py-3 text-left"
+                        >
+                          <span className="text-[12px] font-semibold text-white">
+                            {group.title}
+                          </span>
+                          <span className="text-sm text-white/72">
+                            {isOpen ? "▴" : "▾"}
+                          </span>
+                        </button>
+
+                        {isOpen ? (
+                          <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
+                            {group.methods.map((paymentMethod) => {
+                              const isSelected =
+                                paymentMethodCode === paymentMethod.code;
+                              const totalByMethod = selectedVariant
+                                ? getPaymentTotal(
+                                    selectedVariant.price,
+                                    paymentMethod
+                                  )
+                                : 0;
+
+                              return (
+                                <button
+                                  key={paymentMethod.code}
+                                  type="button"
+                                  onClick={() =>
+                                    handlePaymentMethodSelect(paymentMethod.code)
+                                  }
+                                  className={`rounded-[14px] border px-3 py-3 text-left transition ${
+                                    isSelected
+                                      ? "border-[var(--accent)] bg-[#4b4b50] shadow-[0_0_0_1px_var(--accent-glow)]"
+                                      : "border-white/8 bg-[#4a4a4f] hover:border-[rgba(211,59,59,0.55)]"
+                                  }`}
+                                >
+                                  <div className="flex min-h-[44px] items-start">
+                                    <PaymentMethodLogo paymentMethod={paymentMethod} />
+                                  </div>
+
+                                  <p className="mt-3 text-[12px] font-medium text-white/88">
+                                    {paymentMethod.name}
+                                  </p>
+
+                                  <p className="mt-2 text-[12px] font-semibold text-white">
+                                    {selectedVariant
+                                      ? formatCurrency(
+                                          totalByMethod,
+                                          paymentMethod.currency ||
+                                            selectedVariant.currency
+                                        )
+                                      : "Pilih nominal dulu"}
+                                  </p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto px-4 py-3">
+                            <div className="flex min-w-max items-center justify-end gap-2">
+                              {group.methods.map((paymentMethod) => (
+                                <div
+                                  key={paymentMethod.code}
+                                  className={`rounded-[8px] transition ${
+                                    paymentMethodCode === paymentMethod.code
+                                      ? "ring-1 ring-[var(--accent)]"
+                                      : ""
+                                  }`}
+                                >
+                                  <PaymentMethodLogo
+                                    paymentMethod={paymentMethod}
+                                    compact
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="rounded-[16px] border border-dashed border-white/10 bg-[#242429] px-4 py-4 text-[13px] text-white/58">

@@ -2,6 +2,7 @@
 
 import type {
   PaymentFeeType,
+  PaymentMethodCategory,
   PaymentMethodType,
 } from "@/app/types/PaymentMethod";
 
@@ -23,6 +24,8 @@ type Props = {
   name: string;
   code: string;
   provider: string;
+  categoryId: string;
+  categories: PaymentMethodCategory[];
   logo: string;
   type: PaymentMethodType;
   feeType: PaymentFeeType;
@@ -35,6 +38,7 @@ type Props = {
   setName: (value: string) => void;
   setCode: (value: string) => void;
   setProvider: (value: string) => void;
+  setCategoryId: (value: string) => void;
   setLogo: (value: string) => void;
   setType: (value: PaymentMethodType) => void;
   setFeeType: (value: PaymentFeeType) => void;
@@ -58,6 +62,8 @@ export default function PaymentMethodForm({
   name,
   code,
   provider,
+  categoryId,
+  categories,
   logo,
   type,
   feeType,
@@ -70,6 +76,7 @@ export default function PaymentMethodForm({
   setName,
   setCode,
   setProvider,
+  setCategoryId,
   setLogo,
   setType,
   setFeeType,
@@ -143,6 +150,22 @@ export default function PaymentMethodForm({
               placeholder="Contoh: manual"
               className={fieldClassName}
             />
+          </label>
+
+          <label className="block">
+            <span className={labelClassName}>Kategori Pembayaran</span>
+            <select
+              value={categoryId}
+              onChange={(event) => setCategoryId(event.target.value)}
+              className={fieldClassName}
+            >
+              <option value="">Tanpa kategori</option>
+              {categories.map((category) => (
+                <option key={category._id} value={category._id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="block">
