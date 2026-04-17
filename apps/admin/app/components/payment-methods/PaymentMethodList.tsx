@@ -180,6 +180,14 @@ export default function PaymentMethodList({
                 <p className="text-xs text-gray-400">
                   Fee {formatFee(paymentMethod)} • Urutan {paymentMethod.order}
                 </p>
+                {paymentMethod.accountNumber ? (
+                  <p className="text-xs text-gray-400">
+                    Rek {paymentMethod.accountNumber}
+                    {paymentMethod.accountHolderName
+                      ? ` • ${paymentMethod.accountHolderName}`
+                      : ""}
+                  </p>
+                ) : null}
                 <div className="mt-1 flex flex-wrap gap-2 text-[11px]">
                   <span className="rounded-full bg-fuchsia-50 px-2 py-1 text-fuchsia-700">
                     {paymentMethod.category?.name || "Tanpa kategori"}

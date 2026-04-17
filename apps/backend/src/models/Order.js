@@ -126,6 +126,134 @@ const contactDetailSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const paymentMethodSnapshotSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      default: "",
+    },
+    code: {
+      type: String,
+      default: "",
+    },
+    provider: {
+      type: String,
+      default: "manual",
+    },
+    type: {
+      type: String,
+      default: "bank_transfer",
+    },
+    categoryName: {
+      type: String,
+      default: "",
+    },
+    categoryCode: {
+      type: String,
+      default: "",
+    },
+    logo: {
+      type: String,
+      default: "",
+    },
+    currency: {
+      type: String,
+      default: "IDR",
+    },
+    feeType: {
+      type: String,
+      default: "fixed",
+    },
+    feeValue: {
+      type: Number,
+      default: 0,
+    },
+    gatewayChannelCode: {
+      type: String,
+      default: "",
+    },
+    description: {
+      type: String,
+      default: "",
+    },
+    accountHolderName: {
+      type: String,
+      default: "",
+    },
+    accountNumber: {
+      type: String,
+      default: "",
+    },
+  },
+  { _id: false }
+);
+
+const paymentGatewaySchema = new mongoose.Schema(
+  {
+    provider: {
+      type: String,
+      default: "",
+    },
+    channelCode: {
+      type: String,
+      default: "",
+    },
+    transactionId: {
+      type: String,
+      default: "",
+    },
+    reference: {
+      type: String,
+      default: "",
+    },
+    payUrl: {
+      type: String,
+      default: "",
+    },
+    checkoutUrl: {
+      type: String,
+      default: "",
+    },
+    qrLink: {
+      type: String,
+      default: "",
+    },
+    qrString: {
+      type: String,
+      default: "",
+    },
+    virtualAccountNumber: {
+      type: String,
+      default: "",
+    },
+    instructionsHtml: {
+      type: String,
+      default: "",
+    },
+    rawStatus: {
+      type: String,
+      default: "",
+    },
+    totalPaid: {
+      type: Number,
+      default: 0,
+    },
+    netAmount: {
+      type: Number,
+      default: 0,
+    },
+    expiresAt: {
+      type: Date,
+      default: null,
+    },
+    updatedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  { _id: false }
+);
+
 const ORDER_STATUSES = [
   "UNPAID",
   "PAID",
@@ -209,6 +337,14 @@ const orderSchema = new mongoose.Schema(
     },
     contactDetail: {
       type: contactDetailSchema,
+      default: () => ({}),
+    },
+    paymentMethodSnapshot: {
+      type: paymentMethodSnapshotSchema,
+      default: () => ({}),
+    },
+    paymentGateway: {
+      type: paymentGatewaySchema,
       default: () => ({}),
     },
     region: {

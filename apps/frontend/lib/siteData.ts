@@ -138,10 +138,43 @@ export type StorefrontOrder = {
   customerDisplay: string;
   paymentMethodCode: string;
   paymentMethodName: string;
+  paymentMethodSnapshot: {
+    name: string;
+    code: string;
+    provider: string;
+    type: string;
+    categoryName: string;
+    categoryCode: string;
+    logo: string;
+    currency: string;
+    feeType: string;
+    feeValue: number;
+    gatewayChannelCode: string;
+    description: string;
+    accountHolderName: string;
+    accountNumber: string;
+  };
   contactDetail: {
     email: string;
     phoneCountryCode: string;
     phoneNumber: string;
+  };
+  paymentGateway: {
+    provider: string;
+    channelCode: string;
+    transactionId: string;
+    reference: string;
+    payUrl: string;
+    checkoutUrl: string;
+    qrLink: string;
+    qrString: string;
+    virtualAccountNumber: string;
+    instructionsHtml: string;
+    rawStatus: string;
+    totalPaid: number;
+    netAmount: number;
+    expiresAt: string;
+    updatedAt: string;
   };
   price: {
     currency: string;
@@ -313,10 +346,55 @@ function normalizeStorefrontOrder(
     customerDisplay: String(order?.customerDisplay || "").trim(),
     paymentMethodCode: String(order?.paymentMethodCode || "").trim().toUpperCase(),
     paymentMethodName: String(order?.paymentMethodName || "").trim(),
+    paymentMethodSnapshot: {
+      name: String(order?.paymentMethodSnapshot?.name || "").trim(),
+      code: String(order?.paymentMethodSnapshot?.code || "").trim().toUpperCase(),
+      provider: String(order?.paymentMethodSnapshot?.provider || "").trim(),
+      type: String(order?.paymentMethodSnapshot?.type || "").trim(),
+      categoryName: String(order?.paymentMethodSnapshot?.categoryName || "").trim(),
+      categoryCode: String(order?.paymentMethodSnapshot?.categoryCode || "")
+        .trim()
+        .toUpperCase(),
+      logo: String(order?.paymentMethodSnapshot?.logo || "").trim(),
+      currency: String(order?.paymentMethodSnapshot?.currency || "IDR")
+        .trim()
+        .toUpperCase(),
+      feeType: String(order?.paymentMethodSnapshot?.feeType || "").trim(),
+      feeValue: Number(order?.paymentMethodSnapshot?.feeValue || 0),
+      gatewayChannelCode: String(
+        order?.paymentMethodSnapshot?.gatewayChannelCode || ""
+      ).trim(),
+      description: String(order?.paymentMethodSnapshot?.description || "").trim(),
+      accountHolderName: String(
+        order?.paymentMethodSnapshot?.accountHolderName || ""
+      ).trim(),
+      accountNumber: String(order?.paymentMethodSnapshot?.accountNumber || "").trim(),
+    },
     contactDetail: {
       email: String(order?.contactDetail?.email || "").trim(),
       phoneCountryCode: String(order?.contactDetail?.phoneCountryCode || "+62").trim(),
       phoneNumber: String(order?.contactDetail?.phoneNumber || "").trim(),
+    },
+    paymentGateway: {
+      provider: String(order?.paymentGateway?.provider || "").trim(),
+      channelCode: String(order?.paymentGateway?.channelCode || "").trim().toUpperCase(),
+      transactionId: String(order?.paymentGateway?.transactionId || "").trim(),
+      reference: String(order?.paymentGateway?.reference || "").trim(),
+      payUrl: String(order?.paymentGateway?.payUrl || "").trim(),
+      checkoutUrl: String(order?.paymentGateway?.checkoutUrl || "").trim(),
+      qrLink: String(order?.paymentGateway?.qrLink || "").trim(),
+      qrString: String(order?.paymentGateway?.qrString || "").trim(),
+      virtualAccountNumber: String(
+        order?.paymentGateway?.virtualAccountNumber || ""
+      ).trim(),
+      instructionsHtml: String(
+        order?.paymentGateway?.instructionsHtml || ""
+      ).trim(),
+      rawStatus: String(order?.paymentGateway?.rawStatus || "").trim(),
+      totalPaid: Number(order?.paymentGateway?.totalPaid || 0),
+      netAmount: Number(order?.paymentGateway?.netAmount || 0),
+      expiresAt: String(order?.paymentGateway?.expiresAt || ""),
+      updatedAt: String(order?.paymentGateway?.updatedAt || ""),
     },
     price: {
       currency: String(order?.price?.currency || "IDR").trim().toUpperCase(),

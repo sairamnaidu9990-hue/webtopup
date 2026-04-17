@@ -3,6 +3,17 @@ const Order = require("../models/Order");
 const PaymentMethod = require("../models/PaymentMethod");
 const SiteSetting = require("../models/SiteSetting");
 const Variant = require("../models/Variant");
+const {
+  checkoutBangjeff,
+  getBangjeffOrderByInvoiceNumber,
+  getBangjeffOrderByReferenceNumber,
+} = require("../services/bangjeff.service");
+const {
+  checkTokopayTransaction,
+  createTokopayTransaction,
+  getTokopayConfig,
+  verifyTokopayCallbackSignature,
+} = require("../services/tokopay.service");
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -17,6 +28,182 @@ const ORDER_STATUSES = [
 ];
 const PAYMENT_STATUSES = ["UNPAID", "PAID", "FAILED", "EXPIRED", "REFUNDED"];
 const PROCESSING_SUMMARY_STATUSES = ["PAID", "PROCESSING"];
+
+function toDigits(value) {
+  return toStringValue(value).replace(/[^0-9]/g, "");
+}
+
+function parseTokopayTimestamp(value) {
+  const normalized = toStringValue(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const isoCandidate = normalized.includes("T")
+    ? normalized
+    : normalized.replace(" ", "T");
+  const withOffset = /(?:Z|[+-]\d{2}:\d{2})$/i.test(isoCandidate)
+    ? isoCandidate
+    : `${isoCandidate}+07:00`;
+  const parsedDate = new Date(withOffset);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return parsedDate;
+}
+
+function resolveSiteBaseUrl(siteSetting) {
+  const candidates = [
+    toStringValue(siteSetting?.siteDomain),
+    toStringValue(process.env.FRONTEND_URL),
+    toStringValue(process.env.NEXT_PUBLIC_FRONTEND_URL),
+    toStringValue(process.env.PUBLIC_APP_URL),
+    toStringValue(process.env.APP_URL),
+    "http://localhost:3001",
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+
+    try {
+      return new URL(candidate).toString().replace(/\/+$/, "");
+    } catch {
+      continue;
+    }
+  }
+
+  return "http://localhost:3001";
+}
+
+function buildInvoiceUrl(siteSetting, invoiceNumber) {
+  const baseUrl = resolveSiteBaseUrl(siteSetting);
+  return `${baseUrl}/invoice/${encodeURIComponent(invoiceNumber)}`;
+}
+
+function getTokopayExpireMinutes() {
+  const value = Number(process.env.TOKOPAY_EXPIRED_MINUTES || 1440);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    return 1440;
+  }
+
+  return Math.floor(value);
+}
+
+function getTokopayExpiryDate() {
+  return new Date(Date.now() + getTokopayExpireMinutes() * 60 * 1000);
+}
+
+function getTokopayChannelCode(paymentMethod) {
+  return normalizeCode(paymentMethod?.gatewayChannelCode || paymentMethod?.code);
+}
+
+function buildTokopayCustomerName(order) {
+  return (
+    toStringValue(order.customerDisplay) ||
+    toStringValue(order.gameSnapshot?.name) ||
+    `Customer ${String(order.invoiceNumber || "").slice(-6)}`
+  );
+}
+
+function buildTokopayCustomerEmail(order) {
+  return (
+    toStringValue(order.contactDetail?.email).toLowerCase() ||
+    `order-${String(order.invoiceNumber || "").toLowerCase()}@example.com`
+  );
+}
+
+function buildTokopayCustomerPhone(order) {
+  return toDigits(
+    `${toStringValue(order.contactDetail?.phoneCountryCode)}${toStringValue(
+      order.contactDetail?.phoneNumber
+    )}`
+  );
+}
+
+function buildTokopayItems(order, invoiceUrl) {
+  return [
+    {
+      product_code:
+        toStringValue(order.variantSnapshot?.providerCode) ||
+        toStringValue(order.gameSnapshot?.code),
+      name:
+        toStringValue(order.variantSnapshot?.name) ||
+        toStringValue(order.gameSnapshot?.name),
+      price: Number(order.price?.sellPrice || 0),
+      product_url: invoiceUrl,
+      image_url:
+        toStringValue(order.variantSnapshot?.logo) ||
+        toStringValue(order.gameSnapshot?.logo),
+    },
+  ];
+}
+
+function getTokopayRawStatus(payload, source) {
+  if (source === "create") {
+    return toStringValue(payload?.data?.status) || "UNPAID";
+  }
+
+  return toStringValue(payload?.data?.status) || toStringValue(payload?.status);
+}
+
+function mapTokopayStatus(rawStatus) {
+  const normalizedStatus = normalizeCode(rawStatus);
+
+  if (!normalizedStatus || normalizedStatus === "UNPAID" || normalizedStatus === "PENDING") {
+    return {
+      paymentStatus: "UNPAID",
+      orderStatus: "UNPAID",
+    };
+  }
+
+  if (
+    normalizedStatus === "SUCCESS" ||
+    normalizedStatus === "COMPLETED" ||
+    normalizedStatus === "PAID"
+  ) {
+    return {
+      paymentStatus: "PAID",
+      orderStatus: "PAID",
+    };
+  }
+
+  if (normalizedStatus === "EXPIRED") {
+    return {
+      paymentStatus: "EXPIRED",
+      orderStatus: "EXPIRED",
+    };
+  }
+
+  if (
+    normalizedStatus === "FAILED" ||
+    normalizedStatus === "CANCELLED" ||
+    normalizedStatus === "CANCELED" ||
+    normalizedStatus === "ERROR"
+  ) {
+    return {
+      paymentStatus: "FAILED",
+      orderStatus: "FAILED",
+    };
+  }
+
+  if (normalizedStatus === "REFUNDED") {
+    return {
+      paymentStatus: "REFUNDED",
+      orderStatus: "REFUNDED",
+    };
+  }
+
+  return {
+    paymentStatus: "UNPAID",
+    orderStatus: "UNPAID",
+  };
+}
 
 function toPositiveInteger(value, fallback) {
   const parsed = Number(value);
@@ -61,6 +248,377 @@ function buildCustomerDisplay(customerInputs) {
     .join(" / ");
 }
 
+function isManualPaymentMethod(paymentMethod) {
+  return toStringValue(paymentMethod?.provider || "manual").toLowerCase() === "manual";
+}
+
+function buildPaymentMethodSnapshot(paymentMethod) {
+  return {
+    name: toStringValue(paymentMethod?.name),
+    code: normalizeCode(paymentMethod?.code),
+    provider: toStringValue(paymentMethod?.provider || "manual"),
+    type: toStringValue(paymentMethod?.type || "bank_transfer"),
+    categoryName: toStringValue(paymentMethod?.category?.name),
+    categoryCode: normalizeCode(paymentMethod?.category?.code),
+    logo: toStringValue(paymentMethod?.logo),
+    currency: normalizeCode(paymentMethod?.currency || "IDR"),
+    feeType: toStringValue(paymentMethod?.feeType || "fixed"),
+    feeValue: Number(paymentMethod?.feeValue || 0),
+    gatewayChannelCode: toStringValue(paymentMethod?.gatewayChannelCode),
+    description: toStringValue(paymentMethod?.description),
+    accountHolderName: toStringValue(paymentMethod?.accountHolderName),
+    accountNumber: toStringValue(paymentMethod?.accountNumber),
+  };
+}
+
+function mapBangjeffProviderStatus(rawStatusCode) {
+  const normalizedStatus = normalizeCode(rawStatusCode);
+
+  if (normalizedStatus === "SUCCESS") {
+    return {
+      providerStatus: "SUCCESS",
+      orderStatus: "SUCCESS",
+    };
+  }
+
+  if (normalizedStatus === "PROCESSING") {
+    return {
+      providerStatus: "PROCESSING",
+      orderStatus: "PROCESSING",
+    };
+  }
+
+  if (normalizedStatus === "REFUNDED" || normalizedStatus === "FAILED") {
+    return {
+      providerStatus: "FAILED",
+      orderStatus: "FAILED",
+    };
+  }
+
+  return {
+    providerStatus: "UNKNOWN",
+    orderStatus: "PROCESSING",
+  };
+}
+
+function applyBangjeffOrderData(order, payload) {
+  const mappedStatus = mapBangjeffProviderStatus(payload?.statusCode);
+  const now = new Date();
+
+  order.providerInvoiceNumber = toStringValue(payload?.invoiceNumber);
+  order.providerReferenceNumber = toStringValue(payload?.referenceNumber);
+  order.providerStatus = mappedStatus.providerStatus;
+  order.providerMessage = toStringValue(payload?.statusDesc);
+
+  if (mappedStatus.orderStatus === "SUCCESS") {
+    order.status = "SUCCESS";
+    order.processingAt = order.processingAt || now;
+    order.completedAt = now;
+    order.failedAt = null;
+    return;
+  }
+
+  if (mappedStatus.orderStatus === "FAILED") {
+    order.status = "FAILED";
+    order.failedAt = now;
+    return;
+  }
+
+  order.status = "PROCESSING";
+  order.processingAt = order.processingAt || now;
+}
+
+async function syncBangjeffOrderStatus(order) {
+  if (
+    toStringValue(order.provider).toLowerCase() !== "bangjeff" ||
+    order.paymentStatus !== "PAID"
+  ) {
+    return order;
+  }
+
+  if (!["PAID", "PROCESSING"].includes(toStringValue(order.status).toUpperCase())) {
+    return order;
+  }
+
+  try {
+    let payload = null;
+
+    if (toStringValue(order.providerInvoiceNumber)) {
+      payload = await getBangjeffOrderByInvoiceNumber(order.providerInvoiceNumber);
+    } else if (toStringValue(order.providerReferenceNumber || order.invoiceNumber)) {
+      payload = await getBangjeffOrderByReferenceNumber(
+        toStringValue(order.providerReferenceNumber || order.invoiceNumber)
+      );
+    }
+
+    if (!payload) {
+      return order;
+    }
+
+    applyBangjeffOrderData(order, payload);
+    await order.save();
+  } catch {
+    return order;
+  }
+
+  return order;
+}
+
+async function processBangjeffOrder(order) {
+  try {
+    const variantCode = toStringValue(order.variantSnapshot?.providerCode);
+    const providerPrice = Number(
+      order.variantSnapshot?.basePrice || order.price?.buyPrice || 0
+    );
+
+    if (!variantCode) {
+      throw new Error("Variant provider code belum tersedia");
+    }
+
+    if (providerPrice <= 0) {
+      throw new Error("Harga dasar provider tidak valid");
+    }
+
+    const payload = await checkoutBangjeff({
+      region: toStringValue(order.region) || "ID",
+      variantCode,
+      referenceNumber: toStringValue(order.invoiceNumber),
+      qty: 1,
+      price: {
+        currency:
+          toStringValue(order.variantSnapshot?.currency || order.price?.currency) ||
+          "IDR",
+        value: providerPrice,
+      },
+      inputs: Array.isArray(order.customerInputs)
+        ? order.customerInputs.map((item) => ({
+            name: toStringValue(item?.name || item?.title),
+            value: toStringValue(item?.value),
+          }))
+        : [],
+    });
+
+    applyBangjeffOrderData(order, payload);
+    order.notes = "";
+    await order.save();
+
+    return {
+      ok: true,
+      order,
+    };
+  } catch (error) {
+    order.providerStatus = "FAILED";
+    order.status = "FAILED";
+    order.providerMessage = toStringValue(error.message);
+    order.notes = toStringValue(error.message);
+    order.failedAt = new Date();
+    await order.save();
+
+    return {
+      ok: false,
+      order,
+      error: toStringValue(error.message) || "Gagal kirim order ke BangJeff",
+    };
+  }
+}
+
+function applyTokopayPaymentData(
+  order,
+  tokopayPayload,
+  channelCode,
+  fallbackExpiresAt,
+  source
+) {
+  const data = tokopayPayload?.data || {};
+  const rawStatus = getTokopayRawStatus(tokopayPayload, source);
+  const mappedStatus = mapTokopayStatus(rawStatus);
+  const paidTimestamp =
+    parseTokopayTimestamp(data.updated_at) ||
+    parseTokopayTimestamp(data.created_at) ||
+    new Date();
+  const expiredAt =
+    parseTokopayTimestamp(data.expired_at) ||
+    order.paymentGateway?.expiresAt ||
+    fallbackExpiresAt ||
+    null;
+
+  order.paymentReferenceNumber =
+    toStringValue(data.trx_id) ||
+    toStringValue(tokopayPayload?.reference) ||
+    toStringValue(order.paymentReferenceNumber);
+  order.paymentGateway = {
+    provider: "tokopay",
+    channelCode:
+      toStringValue(data.payment_channel) ||
+      toStringValue(order.paymentGateway?.channelCode) ||
+      channelCode,
+    transactionId:
+      toStringValue(data.trx_id) ||
+      toStringValue(tokopayPayload?.reference) ||
+      toStringValue(order.paymentGateway?.transactionId),
+    reference:
+      toStringValue(tokopayPayload?.reference) ||
+      toStringValue(order.paymentGateway?.reference),
+    payUrl:
+      toStringValue(data.pay_url) || toStringValue(order.paymentGateway?.payUrl),
+    checkoutUrl:
+      toStringValue(data.checkout_url) ||
+      toStringValue(order.paymentGateway?.checkoutUrl),
+    qrLink:
+      toStringValue(data.qr_link) || toStringValue(order.paymentGateway?.qrLink),
+    qrString:
+      toStringValue(data.qr_string) ||
+      toStringValue(order.paymentGateway?.qrString),
+    virtualAccountNumber:
+      toStringValue(data.nomor_va) ||
+      toStringValue(order.paymentGateway?.virtualAccountNumber),
+    instructionsHtml:
+      toStringValue(data.panduan_pembayaran) ||
+      toStringValue(order.paymentGateway?.instructionsHtml),
+    rawStatus,
+    totalPaid: Number(
+      data.total_bayar || order.paymentGateway?.totalPaid || order.price?.totalAmount || 0
+    ),
+    netAmount: Number(data.total_diterima || order.paymentGateway?.netAmount || 0),
+    expiresAt,
+    updatedAt: paidTimestamp,
+  };
+
+  order.paymentStatus = mappedStatus.paymentStatus;
+
+  if (mappedStatus.orderStatus === "PAID") {
+    if (order.status === "UNPAID") {
+      order.status = "PAID";
+    }
+
+    order.paidAt = paidTimestamp;
+    return;
+  }
+
+  if (mappedStatus.orderStatus === "EXPIRED") {
+    order.status = "EXPIRED";
+    order.expiredAt = expiredAt || paidTimestamp;
+    return;
+  }
+
+  if (mappedStatus.orderStatus === "FAILED") {
+    order.status = "FAILED";
+    order.failedAt = paidTimestamp;
+    return;
+  }
+
+  if (mappedStatus.orderStatus === "REFUNDED") {
+    order.status = "REFUNDED";
+  }
+}
+
+async function attachTokopayPaymentToOrder(order, paymentMethod, siteSetting) {
+  const tokopayConfig = getTokopayConfig();
+
+  if (!tokopayConfig.enabled) {
+    return {
+      order,
+      warning: "Tokopay belum dikonfigurasi di backend",
+    };
+  }
+
+  const channelCode = getTokopayChannelCode(paymentMethod);
+
+  if (!channelCode) {
+    return {
+      order,
+      warning: "Metode pembayaran belum memiliki kode channel Tokopay",
+    };
+  }
+
+  const invoiceUrl = buildInvoiceUrl(siteSetting, order.invoiceNumber);
+  const expiresAt = getTokopayExpiryDate();
+
+  try {
+    const tokopayPayload = await createTokopayTransaction({
+      channelCode,
+      refId: order.invoiceNumber,
+      amount: Number(order.price?.totalAmount || order.price?.sellPrice || 0),
+      customerName: buildTokopayCustomerName(order),
+      customerEmail: buildTokopayCustomerEmail(order),
+      customerPhone: buildTokopayCustomerPhone(order),
+      redirectUrl: invoiceUrl,
+      expiredTs: Math.floor(expiresAt.getTime() / 1000),
+      items: buildTokopayItems(order, invoiceUrl),
+    });
+
+    applyTokopayPaymentData(
+      order,
+      tokopayPayload,
+      channelCode,
+      expiresAt,
+      "create"
+    );
+    order.notes = "";
+    await order.save();
+
+    return {
+      order,
+      warning: "",
+    };
+  } catch (error) {
+    order.paymentGateway = {
+      ...order.paymentGateway,
+      provider: "tokopay",
+      channelCode,
+      rawStatus: "ERROR",
+      expiresAt,
+    };
+    order.notes = toStringValue(error.message);
+    await order.save();
+
+    return {
+      order,
+      warning: error.message,
+    };
+  }
+}
+
+async function syncTokopayPaymentStatus(order) {
+  if (
+    toStringValue(order.paymentGateway?.provider).toLowerCase() !== "tokopay" ||
+    !toStringValue(order.paymentGateway?.channelCode)
+  ) {
+    return order;
+  }
+
+  if (!["UNPAID", "PAID", "PROCESSING"].includes(toStringValue(order.status))) {
+    return order;
+  }
+
+  const tokopayConfig = getTokopayConfig();
+
+  if (!tokopayConfig.enabled) {
+    return order;
+  }
+
+  try {
+    const tokopayPayload = await checkTokopayTransaction({
+      refId: order.invoiceNumber,
+      amount: Number(order.price?.totalAmount || order.price?.sellPrice || 0),
+      methodCode: toStringValue(order.paymentGateway?.channelCode),
+    });
+
+    applyTokopayPaymentData(
+      order,
+      tokopayPayload,
+      toStringValue(order.paymentGateway?.channelCode),
+      order.paymentGateway?.expiresAt,
+      "check"
+    );
+    await order.save();
+  } catch {
+    return order;
+  }
+
+  return order;
+}
+
 function serializePublicOrder(order) {
   return {
     _id: order._id,
@@ -77,6 +635,8 @@ function serializePublicOrder(order) {
     paymentMethodCode: order.paymentMethodCode,
     paymentMethodName: order.paymentMethodName,
     contactDetail: order.contactDetail,
+    paymentMethodSnapshot: order.paymentMethodSnapshot,
+    paymentGateway: order.paymentGateway,
     price: order.price,
     region: order.region,
     gameSnapshot: order.gameSnapshot,
@@ -202,6 +762,9 @@ async function getPublicOrderByInvoice(req, res) {
       });
     }
 
+    await syncTokopayPaymentStatus(order);
+    await syncBangjeffOrderStatus(order);
+
     return res.status(200).json({
       order: serializePublicOrder(order),
     });
@@ -295,6 +858,16 @@ async function createOrderDraft(req, res) {
       });
     }
 
+    if (
+      isManualPaymentMethod(paymentMethod) &&
+      (!toStringValue(paymentMethod.accountHolderName) ||
+        !toStringValue(paymentMethod.accountNumber))
+    ) {
+      return res.status(400).json({
+        message: "Metode pembayaran manual belum memiliki nama rekening atau nomor rekening",
+      });
+    }
+
     const normalizedInputs = normalizeCustomerInputs(game, customerInputs);
     const isVoucherCategory =
       toStringValue(game.category).toLowerCase() === "voucher";
@@ -326,6 +899,11 @@ async function createOrderDraft(req, res) {
         : Number(paymentMethod.feeValue || 0);
     const totalAmount = sellPrice + paymentFee;
     const profit = sellPrice - buyPrice;
+    const siteSetting = await SiteSetting.findOne(
+      {},
+      { siteName: 1, siteDomain: 1 }
+    ).lean();
+    const paymentMethodSnapshot = buildPaymentMethodSnapshot(paymentMethod);
 
     const order = await Order.create({
       invoiceNumber,
@@ -354,6 +932,7 @@ async function createOrderDraft(req, res) {
         phoneCountryCode: normalizedPhoneCountryCode,
         phoneNumber: normalizedPhoneNumber,
       },
+      paymentMethodSnapshot,
       region: toStringValue(variant.region) || "ID",
       price: {
         currency: toStringValue(variant.currency) || "IDR",
@@ -370,14 +949,149 @@ async function createOrderDraft(req, res) {
       status: "UNPAID",
     });
 
+    let warning = "";
+
+    if (!isManualPaymentMethod(paymentMethod)) {
+      const result = await attachTokopayPaymentToOrder(
+        order,
+        paymentMethod,
+        siteSetting
+      );
+      warning = result.warning || "";
+    }
+
     return res.status(201).json({
       message: "Order draft berhasil dibuat",
       order: serializePublicOrder(order),
+      warning: warning || undefined,
     });
   } catch (error) {
     return res.status(500).json({
       message: "Error membuat order draft",
       error: error.message,
+    });
+  }
+}
+
+async function markManualOrderAsPaid(req, res) {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order tidak ditemukan",
+      });
+    }
+
+    const paymentProvider = toStringValue(
+      order.paymentMethodSnapshot?.provider || "manual"
+    ).toLowerCase();
+
+    if (paymentProvider !== "manual") {
+      return res.status(400).json({
+        message: "Aksi ini hanya tersedia untuk metode pembayaran manual",
+      });
+    }
+
+    if (order.paymentStatus === "PAID") {
+      return res.status(400).json({
+        message: "Order ini sudah ditandai paid",
+      });
+    }
+
+    if (["SUCCESS", "PROCESSING"].includes(toStringValue(order.status).toUpperCase())) {
+      return res.status(400).json({
+        message: "Order ini sudah sedang atau selesai diproses",
+      });
+    }
+
+    const now = new Date();
+
+    order.paymentStatus = "PAID";
+    order.paidAt = now;
+    order.expiredAt = null;
+    order.status = "PAID";
+    order.notes = "";
+    order.paymentGateway = {
+      ...order.paymentGateway,
+      provider: "manual",
+      rawStatus: "MANUAL_PAID",
+      updatedAt: now,
+    };
+    await order.save();
+
+    if (toStringValue(order.provider).toLowerCase() === "bangjeff") {
+      const result = await processBangjeffOrder(order);
+
+      if (!result.ok) {
+        return res.status(200).json({
+          message: "Pembayaran berhasil ditandai paid, tetapi proses ke BangJeff gagal",
+          order,
+          warning: result.error,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      message: "Pembayaran berhasil ditandai paid dan order mulai diproses",
+      order,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error update status pembayaran manual",
+      error: error.message,
+    });
+  }
+}
+
+async function tokopayCallback(req, res) {
+  try {
+    const payload =
+      req.method === "GET" ? req.query || {} : req.body || {};
+    const invoiceNumber = normalizeCode(payload.reff_id || payload.ref_id);
+    const signature = toStringValue(payload.signature);
+
+    if (!invoiceNumber || !signature) {
+      return res.status(400).json({
+        status: false,
+        message: "Payload callback Tokopay tidak lengkap",
+      });
+    }
+
+    if (!verifyTokopayCallbackSignature(signature, invoiceNumber)) {
+      return res.status(400).json({
+        status: false,
+        message: "Signature Tokopay tidak valid",
+      });
+    }
+
+    const order = await Order.findOne({ invoiceNumber });
+
+    if (!order) {
+      return res.status(404).json({
+        status: false,
+        message: "Invoice order tidak ditemukan",
+      });
+    }
+
+    applyTokopayPaymentData(
+      order,
+      payload,
+      toStringValue(payload?.data?.payment_channel) ||
+        toStringValue(order.paymentGateway?.channelCode),
+      order.paymentGateway?.expiresAt,
+      "webhook"
+    );
+    order.notes = "";
+    await order.save();
+
+    return res.status(200).json({
+      status: true,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: error.message,
     });
   }
 }
@@ -452,4 +1166,6 @@ module.exports = {
   createOrderDraft,
   getOrders,
   getPublicOrderByInvoice,
+  markManualOrderAsPaid,
+  tokopayCallback,
 };

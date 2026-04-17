@@ -31,6 +31,8 @@ export type PaymentMethod = {
   currency?: string;
   gatewayChannelCode?: string;
   description?: string;
+  accountHolderName?: string;
+  accountNumber?: string;
   isActive: boolean;
   order: number;
   createdAt?: string;

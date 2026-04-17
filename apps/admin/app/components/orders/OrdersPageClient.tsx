@@ -73,6 +73,39 @@ function getStatusTone(status?: string) {
   }
 }
 
+function getGatewayErrorMessage(order: Order) {
+  if (order.notes?.trim()) {
+    return order.notes.trim();
+  }
+
+  if (
+    String(order.paymentGateway?.provider || "").trim().toLowerCase() ===
+      "tokopay" &&
+    String(order.paymentGateway?.rawStatus || "")
+      .trim()
+      .toUpperCase() === "ERROR"
+  ) {
+    return "Transaksi Tokopay gagal dibuat, tetapi belum ada detail pesan yang tersimpan.";
+  }
+
+  return "";
+}
+
+function canMarkManualPaid(order: Order) {
+  const paymentProvider = String(
+    order.paymentMethodSnapshot?.provider || ""
+  ).trim().toLowerCase();
+  const orderStatus = String(order.status || "").trim().toUpperCase();
+  const paymentStatus = String(order.paymentStatus || "").trim().toUpperCase();
+
+  return (
+    paymentProvider === "manual" &&
+    paymentStatus !== "PAID" &&
+    orderStatus !== "SUCCESS" &&
+    orderStatus !== "PROCESSING"
+  );
+}
+
 export default function OrdersPageClient() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [summary, setSummary] = useState<OrderSummary>(emptySummary);
@@ -86,6 +119,7 @@ export default function OrdersPageClient() {
     useState<(typeof PAYMENT_STATUS_OPTIONS)[number]>("ALL");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingOrderId, setUpdatingOrderId] = useState("");
 
   const deferredSearch = useDeferredValue(search);
 
@@ -149,6 +183,38 @@ export default function OrdersPageClient() {
     setLoading(true);
     fetchOrders();
   }, [page, deferredSearch, statusFilter, paymentStatusFilter]);
+
+  const handleMarkPaid = async (orderId: string) => {
+    try {
+      setUpdatingOrderId(orderId);
+      const response = await fetch(`/api/orders/${orderId}/mark-paid`, {
+        method: "PATCH",
+      });
+      const payload = await parseJsonSafely<{ message?: string; warning?: string }>(
+        response
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          getResponseMessage(payload, "Gagal update pembayaran manual")
+        );
+      }
+
+      await fetchOrders();
+
+      if (payload?.warning) {
+        alert(payload.warning);
+      }
+    } catch (updateError) {
+      alert(
+        updateError instanceof Error
+          ? updateError.message
+          : "Gagal update pembayaran manual"
+      );
+    } finally {
+      setUpdatingOrderId("");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -336,6 +402,24 @@ export default function OrdersPageClient() {
                           Provider: {order.providerStatus || "PENDING"}
                         </p>
                       </div>
+                      {getGatewayErrorMessage(order) ? (
+                        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700">
+                          <p className="font-semibold">Kendala Payment Gateway</p>
+                          <p className="mt-1">{getGatewayErrorMessage(order)}</p>
+                        </div>
+                      ) : null}
+                      {canMarkManualPaid(order) ? (
+                        <button
+                          type="button"
+                          onClick={() => handleMarkPaid(order._id)}
+                          disabled={updatingOrderId === order._id}
+                          className="rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {updatingOrderId === order._id
+                            ? "Memproses..."
+                            : "Tandai Paid"}
+                        </button>
+                      ) : null}
                     </div>
 
                     <div>
@@ -345,6 +429,11 @@ export default function OrdersPageClient() {
                       <p className="mt-1 text-xs text-gray-500">
                         {order.paymentMethodName || "-"}
                       </p>
+                      {order.paymentGateway?.channelCode ? (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Channel: {order.paymentGateway.channelCode}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 ))}

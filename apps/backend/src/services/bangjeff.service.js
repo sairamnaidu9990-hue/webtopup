@@ -93,9 +93,48 @@ async function getBangjeffBalance(region) {
   return unwrapBangjeffResponse("/api/v4/balance", response);
 }
 
+async function checkoutBangjeff({
+  region,
+  variantCode,
+  referenceNumber,
+  qty,
+  price,
+  inputs,
+}) {
+  const response = await bangjeffRequest("POST", "/api/v4/checkout", {
+    region,
+    variantCode,
+    referenceNumber,
+    qty,
+    price,
+    inputs,
+  });
+
+  return unwrapBangjeffResponse("/api/v4/checkout", response);
+}
+
+async function getBangjeffOrderByInvoiceNumber(invoiceNumber) {
+  const response = await bangjeffRequest("POST", "/api/v4/order/invoice-number", {
+    invoiceNumber,
+  });
+
+  return unwrapBangjeffResponse("/api/v4/order/invoice-number", response);
+}
+
+async function getBangjeffOrderByReferenceNumber(referenceNumber) {
+  const response = await bangjeffRequest("POST", "/api/v4/order/reference-number", {
+    referenceNumber,
+  });
+
+  return unwrapBangjeffResponse("/api/v4/order/reference-number", response);
+}
+
 module.exports = {
+  checkoutBangjeff,
   getBangjeffProducts,
   getBangjeffProductDetail,
+  getBangjeffOrderByInvoiceNumber,
+  getBangjeffOrderByReferenceNumber,
   getBangjeffVariants,
   getBangjeffBalance,
 };

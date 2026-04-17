@@ -33,6 +33,8 @@ type Props = {
   currency: string;
   gatewayChannelCode: string;
   description: string;
+  accountHolderName: string;
+  accountNumber: string;
   isActive: boolean;
   order: string;
   setName: (value: string) => void;
@@ -46,6 +48,8 @@ type Props = {
   setCurrency: (value: string) => void;
   setGatewayChannelCode: (value: string) => void;
   setDescription: (value: string) => void;
+  setAccountHolderName: (value: string) => void;
+  setAccountNumber: (value: string) => void;
   setIsActive: (value: boolean) => void;
   setOrder: (value: string) => void;
   onSubmit: (event: React.FormEvent) => void;
@@ -71,6 +75,8 @@ export default function PaymentMethodForm({
   currency,
   gatewayChannelCode,
   description,
+  accountHolderName,
+  accountNumber,
   isActive,
   order,
   setName,
@@ -84,6 +90,8 @@ export default function PaymentMethodForm({
   setCurrency,
   setGatewayChannelCode,
   setDescription,
+  setAccountHolderName,
+  setAccountNumber,
   setIsActive,
   setOrder,
   onSubmit,
@@ -264,6 +272,26 @@ export default function PaymentMethodForm({
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Deskripsi singkat metode pembayaran"
               className="min-h-[110px] w-full rounded-xl border border-gray-200 px-4 py-3"
+            />
+          </label>
+
+          <label className="block">
+            <span className={labelClassName}>Nama Rekening</span>
+            <input
+              value={accountHolderName}
+              onChange={(event) => setAccountHolderName(event.target.value)}
+              placeholder="Contoh: PT Kitagg Indonesia"
+              className={fieldClassName}
+            />
+          </label>
+
+          <label className="block">
+            <span className={labelClassName}>Nomor Rekening</span>
+            <input
+              value={accountNumber}
+              onChange={(event) => setAccountNumber(event.target.value)}
+              placeholder="Contoh: 1234567890"
+              className={fieldClassName}
             />
           </label>
 

@@ -55,6 +55,8 @@ export default function PaymentMethodsPageClient() {
   const [currency, setCurrency] = useState("IDR");
   const [gatewayChannelCode, setGatewayChannelCode] = useState("");
   const [description, setDescription] = useState("");
+  const [accountHolderName, setAccountHolderName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [order, setOrder] = useState("9999");
   const [error, setError] = useState("");
@@ -83,6 +85,8 @@ export default function PaymentMethodsPageClient() {
     setCurrency("IDR");
     setGatewayChannelCode("");
     setDescription("");
+    setAccountHolderName("");
+    setAccountNumber("");
     setIsActive(true);
     setOrder("9999");
   };
@@ -189,6 +193,8 @@ export default function PaymentMethodsPageClient() {
     setCurrency(paymentMethod.currency || "IDR");
     setGatewayChannelCode(paymentMethod.gatewayChannelCode || "");
     setDescription(paymentMethod.description || "");
+    setAccountHolderName(paymentMethod.accountHolderName || "");
+    setAccountNumber(paymentMethod.accountNumber || "");
     setIsActive(Boolean(paymentMethod.isActive));
     setOrder(String(paymentMethod.order ?? 9999));
     setFormOpen(true);
@@ -339,6 +345,8 @@ export default function PaymentMethodsPageClient() {
           currency,
           gatewayChannelCode,
           description,
+          accountHolderName,
+          accountNumber,
           isActive,
           order: Number(resetNumber(order, "9999")),
         }),
@@ -426,6 +434,8 @@ export default function PaymentMethodsPageClient() {
         currency={currency}
         gatewayChannelCode={gatewayChannelCode}
         description={description}
+        accountHolderName={accountHolderName}
+        accountNumber={accountNumber}
         isActive={isActive}
         order={order}
         setName={setName}
@@ -439,6 +449,8 @@ export default function PaymentMethodsPageClient() {
         setCurrency={setCurrency}
         setGatewayChannelCode={setGatewayChannelCode}
         setDescription={setDescription}
+        setAccountHolderName={setAccountHolderName}
+        setAccountNumber={setAccountNumber}
         setIsActive={setIsActive}
         setOrder={setOrder}
         onSubmit={handleSubmit}

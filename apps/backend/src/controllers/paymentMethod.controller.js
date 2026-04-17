@@ -49,6 +49,10 @@ function normalizeCurrency(value) {
   return String(value || "IDR").trim().toUpperCase() || "IDR";
 }
 
+function isManualProvider(value) {
+  return String(value || "manual").trim().toLowerCase() === "manual";
+}
+
 async function resolveCategory(categoryId) {
   const normalizedId = String(categoryId || "").trim();
 
@@ -147,7 +151,7 @@ exports.getPublicPaymentMethods = async (req, res) => {
       PaymentMethod.find({ isActive: true })
         .sort({ order: 1, createdAt: -1 })
         .select(
-          "name code logo type feeType feeValue currency gatewayChannelCode description order category"
+          "name code provider logo type feeType feeValue currency gatewayChannelCode description order category"
         )
     );
 
@@ -180,6 +184,8 @@ exports.createPaymentMethod = async (req, res) => {
       currency = "IDR",
       gatewayChannelCode = "",
       description = "",
+      accountHolderName = "",
+      accountNumber = "",
       isActive = true,
       order = 9999,
     } = req.body;
@@ -199,6 +205,19 @@ exports.createPaymentMethod = async (req, res) => {
       });
     }
 
+    const normalizedProvider = String(provider || "manual").trim();
+    const normalizedAccountHolderName = String(accountHolderName || "").trim();
+    const normalizedAccountNumber = String(accountNumber || "").trim();
+
+    if (
+      isManualProvider(normalizedProvider) &&
+      (!normalizedAccountHolderName || !normalizedAccountNumber)
+    ) {
+      return res.status(400).json({
+        message: "Nama rekening dan nomor rekening wajib diisi untuk metode pembayaran manual",
+      });
+    }
+
     const categoryDocument = await resolveCategory(category);
 
     if (category && !categoryDocument) {
@@ -210,7 +229,7 @@ exports.createPaymentMethod = async (req, res) => {
     const item = await PaymentMethod.create({
       name: String(name).trim(),
       code: normalizedCode,
-      provider: String(provider || "manual").trim(),
+      provider: normalizedProvider,
       category: categoryDocument?._id || null,
       logo: String(logo || "").trim(),
       type: normalizeType(type),
@@ -219,6 +238,8 @@ exports.createPaymentMethod = async (req, res) => {
       currency: normalizeCurrency(currency),
       gatewayChannelCode: String(gatewayChannelCode || "").trim(),
       description: String(description || "").trim(),
+      accountHolderName: normalizedAccountHolderName,
+      accountNumber: normalizedAccountNumber,
       isActive: Boolean(isActive),
       order: toNumber(order, 9999),
     });
@@ -325,6 +346,41 @@ exports.updatePaymentMethod = async (req, res) => {
 
     if (Object.prototype.hasOwnProperty.call(req.body, "description")) {
       updatePayload.description = String(req.body.description || "").trim();
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "accountHolderName")) {
+      updatePayload.accountHolderName = String(
+        req.body.accountHolderName || ""
+      ).trim();
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "accountNumber")) {
+      updatePayload.accountNumber = String(req.body.accountNumber || "").trim();
+    }
+
+    const nextProvider = Object.prototype.hasOwnProperty.call(updatePayload, "provider")
+      ? updatePayload.provider
+      : currentItem.provider;
+    const nextAccountHolderName = Object.prototype.hasOwnProperty.call(
+      updatePayload,
+      "accountHolderName"
+    )
+      ? updatePayload.accountHolderName
+      : currentItem.accountHolderName;
+    const nextAccountNumber = Object.prototype.hasOwnProperty.call(
+      updatePayload,
+      "accountNumber"
+    )
+      ? updatePayload.accountNumber
+      : currentItem.accountNumber;
+
+    if (
+      isManualProvider(nextProvider) &&
+      (!nextAccountHolderName || !nextAccountNumber)
+    ) {
+      return res.status(400).json({
+        message: "Nama rekening dan nomor rekening wajib diisi untuk metode pembayaran manual",
+      });
     }
 
     const updated = await populateCategory(

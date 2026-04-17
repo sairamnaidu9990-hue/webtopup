@@ -48,6 +48,39 @@ export type Order = {
     phoneCountryCode?: string;
     phoneNumber?: string;
   };
+  paymentMethodSnapshot?: {
+    name?: string;
+    code?: string;
+    provider?: string;
+    type?: string;
+    categoryName?: string;
+    categoryCode?: string;
+    logo?: string;
+    currency?: string;
+    feeType?: string;
+    feeValue?: number;
+    gatewayChannelCode?: string;
+    description?: string;
+    accountHolderName?: string;
+    accountNumber?: string;
+  };
+  paymentGateway?: {
+    provider?: string;
+    channelCode?: string;
+    transactionId?: string;
+    reference?: string;
+    payUrl?: string;
+    checkoutUrl?: string;
+    qrLink?: string;
+    qrString?: string;
+    virtualAccountNumber?: string;
+    instructionsHtml?: string;
+    rawStatus?: string;
+    totalPaid?: number;
+    netAmount?: number;
+    expiresAt?: string | null;
+    updatedAt?: string | null;
+  };
   region?: string;
   price?: {
     currency?: string;

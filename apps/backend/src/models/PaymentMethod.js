@@ -60,6 +60,16 @@ const paymentMethodSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    accountHolderName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    accountNumber: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     isActive: {
       type: Boolean,
       default: true,
