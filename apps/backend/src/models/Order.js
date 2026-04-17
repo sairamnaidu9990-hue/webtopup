@@ -40,6 +40,14 @@ const priceSnapshotSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    paymentFee: {
+      type: Number,
+      default: 0,
+    },
+    totalAmount: {
+      type: Number,
+      default: 0,
+    },
   },
   { _id: false }
 );

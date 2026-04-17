@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type {
   StorefrontGameDetail,
@@ -334,6 +335,7 @@ export default function GameTopupPanel({
   variants,
   paymentMethods,
 }: GameTopupPanelProps) {
+  const router = useRouter();
   const resolvedInputs = getBangjeffInputs(game);
   const isVoucherCategory =
     String(game.category || "").trim().toLowerCase() === "voucher";
@@ -350,6 +352,16 @@ export default function GameTopupPanel({
     id: number;
     message: string;
   } | null>(null);
+  const [successToast, setSuccessToast] = useState<{
+    id: number;
+    message: string;
+  } | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<{
+    invoiceNumber: string;
+    totalAmount: number;
+    currency: string;
+  } | null>(null);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isMobileSummaryExpanded, setIsMobileSummaryExpanded] = useState(false);
   const [openPaymentGroups, setOpenPaymentGroups] = useState<
     Record<string, boolean>
@@ -394,10 +406,16 @@ export default function GameTopupPanel({
     : "pb-[72px] md:pb-0";
 
   const showAlert = (message: string) => {
+    setSuccessToast(null);
     setSelectionAlert({
       id: Date.now(),
       message,
     });
+  };
+
+  const clearCreatedOrder = () => {
+    setCreatedOrder(null);
+    setSuccessToast(null);
   };
 
   useEffect(() => {
@@ -411,6 +429,18 @@ export default function GameTopupPanel({
 
     return () => window.clearTimeout(timeoutId);
   }, [selectionAlert]);
+
+  useEffect(() => {
+    if (!successToast) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSuccessToast(null);
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [successToast]);
 
   useEffect(() => {
     return () => {
@@ -490,6 +520,7 @@ export default function GameTopupPanel({
       return;
     }
 
+    clearCreatedOrder();
     setSelectionAlert(null);
     setSelectedVariantId(variantId);
     setIsMobileSummaryExpanded(false);
@@ -506,6 +537,7 @@ export default function GameTopupPanel({
       return;
     }
 
+    clearCreatedOrder();
     setSelectionAlert(null);
     setPaymentMethodCode(methodCode);
 
@@ -514,7 +546,7 @@ export default function GameTopupPanel({
     });
   };
 
-  const handleOrderClick = () => {
+  const handleOrderClick = async () => {
     if (!isAccountDataReady) {
       showAlert(
         resolvedInputs.length === 0
@@ -546,6 +578,107 @@ export default function GameTopupPanel({
     if (!contactPhoneNumber.trim()) {
       showAlert("Silakan isi nomor kontak terlebih dahulu.");
       focusStep("contact", contactStepRef);
+      return;
+    }
+
+    try {
+      setIsCreatingOrder(true);
+      setSelectionAlert(null);
+      setSuccessToast(null);
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          gameCode: game.code,
+          variantId: selectedVariant._id,
+          paymentMethodCode,
+          customerInputs: resolvedInputs.map((input) => {
+            const key = input.name || input.title;
+
+            return {
+              name: input.name,
+              title: input.title,
+              type: input.type,
+              value: accountValues[key] || "",
+            };
+          }),
+          contactDetail: {
+            email: contactEmail,
+            phoneCountryCode: contactPhoneCode,
+            phoneNumber: contactPhoneNumber,
+          },
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          payload && typeof payload === "object" && "message" in payload
+            ? String(payload.message || "Gagal membuat order draft")
+            : "Gagal membuat order draft"
+        );
+      }
+
+      const invoiceNumber =
+        payload &&
+        typeof payload === "object" &&
+        "order" in payload &&
+        payload.order &&
+        typeof payload.order === "object" &&
+        "invoiceNumber" in payload.order
+          ? String(payload.order.invoiceNumber || "")
+          : "";
+      const totalAmount =
+        payload &&
+        typeof payload === "object" &&
+        "order" in payload &&
+        payload.order &&
+        typeof payload.order === "object" &&
+        "price" in payload.order &&
+        payload.order.price &&
+        typeof payload.order.price === "object" &&
+        "totalAmount" in payload.order.price
+          ? Number(payload.order.price.totalAmount || totalPayment)
+          : totalPayment;
+      const currency =
+        payload &&
+        typeof payload === "object" &&
+        "order" in payload &&
+        payload.order &&
+        typeof payload.order === "object" &&
+        "price" in payload.order &&
+        payload.order.price &&
+        typeof payload.order.price === "object" &&
+        "currency" in payload.order.price
+          ? String(payload.order.price.currency || selectedVariant.currency)
+          : selectedVariant.currency;
+
+      if (invoiceNumber) {
+        router.push(`/invoice/${encodeURIComponent(invoiceNumber)}`);
+        return;
+      }
+
+      setCreatedOrder({
+        invoiceNumber,
+        totalAmount,
+        currency,
+      });
+      setSuccessToast({
+        id: Date.now(),
+        message: invoiceNumber
+          ? `Order draft berhasil dibuat. Invoice: ${invoiceNumber}`
+          : "Order draft berhasil dibuat.",
+      });
+    } catch (error) {
+      showAlert(
+        error instanceof Error ? error.message : "Gagal membuat order draft."
+      );
+    } finally {
+      setIsCreatingOrder(false);
     }
   };
 
@@ -560,6 +693,17 @@ export default function GameTopupPanel({
                   ×
                 </span>
                 <span>{selectionAlert.message}</span>
+              </div>
+            </div>
+          ) : null}
+
+          {successToast ? (
+            <div className="pointer-events-none fixed left-1/2 top-3 z-50 flex w-full -translate-x-1/2 justify-center px-4 md:top-4">
+              <div className="pointer-events-auto inline-flex max-w-full items-center gap-3 rounded-[14px] border border-emerald-100 bg-white px-4 py-3 text-[13px] font-medium text-[#454545] shadow-[0_12px_24px_rgba(0,0,0,0.18)]">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[12px] font-bold text-white">
+                  ✓
+                </span>
+                <span>{successToast.message}</span>
               </div>
             </div>
           ) : null}
@@ -594,6 +738,7 @@ export default function GameTopupPanel({
                             gameInput,
                             accountValues[key] || "",
                             (nextValue) => {
+                              clearCreatedOrder();
                               setSelectionAlert(null);
                               setAccountValues((current) => ({
                                 ...current,
@@ -851,6 +996,7 @@ export default function GameTopupPanel({
                     type="email"
                     value={contactEmail}
                     onChange={(event) => {
+                      clearCreatedOrder();
                       setSelectionAlert(null);
                       setContactEmail(event.target.value);
                     }}
@@ -875,6 +1021,7 @@ export default function GameTopupPanel({
                         type="tel"
                         value={contactPhoneNumber}
                         onChange={(event) => {
+                          clearCreatedOrder();
                           setSelectionAlert(null);
                           setContactPhoneNumber(
                             event.target.value.replace(/[^0-9]/g, "")
@@ -904,6 +1051,20 @@ export default function GameTopupPanel({
             <section className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
               {selectedVariant ? (
                 <div className="space-y-4 p-4 sm:p-[18px]">
+                  {createdOrder ? (
+                    <div className="rounded-[14px] border border-emerald-400/20 bg-emerald-500/10 px-3.5 py-3 text-[12px] text-emerald-100">
+                      <p className="font-semibold text-white">
+                        Draft order berhasil dibuat
+                      </p>
+                      <p className="mt-1">
+                        Invoice:{" "}
+                        <span className="font-semibold text-white">
+                          {createdOrder.invoiceNumber}
+                        </span>
+                      </p>
+                    </div>
+                  ) : null}
+
                   <div className="flex items-start gap-3">
                     <div className="overflow-hidden rounded-[14px] border border-white/8 bg-[#34353b]">
                       {selectedVariant.logo ? (
@@ -987,9 +1148,10 @@ export default function GameTopupPanel({
             <button
               type="button"
               onClick={handleOrderClick}
-              className="flex h-12 w-full items-center justify-center rounded-[16px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-4 text-[14px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition hover:brightness-105"
+              disabled={isCreatingOrder}
+              className="flex h-12 w-full items-center justify-center rounded-[16px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-4 text-[14px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Pesan Sekarang
+              {isCreatingOrder ? "Membuat Order..." : "Pesan Sekarang"}
             </button>
           </div>
         </div>
@@ -1006,6 +1168,18 @@ export default function GameTopupPanel({
         }}
       >
         <div className="site-shell space-y-3 pt-3">
+          {createdOrder ? (
+            <div className="rounded-[14px] border border-emerald-400/20 bg-emerald-500/10 px-3.5 py-3 text-[12px] text-emerald-100">
+              <p className="font-semibold text-white">Draft order berhasil dibuat</p>
+              <p className="mt-1">
+                Invoice:{" "}
+                <span className="font-semibold text-white">
+                  {createdOrder.invoiceNumber}
+                </span>
+              </p>
+            </div>
+          ) : null}
+
           <section className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
             {selectedVariant ? (
               <button
@@ -1100,9 +1274,10 @@ export default function GameTopupPanel({
           <button
             type="button"
             onClick={handleOrderClick}
-            className="flex h-12 w-full items-center justify-center rounded-[16px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-4 text-[14px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition active:scale-[0.99]"
+            disabled={isCreatingOrder}
+            className="flex h-12 w-full items-center justify-center rounded-[16px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-4 text-[14px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Pesan Sekarang
+            {isCreatingOrder ? "Membuat Order..." : "Pesan Sekarang"}
           </button>
         </div>
       </div>

@@ -119,6 +119,60 @@ export type StorefrontPaymentMethod = {
   order: number;
 };
 
+export type StorefrontOrder = {
+  _id: string;
+  invoiceNumber: string;
+  provider: string;
+  providerInvoiceNumber: string;
+  providerReferenceNumber: string;
+  paymentReferenceNumber: string;
+  status: string;
+  paymentStatus: string;
+  providerStatus: string;
+  customerInputs: Array<{
+    name: string;
+    title: string;
+    type: string;
+    value: string;
+  }>;
+  customerDisplay: string;
+  paymentMethodCode: string;
+  paymentMethodName: string;
+  contactDetail: {
+    email: string;
+    phoneCountryCode: string;
+    phoneNumber: string;
+  };
+  price: {
+    currency: string;
+    buyPrice: number;
+    sellPrice: number;
+    profit: number;
+    paymentFee: number;
+    totalAmount: number;
+  };
+  region: string;
+  gameSnapshot: {
+    name: string;
+    code: string;
+    provider: string;
+    category: string;
+    logo: string;
+  };
+  variantSnapshot: {
+    name: string;
+    providerCode: string;
+    logo: string;
+    currency: string;
+    basePrice: number;
+    sellPrice: number;
+  };
+  providerMessage: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 const defaultSiteSetting: PublicSiteSetting = {
   siteName: "WebTopup",
   siteLogoUrl: "",
@@ -232,6 +286,66 @@ function normalizeStorefrontPaymentMethod(
     gatewayChannelCode: String(paymentMethod?.gatewayChannelCode || "").trim(),
     description: String(paymentMethod?.description || "").trim(),
     order: Number(paymentMethod?.order || 9999),
+  };
+}
+
+function normalizeStorefrontOrder(
+  order?: Partial<StorefrontOrder> | null
+): StorefrontOrder {
+  return {
+    _id: String(order?._id || "").trim(),
+    invoiceNumber: String(order?.invoiceNumber || "").trim(),
+    provider: String(order?.provider || "").trim(),
+    providerInvoiceNumber: String(order?.providerInvoiceNumber || "").trim(),
+    providerReferenceNumber: String(order?.providerReferenceNumber || "").trim(),
+    paymentReferenceNumber: String(order?.paymentReferenceNumber || "").trim(),
+    status: String(order?.status || "").trim().toUpperCase(),
+    paymentStatus: String(order?.paymentStatus || "").trim().toUpperCase(),
+    providerStatus: String(order?.providerStatus || "").trim().toUpperCase(),
+    customerInputs: Array.isArray(order?.customerInputs)
+      ? order.customerInputs.map((input) => ({
+          name: String(input?.name || "").trim(),
+          title: String(input?.title || "").trim(),
+          type: String(input?.type || "").trim(),
+          value: String(input?.value || "").trim(),
+        }))
+      : [],
+    customerDisplay: String(order?.customerDisplay || "").trim(),
+    paymentMethodCode: String(order?.paymentMethodCode || "").trim().toUpperCase(),
+    paymentMethodName: String(order?.paymentMethodName || "").trim(),
+    contactDetail: {
+      email: String(order?.contactDetail?.email || "").trim(),
+      phoneCountryCode: String(order?.contactDetail?.phoneCountryCode || "+62").trim(),
+      phoneNumber: String(order?.contactDetail?.phoneNumber || "").trim(),
+    },
+    price: {
+      currency: String(order?.price?.currency || "IDR").trim().toUpperCase(),
+      buyPrice: Number(order?.price?.buyPrice || 0),
+      sellPrice: Number(order?.price?.sellPrice || 0),
+      profit: Number(order?.price?.profit || 0),
+      paymentFee: Number(order?.price?.paymentFee || 0),
+      totalAmount: Number(order?.price?.totalAmount || 0),
+    },
+    region: String(order?.region || "ID").trim().toUpperCase(),
+    gameSnapshot: {
+      name: String(order?.gameSnapshot?.name || "").trim(),
+      code: String(order?.gameSnapshot?.code || "").trim().toUpperCase(),
+      provider: String(order?.gameSnapshot?.provider || "").trim(),
+      category: String(order?.gameSnapshot?.category || "").trim(),
+      logo: String(order?.gameSnapshot?.logo || "").trim(),
+    },
+    variantSnapshot: {
+      name: String(order?.variantSnapshot?.name || "").trim(),
+      providerCode: String(order?.variantSnapshot?.providerCode || "").trim(),
+      logo: String(order?.variantSnapshot?.logo || "").trim(),
+      currency: String(order?.variantSnapshot?.currency || "IDR").trim().toUpperCase(),
+      basePrice: Number(order?.variantSnapshot?.basePrice || 0),
+      sellPrice: Number(order?.variantSnapshot?.sellPrice || 0),
+    },
+    providerMessage: String(order?.providerMessage || "").trim(),
+    notes: String(order?.notes || "").trim(),
+    createdAt: String(order?.createdAt || ""),
+    updatedAt: String(order?.updatedAt || ""),
   };
 }
 
@@ -431,6 +545,34 @@ export const getPublicPaymentMethods = cache(
         : [];
     } catch {
       return [];
+    }
+  }
+);
+
+export const getPublicOrderByInvoice = cache(
+  async (invoiceNumber: string): Promise<StorefrontOrder | null> => {
+    const normalizedInvoiceNumber = String(invoiceNumber || "").trim().toUpperCase();
+
+    if (!normalizedInvoiceNumber) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/orders/invoice/${encodeURIComponent(normalizedInvoiceNumber)}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch order invoice");
+      }
+
+      const payload = await response.json();
+      return normalizeStorefrontOrder(payload.order);
+    } catch {
+      return null;
     }
   }
 );

@@ -1,10 +1,16 @@
 const express = require("express");
 
-const { getOrders } = require("../controllers/order.controller");
+const {
+  createOrderDraft,
+  getOrders,
+  getPublicOrderByInvoice,
+} = require("../controllers/order.controller");
 const { protectAdmin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+router.get("/invoice/:invoiceNumber", getPublicOrderByInvoice);
+router.post("/", createOrderDraft);
 router.get("/", protectAdmin, getOrders);
 
 module.exports = router;

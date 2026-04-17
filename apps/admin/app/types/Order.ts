@@ -54,6 +54,8 @@ export type Order = {
     buyPrice?: number;
     sellPrice?: number;
     profit?: number;
+    paymentFee?: number;
+    totalAmount?: number;
   };
   paymentMethodCode?: string;
   paymentMethodName?: string;
