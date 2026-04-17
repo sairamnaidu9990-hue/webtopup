@@ -422,6 +422,30 @@ async function processBangjeffOrder(order) {
   }
 }
 
+async function maybeProcessBangjeffAfterPaid(order) {
+  if (toStringValue(order.provider).toLowerCase() !== "bangjeff") {
+    return order;
+  }
+
+  if (toStringValue(order.paymentStatus).toUpperCase() !== "PAID") {
+    return order;
+  }
+
+  if (toStringValue(order.status).toUpperCase() !== "PAID") {
+    return order;
+  }
+
+  if (
+    toStringValue(order.providerInvoiceNumber) ||
+    toStringValue(order.providerReferenceNumber)
+  ) {
+    return order;
+  }
+
+  await processBangjeffOrder(order);
+  return order;
+}
+
 function applyTokopayPaymentData(
   order,
   tokopayPayload,
@@ -480,7 +504,7 @@ function applyTokopayPaymentData(
       data.total_bayar || order.paymentGateway?.totalPaid || order.price?.totalAmount || 0
     ),
     netAmount: Number(data.total_diterima || order.paymentGateway?.netAmount || 0),
-    expiresAt,
+    expiresAt: expiredAt,
     updatedAt: paidTimestamp,
   };
 
@@ -612,6 +636,7 @@ async function syncTokopayPaymentStatus(order) {
       "check"
     );
     await order.save();
+    await maybeProcessBangjeffAfterPaid(order);
   } catch {
     return order;
   }
@@ -1084,6 +1109,7 @@ async function tokopayCallback(req, res) {
     );
     order.notes = "";
     await order.save();
+    await maybeProcessBangjeffAfterPaid(order);
 
     return res.status(200).json({
       status: true,
