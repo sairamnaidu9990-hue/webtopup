@@ -40,6 +40,7 @@ type Props = {
   totalItems: number;
   page: number;
   totalPages: number;
+  loading: boolean;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: string) => void;
   onCategoryFilterChange: (value: string) => void;
@@ -57,6 +58,7 @@ export default function GameList({
   totalItems,
   page,
   totalPages,
+  loading,
   onSearchChange,
   onStatusFilterChange,
   onCategoryFilterChange,
@@ -129,13 +131,17 @@ export default function GameList({
       </div>
 
       <div className="space-y-3">
-        {totalItems === 0 ? (
+        {loading && totalItems === 0 ? (
+          <p className="text-sm text-gray-500">Memuat data game...</p>
+        ) : null}
+
+        {!loading && totalItems === 0 ? (
           <p className="text-sm text-gray-500">
             Belum ada data game yang tersimpan.
           </p>
         ) : null}
 
-        {totalItems > 0 && games.length === 0 ? (
+        {!loading && totalItems > 0 && games.length === 0 ? (
           <p className="text-sm text-gray-500">
             Tidak ada game yang cocok dengan pencarian.
           </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 import GameForm from "./GameForm";
 import GameList from "./GameList";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
@@ -54,6 +54,7 @@ export default function GamesPageClient({
   syncSource,
   allowCreate = true,
 }: Props) {
+  const fetchRequestIdRef = useRef(0);
   const [games, setGames] = useState<Game[]>([]);
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -106,6 +107,8 @@ export default function GamesPageClient({
   };
 
   const fetchGames = async () => {
+    const requestId = ++fetchRequestIdRef.current;
+
     try {
       const params = new URLSearchParams({
         page: String(page),
@@ -142,17 +145,27 @@ export default function GamesPageClient({
         throw new Error(getResponseMessage(data, "Gagal ambil data game"));
       }
 
+      if (requestId !== fetchRequestIdRef.current) {
+        return;
+      }
+
       setGames(Array.isArray(data?.items) ? data.items : []);
       setTotalItems(Number(data?.totalItems || 0));
       setTotalPages(Number(data?.totalPages || 1));
       setPage(Number(data?.page || 1));
     } catch (err) {
+      if (requestId !== fetchRequestIdRef.current) {
+        return;
+      }
+
       console.error("Fetch error:", err);
       setGames([]);
       setTotalItems(0);
       setTotalPages(1);
     } finally {
-      setLoading(false);
+      if (requestId === fetchRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -354,26 +367,23 @@ export default function GamesPageClient({
         />
       ) : null}
 
-      {loading ? (
-        <p className="text-sm text-gray-500">Memuat data game...</p>
-      ) : (
-        <GameList
-          games={games}
-          search={search}
-          statusFilter={statusFilter}
-          categoryFilter={categoryFilter}
-          categoryOptions={categoryOptions}
-          totalItems={totalItems}
-          page={page}
-          totalPages={totalPages}
-          onSearchChange={handleSearchChange}
-          onStatusFilterChange={handleStatusFilterChange}
-          onCategoryFilterChange={handleCategoryFilterChange}
-          onPageChange={setPage}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      )}
+      <GameList
+        games={games}
+        search={search}
+        statusFilter={statusFilter}
+        categoryFilter={categoryFilter}
+        categoryOptions={categoryOptions}
+        totalItems={totalItems}
+        page={page}
+        totalPages={totalPages}
+        loading={loading}
+        onSearchChange={handleSearchChange}
+        onStatusFilterChange={handleStatusFilterChange}
+        onCategoryFilterChange={handleCategoryFilterChange}
+        onPageChange={setPage}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }

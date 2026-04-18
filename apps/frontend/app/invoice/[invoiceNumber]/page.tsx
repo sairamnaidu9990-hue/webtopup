@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import InvoiceAutoRefresh from "@/components/invoice/InvoiceAutoRefresh";
+import InvoicePaymentTimer from "@/components/invoice/InvoicePaymentTimer";
 import CopyInvoiceButton from "@/components/invoice/CopyInvoiceButton";
 import CopyValueIconButton from "@/components/invoice/CopyValueIconButton";
 import {
@@ -75,6 +77,26 @@ function getStatusLabel(status: string) {
   }
 }
 
+function shouldAutoRefreshOrder(order: StorefrontOrder) {
+  const orderStatus = String(order.status || "").trim().toUpperCase();
+  const paymentStatus = String(order.paymentStatus || "").trim().toUpperCase();
+  const providerStatus = String(order.providerStatus || "").trim().toUpperCase();
+
+  if (["SUCCESS", "FAILED", "REFUNDED", "EXPIRED"].includes(orderStatus)) {
+    return false;
+  }
+
+  if (["FAILED", "REFUNDED", "EXPIRED"].includes(paymentStatus)) {
+    return false;
+  }
+
+  if (["SUCCESS", "FAILED"].includes(providerStatus)) {
+    return false;
+  }
+
+  return true;
+}
+
 function shouldHideInternalProvider(value?: string) {
   return String(value || "").trim().toLowerCase().includes("bangjeff");
 }
@@ -121,43 +143,11 @@ function getTransactionProgress(order: StorefrontOrder): TransactionStep[] {
     state: "current",
   };
 
-  if (paymentStatus === "PAID") {
-    paymentStep.description = "Pembayaran telah berhasil diterima.";
-    paymentStep.state = "done";
-  } else if (paymentStatus === "EXPIRED") {
-    paymentStep.description = "Pembayaran telah kedaluwarsa.";
-    paymentStep.state = "error";
-  } else if (paymentStatus === "FAILED") {
-    paymentStep.description = "Pembayaran gagal diproses.";
-    paymentStep.state = "error";
-  } else if (paymentStatus === "REFUNDED") {
-    paymentStep.description = "Pembayaran telah direfund.";
-    paymentStep.state = "done";
-  }
-
   const processStep: TransactionStep = {
     title: "Sedang Di Proses",
-    description: "Menunggu pembayaran berhasil.",
+    description: "Pembelian sedang dalam proses.",
     state: "upcoming",
   };
-
-  if (paymentStatus === "PAID" || orderStatus === "PROCESSING") {
-    processStep.description = "Pembelian sedang dalam proses.";
-    processStep.state = "current";
-  }
-
-  if (providerStatus === "PROCESSING" || providerStatus === "PENDING") {
-    processStep.description = "Pembelian sedang dalam proses.";
-    processStep.state = "current";
-  }
-
-  if (orderStatus === "SUCCESS" || providerStatus === "SUCCESS") {
-    processStep.description = "Pembelian telah selesai diproses.";
-    processStep.state = "done";
-  } else if (orderStatus === "FAILED" || providerStatus === "FAILED") {
-    processStep.description = "Pesanan gagal diproses oleh provider.";
-    processStep.state = "error";
-  }
 
   const completedStep: TransactionStep = {
     title: "Transaksi Selesai",
@@ -165,23 +155,47 @@ function getTransactionProgress(order: StorefrontOrder): TransactionStep[] {
     state: "upcoming",
   };
 
-  if (orderStatus === "SUCCESS" || providerStatus === "SUCCESS") {
-    completedStep.description = "Transaksi telah berhasil dilakukan.";
-    completedStep.state = "success";
-  } else if (orderStatus === "FAILED") {
-    completedStep.description = "Transaksi gagal diselesaikan.";
-    completedStep.state = "error";
-  } else if (orderStatus === "REFUNDED") {
-    completedStep.description = "Transaksi telah direfund.";
-    completedStep.state = "error";
-  }
-
-  if (paymentStep.state === "error") {
+  if (paymentStatus === "EXPIRED") {
+    paymentStep.description = "Pembayaran telah kedaluwarsa.";
+    paymentStep.state = "error";
     processStep.state = "upcoming";
     processStep.description = "Menunggu pembayaran berhasil.";
     completedStep.state = "upcoming";
     completedStep.description =
       "Transaksi akan selesai setelah proses provider berhasil.";
+  } else if (paymentStatus === "FAILED") {
+    paymentStep.description = "Pembayaran gagal diproses.";
+    paymentStep.state = "error";
+    processStep.state = "upcoming";
+    processStep.description = "Menunggu pembayaran berhasil.";
+    completedStep.state = "upcoming";
+    completedStep.description =
+      "Transaksi akan selesai setelah proses provider berhasil.";
+  } else if (paymentStatus === "REFUNDED") {
+    paymentStep.description = "Pembayaran telah direfund.";
+    paymentStep.state = "done";
+    processStep.state = "upcoming";
+    processStep.description = "Transaksi tidak dilanjutkan setelah refund.";
+    completedStep.state = "error";
+    completedStep.description = "Transaksi telah direfund.";
+  } else if (paymentStatus === "PAID") {
+    paymentStep.description = "Pembayaran telah berhasil diterima.";
+    paymentStep.state = "done";
+    processStep.state = "current";
+    processStep.description = "Pembelian sedang dalam proses.";
+
+    if (orderStatus === "SUCCESS" || providerStatus === "SUCCESS") {
+      processStep.description = "Pembelian telah selesai diproses.";
+      processStep.state = "done";
+      completedStep.description = "Transaksi telah berhasil dilakukan.";
+      completedStep.state = "success";
+    } else if (orderStatus === "FAILED" || providerStatus === "FAILED") {
+      processStep.description = "Pesanan gagal diproses oleh provider.";
+      processStep.state = "error";
+      completedStep.description =
+        "Transaksi belum dapat diselesaikan karena proses provider gagal.";
+      completedStep.state = "upcoming";
+    }
   }
 
   return [
@@ -335,6 +349,7 @@ export default async function InvoicePage({
   const paymentCurrency = order.price.currency || order.variantSnapshot.currency || "IDR";
   const productImage = order.variantSnapshot.logo || order.gameSnapshot.logo;
   const transactionProgress = getTransactionProgress(order);
+  const shouldAutoRefresh = shouldAutoRefreshOrder(order);
   const displayGameProvider = shouldHideInternalProvider(order.gameSnapshot.provider)
     ? ""
     : order.gameSnapshot.provider;
@@ -372,6 +387,9 @@ export default async function InvoicePage({
                   {order.invoiceNumber}
                 </h1>
                 <CopyInvoiceButton invoiceNumber={order.invoiceNumber} />
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <InvoiceAutoRefresh enabled={shouldAutoRefresh} />
               </div>
             </div>
           </div>
@@ -443,12 +461,15 @@ export default async function InvoicePage({
             </div>
           </div>
 
-          <div className="grid gap-5 px-5 py-5 sm:px-6 md:grid-cols-[minmax(0,1.55fr)_minmax(290px,0.95fr)]">
-            <section className="space-y-4 rounded-[20px] border border-white/8 bg-[#24262d] p-4 sm:p-5">
-              <p className="text-[12px] font-medium text-white/54">
-                {formatDateTime(order.createdAt)}
-              </p>
+          <div className="space-y-4 px-5 py-5 sm:px-6">
+            <InvoicePaymentTimer
+              createdAt={order.createdAt}
+              expiresAt={order.paymentGateway.expiresAt}
+              paymentStatus={order.paymentStatus}
+            />
 
+            <div className="grid gap-5 md:grid-cols-[minmax(0,1.55fr)_minmax(290px,0.95fr)]">
+            <section className="space-y-4 rounded-[20px] border border-white/8 bg-[#24262d] p-4 sm:p-5">
               <div className="flex items-start gap-4">
                 <div className="overflow-hidden rounded-[18px] border border-white/8 bg-[#31333b] shadow-[0_10px_24px_rgba(0,0,0,0.2)]">
                   {productImage ? (
@@ -701,6 +722,7 @@ export default async function InvoicePage({
             <aside className="hidden md:block" aria-hidden="true">
               <div className="min-h-full rounded-[20px] border border-transparent" />
             </aside>
+            </div>
           </div>
         </section>
 

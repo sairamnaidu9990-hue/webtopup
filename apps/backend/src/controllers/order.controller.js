@@ -399,7 +399,6 @@ async function processBangjeffOrder(order) {
     });
 
     applyBangjeffOrderData(order, payload);
-    order.notes = "";
     await order.save();
 
     return {
@@ -410,7 +409,6 @@ async function processBangjeffOrder(order) {
     order.providerStatus = "FAILED";
     order.status = "FAILED";
     order.providerMessage = toStringValue(error.message);
-    order.notes = toStringValue(error.message);
     order.failedAt = new Date();
     await order.save();
 
@@ -766,6 +764,49 @@ async function buildSummary() {
     successOrders,
     failedOrders,
     processingOrders,
+  };
+}
+
+async function buildDashboardSummary() {
+  const [aggregateResult, recentOrders] = await Promise.all([
+    Order.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          totalBasePrice: { $sum: { $ifNull: ["$price.buyPrice", 0] } },
+          totalSellPrice: { $sum: { $ifNull: ["$price.sellPrice", 0] } },
+          totalProfit: { $sum: { $ifNull: ["$price.profit", 0] } },
+        },
+      },
+    ]),
+    Order.find({})
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select(
+        [
+          "invoiceNumber",
+          "gameSnapshot",
+          "variantSnapshot",
+          "paymentMethodName",
+          "paymentStatus",
+          "providerStatus",
+          "status",
+          "price",
+          "createdAt",
+        ].join(" ")
+      )
+      .lean(),
+  ]);
+
+  const metrics = aggregateResult[0] || {};
+
+  return {
+    totalOrders: Number(metrics.totalOrders || 0),
+    totalBasePrice: Number(metrics.totalBasePrice || 0),
+    totalSellPrice: Number(metrics.totalSellPrice || 0),
+    totalProfit: Number(metrics.totalProfit || 0),
+    recentOrders,
   };
 }
 
@@ -1147,6 +1188,8 @@ async function getOrders(req, res) {
         { "variantSnapshot.name": regex },
         { "variantSnapshot.providerCode": regex },
         { customerDisplay: regex },
+        { "contactDetail.email": regex },
+        { "contactDetail.phoneNumber": regex },
         { paymentMethodName: regex },
       ];
     }
@@ -1159,14 +1202,23 @@ async function getOrders(req, res) {
       filter.paymentStatus = paymentStatus;
     }
 
-    const [items, totalItems, summary] = await Promise.all([
+    const [items, totalItems] = await Promise.all([
       Order.find(filter)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit),
       Order.countDocuments(filter),
-      buildSummary(),
     ]);
+
+    await Promise.all(
+      items.map(async (order) => {
+        await syncTokopayPaymentStatus(order);
+        await maybeProcessBangjeffAfterPaid(order);
+        await syncBangjeffOrderStatus(order);
+      })
+    );
+
+    const summary = await buildSummary();
 
     const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
@@ -1188,8 +1240,22 @@ async function getOrders(req, res) {
   }
 }
 
+async function getOrderDashboard(req, res) {
+  try {
+    const dashboard = await buildDashboardSummary();
+
+    return res.status(200).json(dashboard);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error ambil ringkasan dashboard order",
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   createOrderDraft,
+  getOrderDashboard,
   getOrders,
   getPublicOrderByInvoice,
   markManualOrderAsPaid,

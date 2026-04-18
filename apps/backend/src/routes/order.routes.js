@@ -2,6 +2,7 @@ const express = require("express");
 
 const {
   createOrderDraft,
+  getOrderDashboard,
   getOrders,
   getPublicOrderByInvoice,
   markManualOrderAsPaid,
@@ -15,6 +16,7 @@ router.get("/tokopay/callback", tokopayCallback);
 router.post("/tokopay/callback", tokopayCallback);
 router.get("/invoice/:invoiceNumber", getPublicOrderByInvoice);
 router.post("/", createOrderDraft);
+router.get("/dashboard", protectAdmin, getOrderDashboard);
 router.get("/", protectAdmin, getOrders);
 router.patch("/:id/mark-paid", protectAdmin, markManualOrderAsPaid);
 

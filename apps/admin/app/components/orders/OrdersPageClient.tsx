@@ -7,7 +7,7 @@ import SectionTitle from "@/app/components/ui/SectionTitle";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import type { Order, OrderSummary } from "@/app/types/Order";
 
-const PAGE_LIMIT = 20;
+const PAGE_LIMIT = 10;
 const ORDER_STATUS_OPTIONS = [
   "ALL",
   "UNPAID",
@@ -33,6 +33,7 @@ const emptySummary: OrderSummary = {
   failedOrders: 0,
   processingOrders: 0,
 };
+const POLLING_INTERVAL_MS = 10000;
 
 function formatMoney(currency = "IDR", value = 0) {
   return new Intl.NumberFormat("id-ID", {
@@ -74,21 +75,67 @@ function getStatusTone(status?: string) {
 }
 
 function getGatewayErrorMessage(order: Order) {
-  if (order.notes?.trim()) {
-    return order.notes.trim();
+  const notes = order.notes?.trim() || "";
+  const paymentStatus = String(order.paymentStatus || "").trim().toUpperCase();
+  const gatewayProvider = String(order.paymentGateway?.provider || "")
+    .trim()
+    .toLowerCase();
+  const rawStatus = String(order.paymentGateway?.rawStatus || "")
+    .trim()
+    .toUpperCase();
+
+  const hasGatewayIssue =
+    paymentStatus === "FAILED" ||
+    paymentStatus === "EXPIRED" ||
+    rawStatus === "ERROR" ||
+    rawStatus === "FAILED" ||
+    rawStatus === "EXPIRED";
+
+  if (!hasGatewayIssue) {
+    return "";
   }
 
-  if (
-    String(order.paymentGateway?.provider || "").trim().toLowerCase() ===
-      "tokopay" &&
-    String(order.paymentGateway?.rawStatus || "")
-      .trim()
-      .toUpperCase() === "ERROR"
-  ) {
+  if (notes) {
+    return notes;
+  }
+
+  if (gatewayProvider === "tokopay") {
     return "Transaksi Tokopay gagal dibuat, tetapi belum ada detail pesan yang tersimpan.";
   }
 
   return "";
+}
+
+function getProviderErrorMessage(order: Order) {
+  const providerStatus = String(order.providerStatus || "").trim().toUpperCase();
+
+  if (providerStatus !== "FAILED" && providerStatus !== "EXPIRED") {
+    return "";
+  }
+
+  if (order.providerMessage?.trim()) {
+    return order.providerMessage.trim();
+  }
+
+  if (
+    order.notes?.trim() &&
+    String(order.providerStatus || "").trim().toUpperCase() === "FAILED"
+  ) {
+    return order.notes.trim();
+  }
+
+  return "";
+}
+
+function getOrderIssueMessages(order: Order) {
+  const gatewayMessage = getGatewayErrorMessage(order);
+  const providerMessage = getProviderErrorMessage(order);
+
+  return {
+    gatewayMessage,
+    providerMessage,
+    hasIssues: Boolean(gatewayMessage || providerMessage),
+  };
 }
 
 function canMarkManualPaid(order: Order) {
@@ -106,6 +153,26 @@ function canMarkManualPaid(order: Order) {
   );
 }
 
+function getTokopayInvoiceNumber(order: Order) {
+  return (
+    order.paymentGateway?.transactionId?.trim() ||
+    order.paymentReferenceNumber?.trim() ||
+    order.paymentGateway?.reference?.trim() ||
+    "-"
+  );
+}
+
+function formatContactPhone(order: Order) {
+  const countryCode = String(order.contactDetail?.phoneCountryCode || "").trim();
+  const phoneNumber = String(order.contactDetail?.phoneNumber || "").trim();
+
+  if (!phoneNumber) {
+    return "-";
+  }
+
+  return `${countryCode || "+62"} ${phoneNumber}`.trim();
+}
+
 export default function OrdersPageClient() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [summary, setSummary] = useState<OrderSummary>(emptySummary);
@@ -118,13 +185,23 @@ export default function OrdersPageClient() {
   const [paymentStatusFilter, setPaymentStatusFilter] =
     useState<(typeof PAYMENT_STATUS_OPTIONS)[number]>("ALL");
   const [loading, setLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState("");
   const [updatingOrderId, setUpdatingOrderId] = useState("");
+  const [isPolling, setIsPolling] = useState(false);
 
   const deferredSearch = useDeferredValue(search);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (options?: { silent?: boolean }) => {
     try {
+      const silent = Boolean(options?.silent);
+
+      if (!silent) {
+        setLoading(true);
+      } else {
+        setIsPolling(true);
+      }
+
       setError("");
       const params = new URLSearchParams({
         page: String(page),
@@ -165,24 +242,42 @@ export default function OrdersPageClient() {
       setTotalPages(Number(payload?.totalPages || 1));
       setPage(Number(payload?.page || 1));
     } catch (fetchError) {
-      setOrders([]);
-      setSummary(emptySummary);
-      setTotalItems(0);
-      setTotalPages(1);
-      setError(
-        fetchError instanceof Error
-          ? fetchError.message
-          : "Gagal ambil data order"
-      );
+      if (!options?.silent) {
+        setOrders([]);
+        setSummary(emptySummary);
+        setTotalItems(0);
+        setTotalPages(1);
+      }
+      if (!options?.silent) {
+        setError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Gagal ambil data order"
+        );
+      }
     } finally {
-      setLoading(false);
+      if (options?.silent) {
+        setIsPolling(false);
+      } else {
+        setLoading(false);
+        setHasLoadedOnce(true);
+      }
     }
   };
 
   useEffect(() => {
-    setLoading(true);
     fetchOrders();
   }, [page, deferredSearch, statusFilter, paymentStatusFilter]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible" && !updatingOrderId) {
+        void fetchOrders({ silent: true });
+      }
+    }, POLLING_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [page, deferredSearch, statusFilter, paymentStatusFilter, updatingOrderId]);
 
   const handleMarkPaid = async (orderId: string) => {
     try {
@@ -251,6 +346,11 @@ export default function OrdersPageClient() {
 
       <Card title="Daftar Order">
         <div className="space-y-5">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-500">
+            <span>Data order diperbarui otomatis setiap 10 detik selama halaman aktif.</span>
+            <span>Auto update aktif</span>
+          </div>
+
           <div className="grid gap-3 md:grid-cols-3">
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -263,7 +363,7 @@ export default function OrdersPageClient() {
                   setSearch(event.target.value);
                   setPage(1);
                 }}
-                placeholder="Invoice, ref provider, game, customer"
+                placeholder="Invoice, ref provider, game, customer, email, kontak"
                 className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-black"
               />
             </div>
@@ -313,9 +413,9 @@ export default function OrdersPageClient() {
             </div>
           </div>
 
-          {loading ? (
+          {!hasLoadedOnce && loading ? (
             <p className="text-sm text-gray-500">Memuat data order...</p>
-          ) : error ? (
+          ) : error && orders.length === 0 ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-600">
               {error}
             </div>
@@ -324,119 +424,165 @@ export default function OrdersPageClient() {
               Belum ada data order yang tersimpan.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-gray-200">
-              <div className="hidden grid-cols-[1.2fr_1.1fr_1fr_0.8fr_0.8fr_0.9fr] gap-4 border-b border-gray-200 bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 lg:grid">
-                <span>Invoice</span>
-                <span>Game & Customer</span>
-                <span>Variant</span>
-                <span>Harga</span>
-                <span>Status</span>
-                <span>Dibuat</span>
-              </div>
+            <div className="space-y-3">
+              {error ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {error}
+                </div>
+              ) : null}
 
-              <div className="divide-y divide-gray-100">
-                {orders.map((order) => (
-                  <div
-                    key={order._id}
-                    className="grid gap-4 px-5 py-4 lg:grid-cols-[1.2fr_1.1fr_1fr_0.8fr_0.8fr_0.9fr] lg:items-start"
-                  >
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {order.invoiceNumber}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Provider: {order.provider || "bangjeff"}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Ref: {order.providerReferenceNumber || "-"}
-                      </p>
-                    </div>
+              <div className="overflow-hidden rounded-2xl border border-gray-200">
+                <div className="hidden grid-cols-[1.2fr_1.1fr_1fr_0.8fr_0.8fr_0.9fr_1fr] gap-4 border-b border-gray-200 bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 lg:grid">
+                  <span>Invoice</span>
+                  <span>Game & Customer</span>
+                  <span>Variant</span>
+                  <span>Harga</span>
+                  <span>Status</span>
+                  <span>Dibuat</span>
+                  <span>KET</span>
+                </div>
 
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {order.gameSnapshot?.name || "-"}
-                      </p>
-                      <p className="mt-1 text-sm text-gray-600">
-                        {order.customerDisplay || "-"}
-                      </p>
-                    </div>
+                <div className="divide-y divide-gray-100">
+                  {orders.map((order) => {
+                    const issueMessages = getOrderIssueMessages(order);
 
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {order.variantSnapshot?.name || "-"}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        {order.variantSnapshot?.providerCode || "-"}
-                      </p>
-                    </div>
+                    return (
+                      <div key={order._id} className="px-5 py-4">
+                        <div className="grid gap-4 lg:grid-cols-[1.2fr_1.1fr_1fr_0.8fr_0.8fr_0.9fr_1fr] lg:items-start">
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {order.invoiceNumber}
+                            </p>
+                            <p className="mt-2 text-[11px] text-gray-500">
+                              Invoice BangJeff:{" "}
+                              <span className="font-medium text-gray-700">
+                                {order.providerInvoiceNumber || "-"}
+                              </span>
+                            </p>
+                            <p className="mt-1 text-[11px] text-gray-500">
+                              Invoice Tokopay:{" "}
+                              <span className="font-medium text-gray-700">
+                                {getTokopayInvoiceNumber(order)}
+                              </span>
+                            </p>
+                          </div>
 
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {formatMoney(
-                          order.price?.currency || "IDR",
-                          order.price?.sellPrice || 0
-                        )}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Profit{" "}
-                        {formatMoney(
-                          order.price?.currency || "IDR",
-                          order.price?.profit || 0
-                        )}
-                      </p>
-                    </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {order.gameSnapshot?.name || "-"}
+                            </p>
+                            <p className="mt-1 text-sm text-gray-600">
+                              {order.customerDisplay || "-"}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Kontak: {formatContactPhone(order)}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Email: {order.contactDetail?.email?.trim() || "-"}
+                            </p>
+                          </div>
 
-                    <div className="space-y-2">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusTone(
-                          order.status
-                        )}`}
-                      >
-                        {order.status || "UNPAID"}
-                      </span>
-                      <div>
-                        <p className="text-xs text-gray-500">
-                          Payment: {order.paymentStatus || "UNPAID"}
-                        </p>
-                        <p className="mt-1 text-xs text-gray-500">
-                          Provider: {order.providerStatus || "PENDING"}
-                        </p>
-                      </div>
-                      {getGatewayErrorMessage(order) ? (
-                        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700">
-                          <p className="font-semibold">Kendala Payment Gateway</p>
-                          <p className="mt-1">{getGatewayErrorMessage(order)}</p>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {order.variantSnapshot?.name || "-"}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {order.variantSnapshot?.providerCode || "-"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {formatMoney(
+                                order.price?.currency || "IDR",
+                                order.price?.sellPrice || 0
+                              )}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Profit{" "}
+                              {formatMoney(
+                                order.price?.currency || "IDR",
+                                order.price?.profit || 0
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusTone(
+                                order.status
+                              )}`}
+                            >
+                              {order.status || "UNPAID"}
+                            </span>
+                            <div>
+                              <p className="text-xs text-gray-500">
+                                Payment: {order.paymentStatus || "UNPAID"}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Provider: {order.providerStatus || "PENDING"}
+                              </p>
+                            </div>
+                            {canMarkManualPaid(order) ? (
+                              <button
+                                type="button"
+                                onClick={() => handleMarkPaid(order._id)}
+                                disabled={updatingOrderId === order._id}
+                                className="rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {updatingOrderId === order._id
+                                  ? "Memproses..."
+                                  : "Tandai Paid"}
+                              </button>
+                            ) : null}
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {formatDate(order.createdAt)}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {order.paymentMethodName || "-"}
+                            </p>
+                            {order.paymentGateway?.channelCode ? (
+                              <p className="mt-1 text-xs text-gray-500">
+                                Channel: {order.paymentGateway.channelCode}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div>
+                            {issueMessages.hasIssues ? (
+                              <div className="space-y-3 text-xs leading-5">
+                                {issueMessages.gatewayMessage ? (
+                                  <div className="text-red-700">
+                                    <p className="font-semibold text-red-800">
+                                      Payment Gateway
+                                    </p>
+                                    <p className="mt-1 line-clamp-4">
+                                      {issueMessages.gatewayMessage}
+                                    </p>
+                                  </div>
+                                ) : null}
+
+                                {issueMessages.providerMessage ? (
+                                  <div className="text-amber-700">
+                                    <p className="font-semibold text-amber-900">
+                                      Provider BangJeff
+                                    </p>
+                                    <p className="mt-1 line-clamp-4">
+                                      {issueMessages.providerMessage}
+                                    </p>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
-                      ) : null}
-                      {canMarkManualPaid(order) ? (
-                        <button
-                          type="button"
-                          onClick={() => handleMarkPaid(order._id)}
-                          disabled={updatingOrderId === order._id}
-                          className="rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {updatingOrderId === order._id
-                            ? "Memproses..."
-                            : "Tandai Paid"}
-                        </button>
-                      ) : null}
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {formatDate(order.createdAt)}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        {order.paymentMethodName || "-"}
-                      </p>
-                      {order.paymentGateway?.channelCode ? (
-                        <p className="mt-1 text-xs text-gray-500">
-                          Channel: {order.paymentGateway.channelCode}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}

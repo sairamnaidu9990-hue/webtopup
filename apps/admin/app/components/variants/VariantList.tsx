@@ -15,6 +15,7 @@ type Props = {
   totalItems: number;
   page: number;
   totalPages: number;
+  loading: boolean;
   onSearchChange: (value: string) => void;
   onGameFilterChange: (value: string) => void;
   onStatusFilterChange: (value: string) => void;
@@ -32,6 +33,7 @@ export default function VariantList({
   totalItems,
   page,
   totalPages,
+  loading,
   onSearchChange,
   onGameFilterChange,
   onStatusFilterChange,
@@ -109,13 +111,17 @@ export default function VariantList({
       </div>
 
       <div className="space-y-3">
-        {totalItems === 0 ? (
+        {loading && totalItems === 0 ? (
+          <p className="text-sm text-gray-500">Memuat data variant...</p>
+        ) : null}
+
+        {!loading && totalItems === 0 ? (
           <p className="text-sm text-gray-500">
             Belum ada data variant yang tersimpan.
           </p>
         ) : null}
 
-        {totalItems > 0 && variants.length === 0 ? (
+        {!loading && totalItems > 0 && variants.length === 0 ? (
           <p className="text-sm text-gray-500">
             Tidak ada variant yang cocok dengan pencarian.
           </p>

@@ -107,3 +107,11 @@ export type OrderSummary = {
   failedOrders: number;
   processingOrders: number;
 };
+
+export type OrderDashboardSummary = {
+  totalOrders: number;
+  totalBasePrice: number;
+  totalSellPrice: number;
+  totalProfit: number;
+  recentOrders: Order[];
+};

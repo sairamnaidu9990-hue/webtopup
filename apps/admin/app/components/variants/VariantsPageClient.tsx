@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 import VariantForm from "./VariantForm";
 import VariantList from "./VariantList";
 import { Variant } from "@/app/types/Variant";
@@ -29,6 +29,7 @@ export default function VariantsPageClient({
   syncSource,
   allowCreate = true,
 }: Props) {
+  const fetchRequestIdRef = useRef(0);
   const [games, setGames] = useState<Game[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [page, setPage] = useState(1);
@@ -77,6 +78,8 @@ export default function VariantsPageClient({
   }, [providerQuery]);
 
   const fetchVariants = async () => {
+    const requestId = ++fetchRequestIdRef.current;
+
     try {
       const params = new URLSearchParams({
         page: String(page),
@@ -113,17 +116,27 @@ export default function VariantsPageClient({
         throw new Error(getResponseMessage(payload, "Gagal ambil variant"));
       }
 
+      if (requestId !== fetchRequestIdRef.current) {
+        return;
+      }
+
       setVariants(Array.isArray(payload?.items) ? payload.items : []);
       setTotalItems(Number(payload?.totalItems || 0));
       setTotalPages(Number(payload?.totalPages || 1));
       setPage(Number(payload?.page || 1));
     } catch (error) {
+      if (requestId !== fetchRequestIdRef.current) {
+        return;
+      }
+
       console.error(error);
       setVariants([]);
       setTotalItems(0);
       setTotalPages(1);
     } finally {
-      setLoading(false);
+      if (requestId === fetchRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -294,26 +307,23 @@ export default function VariantsPageClient({
         />
       ) : null}
 
-      {loading ? (
-        <p className="text-sm text-gray-500">Memuat data variant...</p>
-      ) : (
-        <VariantList
-          games={games}
-          variants={variants}
-          search={search}
-          gameFilter={gameFilter}
-          statusFilter={statusFilter}
-          totalItems={totalItems}
-          page={page}
-          totalPages={totalPages}
-          onSearchChange={handleSearchChange}
-          onGameFilterChange={handleGameFilterChange}
-          onStatusFilterChange={handleStatusFilterChange}
-          onPageChange={setPage}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      )}
+      <VariantList
+        games={games}
+        variants={variants}
+        search={search}
+        gameFilter={gameFilter}
+        statusFilter={statusFilter}
+        totalItems={totalItems}
+        page={page}
+        totalPages={totalPages}
+        loading={loading}
+        onSearchChange={handleSearchChange}
+        onGameFilterChange={handleGameFilterChange}
+        onStatusFilterChange={handleStatusFilterChange}
+        onPageChange={setPage}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }

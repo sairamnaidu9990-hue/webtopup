@@ -105,12 +105,17 @@ exports.getVariants = async (req, res) => {
 
     if (search) {
       const regex = new RegExp(escapeRegex(search), "i");
+      const matchingGames = await Game.find({
+        $or: [{ name: regex }, { code: regex }],
+      }).distinct("_id");
+
       filter.$or = [
         { name: regex },
         { providerCode: regex },
         { productCode: regex },
         { region: regex },
         { currency: regex },
+        ...(matchingGames.length > 0 ? [{ game: { $in: matchingGames } }] : []),
       ];
     }
 
