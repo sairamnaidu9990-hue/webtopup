@@ -671,6 +671,51 @@ function serializePublicOrder(order) {
   };
 }
 
+function maskPhoneNumber(countryCode, phoneNumber) {
+  const digits = toDigits(phoneNumber);
+
+  if (!digits) {
+    return "-";
+  }
+
+  const visibleLength = Math.min(3, digits.length);
+  const maskedLength = Math.max(digits.length - visibleLength, 0);
+  const maskedDigits = `${"*".repeat(maskedLength)}${digits.slice(-visibleLength)}`;
+
+  return `${toStringValue(countryCode) || "+62"}${maskedDigits}`;
+}
+
+function maskInvoiceNumber(invoiceNumber) {
+  const normalizedInvoice = toStringValue(invoiceNumber).toUpperCase();
+
+  if (!normalizedInvoice) {
+    return "-";
+  }
+
+  if (normalizedInvoice.length <= 6) {
+    return normalizedInvoice;
+  }
+
+  return `${normalizedInvoice.slice(0, 3)}${"*".repeat(
+    Math.max(normalizedInvoice.length - 6, 3)
+  )}${normalizedInvoice.slice(-3)}`;
+}
+
+function serializeRecentPublicOrder(order) {
+  return {
+    _id: String(order._id || ""),
+    invoiceNumber: maskInvoiceNumber(order.invoiceNumber),
+    phoneNumber: maskPhoneNumber(
+      order.contactDetail?.phoneCountryCode,
+      order.contactDetail?.phoneNumber
+    ),
+    currency: toStringValue(order.price?.currency) || "IDR",
+    totalAmount: Number(order.price?.totalAmount || order.price?.sellPrice || 0),
+    status: normalizeCode(order.status || order.paymentStatus || "UNPAID"),
+    createdAt: order.createdAt,
+  };
+}
+
 function isInputComplete(input, value) {
   const normalizedValue = toStringValue(value);
 
@@ -771,6 +816,11 @@ async function buildDashboardSummary() {
   const [aggregateResult, recentOrders] = await Promise.all([
     Order.aggregate([
       {
+        $match: {
+          status: "SUCCESS",
+        },
+      },
+      {
         $group: {
           _id: null,
           totalOrders: { $sum: 1 },
@@ -837,6 +887,32 @@ async function getPublicOrderByInvoice(req, res) {
   } catch (error) {
     return res.status(500).json({
       message: "Error ambil invoice order",
+      error: error.message,
+    });
+  }
+}
+
+async function getRecentPublicOrders(req, res) {
+  try {
+    const limit = Math.min(toPositiveInteger(req.query.limit, 10), 20);
+    const items = await Order.find({})
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    await Promise.all(
+      items.map(async (order) => {
+        await syncTokopayPaymentStatus(order);
+        await maybeProcessBangjeffAfterPaid(order);
+        await syncBangjeffOrderStatus(order);
+      })
+    );
+
+    return res.status(200).json({
+      items: items.map((order) => serializeRecentPublicOrder(order)),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error ambil transaksi terbaru",
       error: error.message,
     });
   }
@@ -1258,6 +1334,7 @@ module.exports = {
   getOrderDashboard,
   getOrders,
   getPublicOrderByInvoice,
+  getRecentPublicOrders,
   markManualOrderAsPaid,
   tokopayCallback,
 };

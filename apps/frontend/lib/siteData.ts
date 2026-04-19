@@ -206,6 +206,16 @@ export type StorefrontOrder = {
   updatedAt: string;
 };
 
+export type RecentPublicOrder = {
+  _id: string;
+  invoiceNumber: string;
+  phoneNumber: string;
+  currency: string;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+};
+
 const defaultSiteSetting: PublicSiteSetting = {
   siteName: "WebTopup",
   siteLogoUrl: "",
@@ -651,6 +661,40 @@ export const getPublicOrderByInvoice = cache(
       return normalizeStorefrontOrder(payload.order);
     } catch {
       return null;
+    }
+  }
+);
+
+export const getRecentPublicOrders = cache(
+  async (limit = 10): Promise<RecentPublicOrder[]> => {
+    try {
+      const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 20);
+      const response = await fetch(
+        `${API_BASE}/api/orders/recent?limit=${encodeURIComponent(String(safeLimit))}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch recent public orders");
+      }
+
+      const payload = await response.json();
+
+      return Array.isArray(payload.items)
+        ? payload.items.map((item: Partial<RecentPublicOrder>) => ({
+            _id: String(item?._id || "").trim(),
+            invoiceNumber: String(item?.invoiceNumber || "").trim(),
+            phoneNumber: String(item?.phoneNumber || "-").trim() || "-",
+            currency: String(item?.currency || "IDR").trim().toUpperCase(),
+            totalAmount: Number(item?.totalAmount || 0),
+            status: String(item?.status || "").trim().toUpperCase(),
+            createdAt: String(item?.createdAt || ""),
+          }))
+        : [];
+    } catch {
+      return [];
     }
   }
 );

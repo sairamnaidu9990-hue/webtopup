@@ -93,6 +93,47 @@ function HamburgerIcon() {
   );
 }
 
+function ReceiptSearchIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-[18px] w-[18px]"
+      aria-hidden="true"
+    >
+      <path d="M7 3h10a2 2 0 0 1 2 2v16l-2.5-1.5L14 21l-2.5-1.5L9 21l-2.5-1.5L4 21V5a2 2 0 0 1 2-2Z" />
+      <path d="M8 8h8" />
+      <path d="M8 12h5" />
+      <circle cx="17.5" cy="16.5" r="2.5" />
+      <path d="m20 19 1.2 1.2" />
+    </svg>
+  );
+}
+
+function HeaderIconLink({
+  href,
+  label,
+  children,
+}: {
+  href: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-[#23262d] text-white/82 transition hover:border-white/18 hover:text-white"
+    >
+      {children}
+    </Link>
+  );
+}
+
 function HeaderIconButton({
   label,
   active = false,
@@ -370,14 +411,15 @@ export default function SiteHeader({
               ) : null}
             </div>
 
-            <nav className="hidden shrink-0 items-center gap-5 text-sm text-white/65 md:flex lg:gap-6">
-              <Link href="/#trending-games" className="transition hover:text-white">
-                Trending Games
+            <div className="hidden shrink-0 items-center md:flex">
+              <Link
+                href="/cek-transaksi"
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#23262d] px-4 py-2 text-sm font-medium text-white/78 transition hover:border-white/18 hover:text-white"
+              >
+                <ReceiptSearchIcon />
+                <span>Cek Transaksi</span>
               </Link>
-              <Link href="/#all-games" className="transition hover:text-white">
-                All Games
-              </Link>
-            </nav>
+            </div>
 
             <div className="flex items-center gap-2 md:hidden">
               <HeaderIconButton
@@ -390,6 +432,10 @@ export default function SiteHeader({
               >
                 <SearchIcon />
               </HeaderIconButton>
+
+              <HeaderIconLink href="/cek-transaksi" label="Buka cek transaksi">
+                <ReceiptSearchIcon />
+              </HeaderIconLink>
 
               <HeaderIconButton
                 label="Buka menu"
@@ -474,18 +520,11 @@ export default function SiteHeader({
                 Home
               </Link>
               <Link
-                href="/#trending-games"
+                href="/cek-transaksi"
                 onClick={() => setMenuOpen(false)}
-                className="block rounded-2xl px-4 py-3 text-sm font-medium text-white/88 transition hover:bg-white/5 hover:text-white"
+                className="block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-white/88 transition hover:bg-white/5 hover:text-white"
               >
-                Trending Games
-              </Link>
-              <Link
-                href="/#all-games"
-                onClick={() => setMenuOpen(false)}
-                className="block rounded-2xl px-4 py-3 text-sm font-medium text-white/88 transition hover:bg-white/5 hover:text-white"
-              >
-                All Games
+                Cek Transaksi
               </Link>
             </nav>
           </aside>

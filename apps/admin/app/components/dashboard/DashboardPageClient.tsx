@@ -105,7 +105,7 @@ export default function DashboardPageClient() {
 
   const summaryCards = [
     {
-      title: "Total Order",
+      title: "Total Order Sukses",
       value: String(dashboard.totalOrders),
       variant: "info" as const,
     },
@@ -130,7 +130,7 @@ export default function DashboardPageClient() {
     <div className="space-y-6">
       <SectionTitle
         title="Dashboard"
-        subtitle="Ringkasan operasional untuk memantau transaksi utama, nilai modal, harga jual, dan profit dari seluruh order."
+        subtitle="Ringkasan operasional berdasarkan transaksi yang sudah sukses, agar nilai modal, harga jual, dan profit lebih akurat."
       />
 
       {error ? (

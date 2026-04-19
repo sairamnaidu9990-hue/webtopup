@@ -5,6 +5,7 @@ const {
   getOrderDashboard,
   getOrders,
   getPublicOrderByInvoice,
+  getRecentPublicOrders,
   markManualOrderAsPaid,
   tokopayCallback,
 } = require("../controllers/order.controller");
@@ -15,6 +16,7 @@ const router = express.Router();
 router.get("/tokopay/callback", tokopayCallback);
 router.post("/tokopay/callback", tokopayCallback);
 router.get("/invoice/:invoiceNumber", getPublicOrderByInvoice);
+router.get("/recent", getRecentPublicOrders);
 router.post("/", createOrderDraft);
 router.get("/dashboard", protectAdmin, getOrderDashboard);
 router.get("/", protectAdmin, getOrders);

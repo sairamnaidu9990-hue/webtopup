@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import InvoiceAutoRefresh from "@/components/invoice/InvoiceAutoRefresh";
 import InvoicePaymentTimer from "@/components/invoice/InvoicePaymentTimer";
@@ -343,7 +342,37 @@ export default async function InvoicePage({
   const order = await getPublicOrderByInvoice(invoiceNumber);
 
   if (!order) {
-    notFound();
+    return (
+      <main className="site-shell py-8 sm:py-10">
+        <section className="rounded-[24px] border border-white/8 bg-[linear-gradient(135deg,#1d2027_0%,#17191f_100%)] px-5 py-8 text-center shadow-[0_18px_42px_rgba(0,0,0,0.18)] sm:px-6 sm:py-10">
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[var(--accent-soft)]">
+            Invoice Tidak Ditemukan
+          </p>
+          <h1 className="mt-4 font-[family-name:var(--font-display)] text-[1.6rem] font-bold tracking-tight text-white sm:text-[2rem]">
+            Invoice {String(invoiceNumber || "").trim().toUpperCase()} tidak tersedia.
+          </h1>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-white/62 sm:text-base">
+            Pastikan nomor invoice yang kamu masukkan sudah benar, lalu coba cek
+            kembali melalui halaman cek transaksi.
+          </p>
+
+          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link
+              href="/cek-transaksi"
+              className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-5 text-[13px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition hover:brightness-105"
+            >
+              Cek Invoice Lagi
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex h-11 items-center justify-center rounded-[14px] border border-white/8 bg-white/5 px-5 text-[13px] font-medium text-white transition hover:bg-white/8"
+            >
+              Kembali ke Home
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   const paymentCurrency = order.price.currency || order.variantSnapshot.currency || "IDR";
@@ -355,10 +384,16 @@ export default async function InvoicePage({
     : order.gameSnapshot.provider;
   const paymentMethodName =
     order.paymentMethodSnapshot.name || order.paymentMethodName || "-";
+  const normalizedPaymentStatus = String(order.paymentStatus || "")
+    .trim()
+    .toUpperCase();
   const isManualPayment =
     String(order.paymentMethodSnapshot.provider || "")
       .trim()
       .toLowerCase() === "manual";
+  const shouldHideGatewayPaymentAccess =
+    !isManualPayment &&
+    ["PAID", "EXPIRED", "FAILED", "REFUNDED"].includes(normalizedPaymentStatus);
   const manualAccountNumber = order.paymentMethodSnapshot.accountNumber || "";
   const manualAccountHolderName =
     order.paymentMethodSnapshot.accountHolderName || "";
@@ -581,6 +616,23 @@ export default async function InvoicePage({
                           </p>
                         </>
                       )
+                    ) : shouldHideGatewayPaymentAccess ? (
+                      <>
+                        <div className="mx-auto flex h-28 w-full max-w-[240px] items-center justify-center rounded-[16px] border border-white/8 bg-[linear-gradient(135deg,#20232a_0%,#171a21_100%)] px-4 text-[12px] font-medium text-white/44">
+                          {normalizedPaymentStatus === "PAID"
+                            ? "Pembayaran Sudah Diterima"
+                            : normalizedPaymentStatus === "EXPIRED"
+                            ? "Pembayaran Telah Kedaluwarsa"
+                            : "Akses Pembayaran Ditutup"}
+                        </div>
+                        <p className="mt-3 text-[12px] text-white/46">
+                          {normalizedPaymentStatus === "PAID"
+                            ? ""
+                            : normalizedPaymentStatus === "EXPIRED"
+                            ? ""
+                            : "Akses pembayaran sudah ditutup untuk status transaksi ini."}
+                        </p>
+                      </>
                     ) : order.paymentGateway.qrLink ? (
                       <div className="space-y-3">
                         <div className="mx-auto overflow-hidden rounded-[16px] border border-white/8 bg-white p-3 shadow-[0_10px_22px_rgba(0,0,0,0.18)]">
@@ -673,7 +725,8 @@ export default async function InvoicePage({
                         </p>
                       </div>
                     ) : null}
-                    {order.paymentGateway.virtualAccountNumber ? (
+                    {order.paymentGateway.virtualAccountNumber &&
+                    !shouldHideGatewayPaymentAccess ? (
                       <div className="rounded-[16px] border border-white/8 bg-[#24262d] px-4 py-3.5">
                         <p className="text-[11px] uppercase tracking-[0.18em] text-white/38">
                           Nomor VA
@@ -702,7 +755,8 @@ export default async function InvoicePage({
                   </div>
                 </div>
 
-                {paymentInstructionLines.length > 0 ? (
+                {paymentInstructionLines.length > 0 &&
+                !shouldHideGatewayPaymentAccess ? (
                   <div className="mt-4 rounded-[16px] border border-white/8 bg-[#24262d] px-4 py-4">
                     <h4 className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/52">
                       Instruksi Pembayaran
