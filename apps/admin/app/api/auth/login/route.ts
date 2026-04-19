@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BACKEND_URL } from "@/lib/api";
+import {
+  setAdminTokenCookie,
+  touchAdminLastActiveCookie,
+} from "@/lib/adminSession";
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,13 +32,8 @@ export async function POST(req: NextRequest) {
       admin: data.admin,
     });
 
-    response.cookies.set("admin_token", data.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+    setAdminTokenCookie(response, data.token);
+    touchAdminLastActiveCookie(response);
 
     return response;
   } catch {

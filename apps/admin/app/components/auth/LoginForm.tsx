@@ -2,8 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { broadcastAdminActivity } from "@/lib/adminSession";
 
-export default function LoginForm() {
+type LoginFormProps = {
+  sessionExpired?: boolean;
+};
+
+export default function LoginForm({
+  sessionExpired = false,
+}: LoginFormProps) {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -32,6 +39,7 @@ export default function LoginForm() {
         throw new Error(data.message || "Login gagal");
       }
 
+      broadcastAdminActivity();
       router.push("/dashboard");
       router.refresh();
     } catch (err) {
@@ -43,6 +51,11 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleLogin} className="space-y-4">
+      {sessionExpired && !error && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          Sesi admin berakhir karena tidak ada aktivitas. Silakan login kembali.
+        </div>
+      )}
       
       {error && (
         <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">

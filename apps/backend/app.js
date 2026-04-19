@@ -12,6 +12,9 @@ const syncLogRoutes = require("./src/routes/syncLog.routes");
 const variantRoutes = require("./src/routes/variant.routes");
 const app = express();
 
+app.set("trust proxy", Number.parseInt(process.env.TRUST_PROXY || "1", 10) || 1);
+app.disable("x-powered-by");
+
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
@@ -36,8 +39,32 @@ app.use(
   })
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=()"
+  );
+
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=15552000; includeSubDomains"
+    );
+  }
+
+  next();
+});
+
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || "100kb" }));
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: process.env.URLENCODED_BODY_LIMIT || "100kb",
+  })
+);
 
 app.get("/", (req, res) => {
   res.send("Backend running");

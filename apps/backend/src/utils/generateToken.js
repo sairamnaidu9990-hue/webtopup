@@ -9,7 +9,7 @@ function generateToken(admin) {
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: "7d",
+      expiresIn: process.env.ADMIN_TOKEN_EXPIRES_IN || "7d",
     }
   );
 }

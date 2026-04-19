@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
+import AdminSessionManager from "../components/auth/AdminSessionManager";
 
 type DashboardShellProps = {
   adminEmail?: string;
@@ -17,6 +18,7 @@ export default function DashboardShell({
 
   return (
     <div className="min-h-screen bg-[#eef2f6]">
+      <AdminSessionManager />
       <div className="flex min-h-screen items-stretch">
         <Sidebar
           mobileOpen={mobileOpen}

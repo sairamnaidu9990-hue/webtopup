@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { broadcastAdminLogout } from "@/lib/adminSession";
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function LogoutButton() {
       await fetch("/api/auth/logout", {
         method: "POST",
       });
+      broadcastAdminLogout();
 
       router.push("/login");
       router.refresh();

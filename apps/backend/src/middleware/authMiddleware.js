@@ -37,7 +37,10 @@ async function protectAdmin(req, res, next) {
     next();
   } catch (error) {
     return res.status(401).json({
-      message: "Token tidak valid",
+      message:
+        error?.name === "TokenExpiredError"
+          ? "Sesi login telah berakhir"
+          : "Token tidak valid",
     });
   }
 }

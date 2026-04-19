@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
+import { clearAdminSessionCookies } from "@/lib/adminSession";
 
 export async function POST() {
   const response = NextResponse.json({
     message: "Logout berhasil",
   });
 
-  response.cookies.set("admin_token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
+  clearAdminSessionCookies(response);
 
   return response;
 }
