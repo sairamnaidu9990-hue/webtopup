@@ -14,6 +14,7 @@ const {
   getTokopayConfig,
   verifyTokopayCallbackSignature,
 } = require("../services/tokopay.service");
+const { logError, logWarn } = require("../utils/appLogger");
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -412,6 +413,19 @@ async function processBangjeffOrder(order) {
     order.failedAt = new Date();
     await order.save();
 
+    logError({
+      source: "backend",
+      scope: "provider",
+      message: "Gagal submit order ke BangJeff",
+      meta: {
+        invoiceNumber: order.invoiceNumber,
+        provider: order.provider,
+        variantCode: toStringValue(order.variantSnapshot?.providerCode),
+        region: order.region,
+      },
+      error,
+    });
+
     return {
       ok: false,
       order,
@@ -594,6 +608,18 @@ async function attachTokopayPaymentToOrder(order, paymentMethod, siteSetting) {
     order.notes = toStringValue(error.message);
     await order.save();
 
+    logError({
+      source: "backend",
+      scope: "payment-gateway",
+      message: "Gagal membuat transaksi Tokopay",
+      meta: {
+        invoiceNumber: order.invoiceNumber,
+        channelCode,
+        amount: Number(order.price?.totalAmount || order.price?.sellPrice || 0),
+      },
+      error,
+    });
+
     return {
       order,
       warning: error.message,
@@ -635,7 +661,17 @@ async function syncTokopayPaymentStatus(order) {
     );
     await order.save();
     await maybeProcessBangjeffAfterPaid(order);
-  } catch {
+  } catch (error) {
+    logWarn({
+      source: "backend",
+      scope: "payment-gateway",
+      message: "Gagal sinkronisasi status Tokopay",
+      meta: {
+        invoiceNumber: order.invoiceNumber,
+        channelCode: toStringValue(order.paymentGateway?.channelCode),
+      },
+      error,
+    });
     return order;
   }
 
@@ -885,6 +921,20 @@ async function getPublicOrderByInvoice(req, res) {
       order: serializePublicOrder(order),
     });
   } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "order",
+      message: "Error ambil invoice order publik",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        invoiceNumber: req.params?.invoiceNumber,
+      },
+      error,
+    });
     return res.status(500).json({
       message: "Error ambil invoice order",
       error: error.message,
@@ -911,6 +961,17 @@ async function getRecentPublicOrders(req, res) {
       items: items.map((order) => serializeRecentPublicOrder(order)),
     });
   } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "order",
+      message: "Error ambil transaksi terbaru publik",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      error,
+    });
     return res.status(500).json({
       message: "Error ambil transaksi terbaru",
       error: error.message,
@@ -1108,6 +1169,22 @@ async function createOrderDraft(req, res) {
       warning: warning || undefined,
     });
   } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "order",
+      message: "Error membuat order draft",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        gameCode: req.body?.gameCode,
+        variantId: req.body?.variantId,
+        paymentMethodCode: req.body?.paymentMethodCode,
+      },
+      error,
+    });
     return res.status(500).json({
       message: "Error membuat order draft",
       error: error.message,
@@ -1179,6 +1256,20 @@ async function markManualOrderAsPaid(req, res) {
       order,
     });
   } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "order",
+      message: "Error update status pembayaran manual",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        orderId: req.params?.id,
+      },
+      error,
+    });
     return res.status(500).json({
       message: "Error update status pembayaran manual",
       error: error.message,
@@ -1232,6 +1323,20 @@ async function tokopayCallback(req, res) {
       status: true,
     });
   } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "payment-gateway",
+      message: "Error proses callback Tokopay",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        invoiceNumber: req.body?.reff_id || req.query?.reff_id || req.body?.ref_id || req.query?.ref_id,
+      },
+      error,
+    });
     return res.status(500).json({
       status: false,
       message: error.message,
@@ -1309,6 +1414,17 @@ async function getOrders(req, res) {
       summary,
     });
   } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "order",
+      message: "Error ambil data order admin",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      error,
+    });
     return res.status(500).json({
       message: "Error ambil data order",
       error: error.message,
@@ -1322,6 +1438,17 @@ async function getOrderDashboard(req, res) {
 
     return res.status(200).json(dashboard);
   } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "order",
+      message: "Error ambil ringkasan dashboard order",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      error,
+    });
     return res.status(500).json({
       message: "Error ambil ringkasan dashboard order",
       error: error.message,

@@ -64,6 +64,10 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
       return "Orders";
     }
 
+    if (pathname.startsWith("/monitoring")) {
+      return "Monitoring";
+    }
+
     if (pathname.startsWith("/payment-methods")) {
       return "Payment Methods";
     }

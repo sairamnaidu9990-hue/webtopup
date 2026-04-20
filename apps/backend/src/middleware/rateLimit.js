@@ -1,5 +1,6 @@
 const DEFAULT_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_MAX_REQUESTS = 100;
+const { logWarn } = require("../utils/appLogger");
 
 function getPositiveInteger(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ""), 10);
@@ -85,6 +86,23 @@ function createRateLimit(options = {}) {
 
     if (entry.count > maxRequests) {
       res.setHeader("Retry-After", String(retryAfterSeconds));
+      res.locals.skipRequestLog = true;
+
+      logWarn({
+        source: "backend",
+        scope: "rate-limit",
+        message: `Rate limit terpicu untuk ${req.method} ${req.originalUrl}`,
+        requestId: req.requestId,
+        method: req.method,
+        path: req.originalUrl || req.url || "",
+        statusCode: 429,
+        meta: {
+          key,
+          limit: maxRequests,
+          windowMs,
+          ip: getClientIdentifier(req),
+        },
+      });
 
       return res.status(429).json({
         message,

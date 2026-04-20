@@ -6,6 +6,8 @@ type CardProps = {
   title?: string;
   children: ReactNode;
   variant?: CardVariant;
+  className?: string;
+  contentClassName?: string;
 };
 
 const variantClasses: Record<CardVariant, string> = {
@@ -24,10 +26,12 @@ export default function Card({
   title,
   children,
   variant = "default",
+  className = "",
+  contentClassName = "",
 }: CardProps) {
   return (
     <div
-      className={`rounded-2xl p-4 shadow-sm transition-all duration-200 hover:-translate-y-[2px] hover:shadow-md sm:p-5 ${variantClasses[variant]}`}
+      className={`rounded-2xl p-4 shadow-sm transition-all duration-200 hover:-translate-y-[2px] hover:shadow-md sm:p-5 ${variantClasses[variant]} ${className}`}
     >
       {title && (
         <h3
@@ -39,7 +43,9 @@ export default function Card({
         </h3>
       )}
 
-      <div className={variant === "default" ? "text-gray-900" : "text-white"}>
+      <div
+        className={`${variant === "default" ? "text-gray-900" : "text-white"} ${contentClassName}`}
+      >
         {children}
       </div>
     </div>

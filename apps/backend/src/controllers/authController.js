@@ -1,28 +1,75 @@
 const bcrypt = require("bcryptjs");
 const Admin = require("../models/Admin");
 const generateToken = require("../utils/generateToken");
+const { logError, logWarn } = require("../utils/appLogger");
 
 async function loginAdmin(req, res) {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email || "")
+      .toLowerCase()
+      .trim();
 
     if (!email || !password) {
+      res.locals.skipRequestLog = true;
+      logWarn({
+        source: "backend",
+        scope: "auth",
+        message: "Percobaan login admin tanpa email atau password lengkap",
+        requestId: req.requestId,
+        method: req.method,
+        path: req.originalUrl || req.url || "",
+        statusCode: 400,
+        meta: {
+          email: normalizedEmail,
+          ip: req.ip,
+        },
+      });
       return res.status(400).json({
         message: "Email dan password wajib diisi",
       });
     }
 
     const admin = await Admin.findOne({
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
     });
 
     if (!admin) {
+      res.locals.skipRequestLog = true;
+      logWarn({
+        source: "backend",
+        scope: "auth",
+        message: "Percobaan login admin dengan email yang tidak terdaftar",
+        requestId: req.requestId,
+        method: req.method,
+        path: req.originalUrl || req.url || "",
+        statusCode: 401,
+        meta: {
+          email: normalizedEmail,
+          ip: req.ip,
+        },
+      });
       return res.status(401).json({
         message: "Email atau password salah",
       });
     }
 
     if (!admin.isActive) {
+      res.locals.skipRequestLog = true;
+      logWarn({
+        source: "backend",
+        scope: "auth",
+        message: "Percobaan login admin dari akun nonaktif",
+        requestId: req.requestId,
+        method: req.method,
+        path: req.originalUrl || req.url || "",
+        statusCode: 403,
+        meta: {
+          email: normalizedEmail,
+          adminId: admin._id,
+          ip: req.ip,
+        },
+      });
       return res.status(403).json({
         message: "Akun admin tidak aktif",
       });
@@ -31,6 +78,21 @@ async function loginAdmin(req, res) {
     const isMatch = await bcrypt.compare(password, admin.password);
 
     if (!isMatch) {
+      res.locals.skipRequestLog = true;
+      logWarn({
+        source: "backend",
+        scope: "auth",
+        message: "Percobaan login admin dengan password salah",
+        requestId: req.requestId,
+        method: req.method,
+        path: req.originalUrl || req.url || "",
+        statusCode: 401,
+        meta: {
+          email: normalizedEmail,
+          adminId: admin._id,
+          ip: req.ip,
+        },
+      });
       return res.status(401).json({
         message: "Email atau password salah",
       });
@@ -49,6 +111,20 @@ async function loginAdmin(req, res) {
       },
     });
   } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "auth",
+      message: "Gagal memproses login admin",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        ip: req.ip,
+      },
+      error,
+    });
     return res.status(500).json({
       message: "Terjadi kesalahan server",
       error: error.message,

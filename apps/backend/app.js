@@ -1,5 +1,10 @@
 const express = require("express");
 const cors = require("cors");
+const { requestContext } = require("./src/middleware/requestContext");
+const { requestLogger } = require("./src/middleware/requestLogger");
+const { notFoundHandler } = require("./src/middleware/notFoundHandler");
+const { errorHandler } = require("./src/middleware/errorHandler");
+const appLogRoutes = require("./src/routes/appLog.routes");
 const authRoutes = require("./src/routes/authRoutes");
 const adminRoutes = require("./src/routes/admin.routes");
 const gameRoutes = require("./src/routes/game.routes");
@@ -57,6 +62,8 @@ app.use((req, res, next) => {
 
   next();
 });
+app.use(requestContext);
+app.use(requestLogger);
 
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || "100kb" }));
 app.use(
@@ -71,6 +78,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/app-logs", appLogRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/games", gameRoutes);
 app.use("/api/orders", orderRoutes);
@@ -80,5 +88,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/site-settings", siteSettingRoutes);
 app.use("/api/sync-logs", syncLogRoutes);
 app.use("/api/variants", variantRoutes);
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 module.exports = app;
