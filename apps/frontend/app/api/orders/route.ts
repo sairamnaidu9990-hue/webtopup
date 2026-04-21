@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE =
-  process.env.BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:4000";
+import { BACKEND_API_BASE } from "@/lib/runtimeConfig";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const response = await fetch(`${API_BASE}/api/orders`, {
+    const response = await fetch(`${BACKEND_API_BASE}/api/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

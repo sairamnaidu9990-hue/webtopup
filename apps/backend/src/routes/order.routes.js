@@ -1,6 +1,7 @@
 const express = require("express");
 
 const {
+  bangjeffCallback,
   createOrderDraft,
   getOrderDashboard,
   getOrders,
@@ -11,6 +12,7 @@ const {
 } = require("../controllers/order.controller");
 const { protectAdmin } = require("../middleware/authMiddleware");
 const { createRateLimit } = require("../middleware/rateLimit");
+const { createCallbackIpAllowlist } = require("../middleware/callbackSecurity");
 
 const router = express.Router();
 
@@ -35,8 +37,22 @@ const createOrderRateLimit = createRateLimit({
     "Terlalu banyak percobaan membuat pesanan. Coba lagi beberapa saat lagi.",
 });
 
-router.get("/tokopay/callback", tokopayCallback);
-router.post("/tokopay/callback", tokopayCallback);
+const tokopayCallbackIpAllowlist = createCallbackIpAllowlist({
+  providerName: "Tokopay",
+  envVarName: "TOKOPAY_CALLBACK_WHITELIST",
+  defaultIps: ["178.128.104.179"],
+});
+
+const bangjeffCallbackIpAllowlist = createCallbackIpAllowlist({
+  providerName: "BangJeff",
+  envVarName: "BANGJEFF_CALLBACK_WHITELIST",
+  defaultIps: ["178.128.110.75"],
+});
+
+router.get("/tokopay/callback", tokopayCallbackIpAllowlist, tokopayCallback);
+router.post("/tokopay/callback", tokopayCallbackIpAllowlist, tokopayCallback);
+router.get("/bangjeff/callback", bangjeffCallbackIpAllowlist, bangjeffCallback);
+router.post("/bangjeff/callback", bangjeffCallbackIpAllowlist, bangjeffCallback);
 router.get(
   "/invoice/:invoiceNumber",
   publicInvoiceLookupRateLimit,

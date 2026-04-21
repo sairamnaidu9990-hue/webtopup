@@ -15,6 +15,17 @@ const {
   verifyTokopayCallbackSignature,
 } = require("../services/tokopay.service");
 const { logError, logWarn } = require("../utils/appLogger");
+const {
+  buildInvoiceUrl,
+  getTokopayExpiryDate,
+  getTokopayRawStatus,
+  mapBangjeffProviderStatus,
+  mapTokopayStatus,
+} = require("../utils/orderFlow");
+const {
+  buildWebhookUrls,
+  getProductionReadinessWarnings,
+} = require("../utils/deploymentConfig");
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -54,50 +65,6 @@ function parseTokopayTimestamp(value) {
   }
 
   return parsedDate;
-}
-
-function resolveSiteBaseUrl(siteSetting) {
-  const candidates = [
-    toStringValue(siteSetting?.siteDomain),
-    toStringValue(process.env.FRONTEND_URL),
-    toStringValue(process.env.NEXT_PUBLIC_FRONTEND_URL),
-    toStringValue(process.env.PUBLIC_APP_URL),
-    toStringValue(process.env.APP_URL),
-    "http://localhost:3001",
-  ];
-
-  for (const candidate of candidates) {
-    if (!candidate) {
-      continue;
-    }
-
-    try {
-      return new URL(candidate).toString().replace(/\/+$/, "");
-    } catch {
-      continue;
-    }
-  }
-
-  return "http://localhost:3001";
-}
-
-function buildInvoiceUrl(siteSetting, invoiceNumber) {
-  const baseUrl = resolveSiteBaseUrl(siteSetting);
-  return `${baseUrl}/invoice/${encodeURIComponent(invoiceNumber)}`;
-}
-
-function getTokopayExpireMinutes() {
-  const value = Number(process.env.TOKOPAY_EXPIRED_MINUTES || 1440);
-
-  if (!Number.isFinite(value) || value <= 0) {
-    return 1440;
-  }
-
-  return Math.floor(value);
-}
-
-function getTokopayExpiryDate() {
-  return new Date(Date.now() + getTokopayExpireMinutes() * 60 * 1000);
 }
 
 function getTokopayChannelCode(paymentMethod) {
@@ -143,67 +110,6 @@ function buildTokopayItems(order, invoiceUrl) {
         toStringValue(order.gameSnapshot?.logo),
     },
   ];
-}
-
-function getTokopayRawStatus(payload, source) {
-  if (source === "create") {
-    return toStringValue(payload?.data?.status) || "UNPAID";
-  }
-
-  return toStringValue(payload?.data?.status) || toStringValue(payload?.status);
-}
-
-function mapTokopayStatus(rawStatus) {
-  const normalizedStatus = normalizeCode(rawStatus);
-
-  if (!normalizedStatus || normalizedStatus === "UNPAID" || normalizedStatus === "PENDING") {
-    return {
-      paymentStatus: "UNPAID",
-      orderStatus: "UNPAID",
-    };
-  }
-
-  if (
-    normalizedStatus === "SUCCESS" ||
-    normalizedStatus === "COMPLETED" ||
-    normalizedStatus === "PAID"
-  ) {
-    return {
-      paymentStatus: "PAID",
-      orderStatus: "PAID",
-    };
-  }
-
-  if (normalizedStatus === "EXPIRED") {
-    return {
-      paymentStatus: "EXPIRED",
-      orderStatus: "EXPIRED",
-    };
-  }
-
-  if (
-    normalizedStatus === "FAILED" ||
-    normalizedStatus === "CANCELLED" ||
-    normalizedStatus === "CANCELED" ||
-    normalizedStatus === "ERROR"
-  ) {
-    return {
-      paymentStatus: "FAILED",
-      orderStatus: "FAILED",
-    };
-  }
-
-  if (normalizedStatus === "REFUNDED") {
-    return {
-      paymentStatus: "REFUNDED",
-      orderStatus: "REFUNDED",
-    };
-  }
-
-  return {
-    paymentStatus: "UNPAID",
-    orderStatus: "UNPAID",
-  };
 }
 
 function toPositiveInteger(value, fallback) {
@@ -269,36 +175,6 @@ function buildPaymentMethodSnapshot(paymentMethod) {
     description: toStringValue(paymentMethod?.description),
     accountHolderName: toStringValue(paymentMethod?.accountHolderName),
     accountNumber: toStringValue(paymentMethod?.accountNumber),
-  };
-}
-
-function mapBangjeffProviderStatus(rawStatusCode) {
-  const normalizedStatus = normalizeCode(rawStatusCode);
-
-  if (normalizedStatus === "SUCCESS") {
-    return {
-      providerStatus: "SUCCESS",
-      orderStatus: "SUCCESS",
-    };
-  }
-
-  if (normalizedStatus === "PROCESSING") {
-    return {
-      providerStatus: "PROCESSING",
-      orderStatus: "PROCESSING",
-    };
-  }
-
-  if (normalizedStatus === "REFUNDED" || normalizedStatus === "FAILED") {
-    return {
-      providerStatus: "FAILED",
-      orderStatus: "FAILED",
-    };
-  }
-
-  return {
-    providerStatus: "UNKNOWN",
-    orderStatus: "PROCESSING",
   };
 }
 
@@ -569,6 +445,40 @@ async function attachTokopayPaymentToOrder(order, paymentMethod, siteSetting) {
 
   const invoiceUrl = buildInvoiceUrl(siteSetting, order.invoiceNumber);
   const expiresAt = getTokopayExpiryDate();
+  const productionWarnings = getProductionReadinessWarnings(
+    siteSetting,
+    tokopayConfig.enabled
+  );
+
+  if (process.env.NODE_ENV === "production" && productionWarnings.length > 0) {
+    const warningMessage = productionWarnings.join(" ");
+
+    order.paymentGateway = {
+      ...order.paymentGateway,
+      provider: "tokopay",
+      channelCode,
+      rawStatus: "CONFIG_ERROR",
+      expiresAt,
+    };
+    order.notes = warningMessage;
+    await order.save();
+
+    logWarn({
+      source: "backend",
+      scope: "deployment",
+      message: "Konfigurasi production payment belum siap",
+      meta: {
+        invoiceNumber: order.invoiceNumber,
+        warnings: productionWarnings,
+        ...buildWebhookUrls(),
+      },
+    });
+
+    return {
+      order,
+      warning: warningMessage,
+    };
+  }
 
   try {
     const tokopayPayload = await createTokopayTransaction({
@@ -1344,6 +1254,94 @@ async function tokopayCallback(req, res) {
   }
 }
 
+async function bangjeffCallback(req, res) {
+  try {
+    const payload = req.method === "GET" ? req.query || {} : req.body || {};
+    const referenceNumber = normalizeCode(
+      payload.referenceNumber || payload.reference_number
+    );
+    const providerInvoiceNumber = toStringValue(
+      payload.invoiceNumber || payload.invoice_number
+    );
+
+    if (!referenceNumber && !providerInvoiceNumber) {
+      return res.status(200).json({
+        status: true,
+        message: "BangJeff callback endpoint ready",
+      });
+    }
+
+    const filters = [];
+
+    if (referenceNumber) {
+      filters.push({ invoiceNumber: referenceNumber });
+      filters.push({ providerReferenceNumber: referenceNumber });
+    }
+
+    if (providerInvoiceNumber) {
+      filters.push({ providerInvoiceNumber });
+    }
+
+    const order = filters.length
+      ? await Order.findOne({
+          $or: filters,
+        })
+      : null;
+
+    if (!order) {
+      logWarn({
+        source: "backend",
+        scope: "provider",
+        message: "BangJeff callback diterima tetapi order tidak ditemukan",
+        requestId: req.requestId,
+        method: req.method,
+        path: req.originalUrl || req.url || "",
+        statusCode: 200,
+        meta: {
+          referenceNumber,
+          providerInvoiceNumber,
+        },
+      });
+
+      return res.status(200).json({
+        status: true,
+        message: "Order tidak ditemukan",
+      });
+    }
+
+    applyBangjeffOrderData(order, payload);
+    await order.save();
+
+    return res.status(200).json({
+      status: true,
+    });
+  } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "provider",
+      message: "Error proses callback BangJeff",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        referenceNumber:
+          req.body?.referenceNumber ||
+          req.query?.referenceNumber ||
+          req.body?.reference_number ||
+          req.query?.reference_number,
+      },
+      error,
+    });
+
+    return res.status(500).json({
+      status: false,
+      message: error.message,
+    });
+  }
+}
+
 async function getOrders(req, res) {
   try {
     const page = toPositiveInteger(req.query.page, 1);
@@ -1457,6 +1455,7 @@ async function getOrderDashboard(req, res) {
 }
 
 module.exports = {
+  bangjeffCallback,
   createOrderDraft,
   getOrderDashboard,
   getOrders,

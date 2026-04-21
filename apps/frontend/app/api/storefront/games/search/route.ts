@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE =
-  process.env.BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:4000";
+import { BACKEND_API_BASE } from "@/lib/runtimeConfig";
 
 export async function GET(request: NextRequest) {
   const search = request.nextUrl.searchParams.get("q") || "";
@@ -11,7 +8,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const response = await fetch(
-      `${API_BASE}/api/games/storefront/search?q=${encodeURIComponent(
+      `${BACKEND_API_BASE}/api/games/storefront/search?q=${encodeURIComponent(
         search
       )}&limit=${encodeURIComponent(limit)}`,
       {

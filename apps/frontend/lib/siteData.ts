@@ -1,9 +1,6 @@
 import { cache } from "react";
 
-const API_BASE =
-  process.env.BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:4000";
+import { buildFrontendApiUrl } from "@/lib/runtimeConfig";
 
 export type SiteBanner = {
   title: string;
@@ -513,9 +510,12 @@ function normalizeSiteSetting(
 
 export const getPublicSiteSetting = cache(async (): Promise<PublicSiteSetting> => {
   try {
-    const response = await fetch(`${API_BASE}/api/site-settings/public`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      await buildFrontendApiUrl("/api/site-settings/public"),
+      {
+        cache: "no-store",
+      }
+    );
 
     if (!response.ok) {
       throw new Error("Failed to fetch site setting");
@@ -534,11 +534,14 @@ export const getStorefrontGames = cache(
     allGames: StorefrontGame[];
   }> => {
     try {
-      const response = await fetch(`${API_BASE}/api/games/storefront`, {
-        next: {
-          revalidate: 60,
-        },
-      });
+      const response = await fetch(
+        await buildFrontendApiUrl("/api/storefront/games"),
+        {
+          next: {
+            revalidate: 60,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch storefront games");
@@ -577,7 +580,9 @@ export const getStorefrontGameDetail = cache(
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/games/storefront/${encodeURIComponent(normalizedCode)}`,
+        await buildFrontendApiUrl(
+          `/api/storefront/games/${encodeURIComponent(normalizedCode)}`
+        ),
         {
           next: {
             revalidate: 60,
@@ -616,9 +621,12 @@ export const getStorefrontGameDetail = cache(
 export const getPublicPaymentMethods = cache(
   async (): Promise<StorefrontPaymentMethod[]> => {
     try {
-      const response = await fetch(`${API_BASE}/api/payment-methods/public`, {
-        cache: "no-store",
-      });
+      const response = await fetch(
+        await buildFrontendApiUrl("/api/payment-methods/public"),
+        {
+          cache: "no-store",
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch payment methods");
@@ -647,7 +655,9 @@ export const getPublicOrderByInvoice = cache(
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/orders/invoice/${encodeURIComponent(normalizedInvoiceNumber)}`,
+        await buildFrontendApiUrl(
+          `/api/orders/invoice/${encodeURIComponent(normalizedInvoiceNumber)}`
+        ),
         {
           cache: "no-store",
         }
@@ -670,7 +680,9 @@ export const getRecentPublicOrders = cache(
     try {
       const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 20);
       const response = await fetch(
-        `${API_BASE}/api/orders/recent?limit=${encodeURIComponent(String(safeLimit))}`,
+        await buildFrontendApiUrl(
+          `/api/orders/recent?limit=${encodeURIComponent(String(safeLimit))}`
+        ),
         {
           cache: "no-store",
         }

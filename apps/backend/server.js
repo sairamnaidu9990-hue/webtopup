@@ -3,9 +3,45 @@ require("dotenv").config();
 const app = require("./app");
 const connectDB = require("./src/config/db");
 const { logError, logFatal, logInfo } = require("./src/utils/appLogger");
+const { buildWebhookUrls, getProductionReadinessWarnings } = require("./src/utils/deploymentConfig");
+const SiteSetting = require("./src/models/SiteSetting");
 
 const PORT = process.env.PORT || 4000;
 let server = null;
+
+async function logDeploymentReadiness() {
+  if (process.env.NODE_ENV !== "production") {
+    return;
+  }
+
+  const siteSetting = await SiteSetting.findOne({}, { siteDomain: 1 }).lean();
+  const warnings = getProductionReadinessWarnings(
+    siteSetting,
+    Boolean(process.env.TOKOPAY_MERCHANT_ID && process.env.TOKOPAY_SECRET)
+  );
+
+  if (warnings.length === 0) {
+    logInfo({
+      source: "backend",
+      scope: "deployment",
+      message: "Webhook/domain production readiness looks good",
+      meta: buildWebhookUrls(),
+      persist: false,
+    });
+    return;
+  }
+
+  logError({
+    source: "backend",
+    scope: "deployment",
+    message: "Masih ada konfigurasi production yang perlu dirapikan",
+    meta: {
+      warnings,
+      ...buildWebhookUrls(),
+    },
+    persist: true,
+  });
+}
 
 process.on("unhandledRejection", (error) => {
   logFatal({
@@ -46,6 +82,8 @@ async function startServer() {
         persist: false,
       });
     });
+
+    await logDeploymentReadiness();
   } catch (error) {
     logError({
       source: "backend",

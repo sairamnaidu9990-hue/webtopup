@@ -1,18 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import { BACKEND_API_BASE } from "@/lib/runtimeConfig";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const queryString = request.nextUrl.searchParams.toString();
-    const endpoint = queryString
-      ? `${BACKEND_API_BASE}/api/orders/recent?${queryString}`
-      : `${BACKEND_API_BASE}/api/orders/recent`;
-    const response = await fetch(endpoint, {
+    const response = await fetch(`${BACKEND_API_BASE}/api/payment-methods/public`, {
       cache: "no-store",
     });
+
     const payload = await response.json().catch(() => ({
-      message: "Respons backend tidak valid",
+      items: [],
     }));
 
     return NextResponse.json(payload, {
@@ -21,6 +18,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
+        items: [],
         message: "Backend tidak dapat dihubungi",
         error: error instanceof Error ? error.message : "Unknown error",
       },
@@ -30,3 +28,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
