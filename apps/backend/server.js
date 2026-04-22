@@ -85,8 +85,6 @@ async function startServer() {
         persist: false,
       });
     });
-
-    await logDeploymentReadiness();
   } catch (error) {
     logError({
       source: "backend",
@@ -96,6 +94,18 @@ async function startServer() {
       persist: true,
     });
     process.exit(1);
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    void logDeploymentReadiness().catch((error) => {
+      logError({
+        source: "backend",
+        scope: "deployment",
+        message: "Gagal mengecek readiness production",
+        error,
+        persist: true,
+      });
+    });
   }
 }
 
