@@ -7,6 +7,9 @@ const { buildWebhookUrls, getProductionReadinessWarnings } = require("./src/util
 const SiteSetting = require("./src/models/SiteSetting");
 
 const PORT = process.env.PORT || 4000;
+const HOST =
+  process.env.HOST ||
+  (process.env.NODE_ENV === "production" ? "127.0.0.1" : "0.0.0.0");
 let server = null;
 
 async function logDeploymentReadiness() {
@@ -74,11 +77,11 @@ async function startServer() {
   try {
     await connectDB();
 
-    server = app.listen(PORT, () => {
+    server = app.listen(PORT, HOST, () => {
       logInfo({
         source: "backend",
         scope: "server",
-        message: `Server running on http://localhost:${PORT}`,
+        message: `Server running on http://${HOST}:${PORT}`,
         persist: false,
       });
     });
