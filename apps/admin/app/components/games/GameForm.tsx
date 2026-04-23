@@ -232,6 +232,10 @@ export default function GameForm({
               value={bannerUrl}
               onChange={(e) => setBannerUrl(e.target.value)}
             />
+            <span className="mt-2 block text-xs leading-6 text-gray-500">
+              Rekomendasi ukuran banner halaman game: 1600 x 720 px atau lebih,
+              format landscape, dengan fokus objek utama di tengah gambar.
+            </span>
           </label>
 
           <label className="block">

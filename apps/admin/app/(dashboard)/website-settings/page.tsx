@@ -528,6 +528,11 @@ export default function WebsiteSettingsPage() {
                         placeholder="https://..."
                         className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
                       />
+                      <p className="text-xs leading-6 text-gray-500">
+                        Rekomendasi ukuran homepage banner: 1600 x 800 px atau
+                        rasio sekitar 2:1 agar desktop tetap penuh dan versi
+                        mobile tetap utuh.
+                      </p>
                     </div>
                   </div>
                 </div>

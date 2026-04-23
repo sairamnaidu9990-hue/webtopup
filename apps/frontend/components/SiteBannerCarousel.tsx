@@ -67,7 +67,7 @@ export default function SiteBannerCarousel({
                   fill
                   priority={index === 0}
                   sizes="(max-width: 640px) calc(100vw - 1.25rem), (max-width: 1024px) calc(100vw - 3rem), 1260px"
-                  className="object-cover object-center"
+                  className="object-contain object-center sm:object-cover"
                 />
               </div>
             ))}
