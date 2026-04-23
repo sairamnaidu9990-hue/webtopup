@@ -13,7 +13,7 @@ async function createSyncLog({
   admin = null,
 }) {
   try {
-    await SyncLog.create({
+    return await SyncLog.create({
       provider,
       action,
       scope,
@@ -34,7 +34,31 @@ async function createSyncLog({
     });
   } catch (error) {
     console.error("Failed to write sync log:", error.message);
+    return null;
   }
 }
+
+async function updateSyncLog(syncLogId, updates = {}) {
+  if (!syncLogId) {
+    return null;
+  }
+
+  try {
+    return await SyncLog.findByIdAndUpdate(
+      syncLogId,
+      {
+        $set: {
+          ...updates,
+        },
+      },
+      { new: true }
+    );
+  } catch (error) {
+    console.error("Failed to update sync log:", error.message);
+    return null;
+  }
+}
+
+createSyncLog.updateSyncLog = updateSyncLog;
 
 module.exports = createSyncLog;

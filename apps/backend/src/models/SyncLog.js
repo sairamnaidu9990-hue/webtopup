@@ -20,7 +20,7 @@ const syncLogSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["SUCCESS", "FAILED"],
+      enum: ["PROCESSING", "SUCCESS", "FAILED"],
       required: true,
     },
     syncSource: {

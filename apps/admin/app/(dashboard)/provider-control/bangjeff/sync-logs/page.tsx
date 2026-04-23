@@ -39,9 +39,11 @@ export default function BangjeffSyncLogsPage() {
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [actionFilter, setActionFilter] = useState("ALL");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState("");
 
   const fetchLogs = async () => {
     try {
+      setError("");
       const response = await fetch("/api/sync-logs?provider=bangjeff", {
         cache: "no-store",
       });
@@ -52,6 +54,7 @@ export default function BangjeffSyncLogsPage() {
       }
 
       setLogs(Array.isArray(payload.logs) ? payload.logs : []);
+      setLastUpdatedAt(new Date().toISOString());
     } catch (fetchError) {
       setError(
         fetchError instanceof Error
@@ -64,7 +67,13 @@ export default function BangjeffSyncLogsPage() {
   };
 
   useEffect(() => {
-    fetchLogs();
+    void fetchLogs();
+
+    const intervalId = window.setInterval(() => {
+      void fetchLogs();
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   const actionOptions = Array.from(new Set(logs.map((log) => log.action)));
@@ -80,9 +89,9 @@ export default function BangjeffSyncLogsPage() {
   const stats = useMemo(
     () => ({
       total: logs.length,
+      processing: logs.filter((log) => log.status === "PROCESSING").length,
       success: logs.filter((log) => log.status === "SUCCESS").length,
       failed: logs.filter((log) => log.status === "FAILED").length,
-      markup: logs.filter((log) => log.action.includes("markup")).length,
     }),
     [logs]
   );
@@ -101,6 +110,12 @@ export default function BangjeffSyncLogsPage() {
           </p>
         </Card>
 
+        <Card title="Sedang Diproses" variant="warning">
+          <p className="text-4xl font-bold tracking-tight">
+            {loading ? 0 : stats.processing}
+          </p>
+        </Card>
+
         <Card title="Success" variant="success">
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.success}
@@ -110,12 +125,6 @@ export default function BangjeffSyncLogsPage() {
         <Card title="Failed" variant="danger">
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.failed}
-          </p>
-        </Card>
-
-        <Card title="Markup Logs" variant="warning">
-          <p className="text-4xl font-bold tracking-tight">
-            {loading ? 0 : stats.markup}
           </p>
         </Card>
       </div>
@@ -132,6 +141,7 @@ export default function BangjeffSyncLogsPage() {
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
             >
               <option value="ALL">Semua status</option>
+              <option value="PROCESSING">PROCESSING</option>
               <option value="SUCCESS">SUCCESS</option>
               <option value="FAILED">FAILED</option>
             </select>
@@ -158,6 +168,13 @@ export default function BangjeffSyncLogsPage() {
       </Card>
 
       <Card title="Riwayat Sinkronisasi">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+          <p>Halaman ini refresh otomatis tiap 5 detik.</p>
+          <p>
+            Terakhir diperbarui: {lastUpdatedAt ? formatDate(lastUpdatedAt) : "-"}
+          </p>
+        </div>
+
         {loading ? (
           <p className="text-sm text-gray-500">Memuat sync logs...</p>
         ) : error ? (
@@ -183,6 +200,8 @@ export default function BangjeffSyncLogsPage() {
                         className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                           log.status === "SUCCESS"
                             ? "bg-emerald-50 text-emerald-700"
+                            : log.status === "PROCESSING"
+                              ? "bg-amber-50 text-amber-700"
                             : "bg-red-50 text-red-700"
                         }`}
                       >
@@ -205,6 +224,11 @@ export default function BangjeffSyncLogsPage() {
                     <p className="mt-1 text-xs text-gray-400">
                       {formatDate(log.createdAt)}
                     </p>
+                    {log.status === "PROCESSING" && log.updatedAt ? (
+                      <p className="mt-1 text-xs text-amber-600">
+                        Sedang berjalan, terakhir diupdate {formatDate(log.updatedAt)}
+                      </p>
+                    ) : null}
 
                     {log.errorMessage ? (
                       <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
