@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useState } from "react";
+import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 
 type SyncAction = {
   label: string;
@@ -25,7 +26,7 @@ const defaultActions: SyncAction[] = [
 ];
 
 type FeedbackProps = {
-  tone: "success" | "error";
+  tone: "success" | "error" | "info";
   message: string;
 };
 
@@ -66,6 +67,10 @@ const feedbackToneStyle: Record<FeedbackProps["tone"], CSSProperties> = {
     borderColor: "#fecaca",
     background: "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)",
   },
+  info: {
+    borderColor: "#bfdbfe",
+    background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+  },
 };
 
 function getButtonStyle(isRunning: boolean, isDisabled: boolean): CSSProperties {
@@ -102,6 +107,7 @@ function getButtonStyle(isRunning: boolean, isDisabled: boolean): CSSProperties 
 
 function FeedbackBanner({ tone, message }: FeedbackProps) {
   const isSuccess = tone === "success";
+  const isInfo = tone === "info";
 
   return (
     <div style={{ ...feedbackBaseStyle, ...feedbackToneStyle[tone] }}>
@@ -109,34 +115,54 @@ function FeedbackBanner({ tone, message }: FeedbackProps) {
         <div
           className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white shadow-sm"
           style={{
-            backgroundColor: isSuccess ? "#059669" : "#dc2626",
+            backgroundColor: isSuccess
+              ? "#059669"
+              : isInfo
+                ? "#2563eb"
+                : "#dc2626",
           }}
         >
-          {isSuccess ? "OK" : "!"}
+          {isSuccess ? "OK" : isInfo ? "..." : "!"}
         </div>
 
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <p
               className="text-sm font-semibold"
-              style={{ color: isSuccess ? "#064e3b" : "#7f1d1d" }}
+              style={{
+                color: isSuccess ? "#064e3b" : isInfo ? "#1d4ed8" : "#7f1d1d",
+              }}
             >
-              {isSuccess ? "Sinkronisasi berhasil" : "Sinkronisasi gagal"}
+              {isSuccess
+                ? "Sinkronisasi berhasil"
+                : isInfo
+                  ? "Sinkronisasi dimulai"
+                  : "Sinkronisasi gagal"}
             </p>
             <span
               className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
               style={{
-                backgroundColor: isSuccess ? "#d1fae5" : "#fee2e2",
-                color: isSuccess ? "#047857" : "#b91c1c",
+                backgroundColor: isSuccess
+                  ? "#d1fae5"
+                  : isInfo
+                    ? "#dbeafe"
+                    : "#fee2e2",
+                color: isSuccess
+                  ? "#047857"
+                  : isInfo
+                    ? "#1d4ed8"
+                    : "#b91c1c",
               }}
             >
-              {isSuccess ? "Berhasil" : "Error"}
+              {isSuccess ? "Berhasil" : isInfo ? "Diproses" : "Error"}
             </span>
           </div>
 
           <p
             className="mt-1.5 text-sm leading-6"
-            style={{ color: isSuccess ? "#065f46" : "#991b1b" }}
+            style={{
+              color: isSuccess ? "#065f46" : isInfo ? "#1e40af" : "#991b1b",
+            }}
           >
             {message}
           </p>
@@ -155,14 +181,12 @@ export default function SyncPanel({
   actions = defaultActions,
 }: Props) {
   const [running, setRunning] = useState<string | null>(null);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState<FeedbackProps | null>(null);
 
   const runSync = async (action: SyncAction) => {
     try {
       setRunning(action.endpoint);
-      setError("");
-      setMessage("");
+      setFeedback(null);
 
       const response = await fetch(`${apiBase}${action.endpoint}`, {
         method: "POST",
@@ -172,18 +196,46 @@ export default function SyncPanel({
         body: JSON.stringify({ region }),
       });
 
-      const payload = await response.json();
+      const payload = await parseJsonSafely<{
+        message?: string;
+        error?: string;
+        queued?: boolean;
+      }>(response);
 
       if (!response.ok) {
-        throw new Error(payload.error || payload.message || "Sync gagal");
+        throw new Error(
+          payload?.error ||
+            getResponseMessage(
+              payload,
+              "Sync gagal. Coba lagi atau cek Sync Logs."
+            )
+        );
       }
 
-      setMessage(payload.message || `${action.label} berhasil`);
+      if (payload?.queued) {
+        setFeedback({
+          tone: "info",
+          message: getResponseMessage(
+            payload,
+            `${action.label} dimulai di background. Pantau Sync Logs untuk status akhirnya.`
+          ),
+        });
+        return;
+      }
+
+      setFeedback({
+        tone: "success",
+        message: getResponseMessage(payload, `${action.label} berhasil`),
+      });
       await onSynced?.();
     } catch (syncError) {
-      setError(
-        syncError instanceof Error ? syncError.message : "Sync gagal dijalankan"
-      );
+      setFeedback({
+        tone: "error",
+        message:
+          syncError instanceof Error
+            ? syncError.message
+            : "Sync gagal dijalankan",
+      });
     } finally {
       setRunning(null);
     }
@@ -236,10 +288,9 @@ export default function SyncPanel({
         </div>
       </div>
 
-      {message || error ? (
+      {feedback ? (
         <div className="mt-6">
-          {message ? <FeedbackBanner tone="success" message={message} /> : null}
-          {error ? <FeedbackBanner tone="error" message={error} /> : null}
+          <FeedbackBanner tone={feedback.tone} message={feedback.message} />
         </div>
       ) : null}
     </div>
