@@ -39,6 +39,13 @@ const ORDER_STATUSES = [
   "EXPIRED",
 ];
 const PAYMENT_STATUSES = ["UNPAID", "PAID", "FAILED", "EXPIRED", "REFUNDED"];
+const PROVIDER_STATUSES = [
+  "PENDING",
+  "PROCESSING",
+  "SUCCESS",
+  "FAILED",
+  "UNKNOWN",
+];
 const PROCESSING_SUMMARY_STATUSES = ["PAID", "PROCESSING"];
 
 function toDigits(value) {
@@ -725,6 +732,121 @@ function normalizeCustomerInputs(game, rawCustomerInputs) {
     : [];
 }
 
+function normalizeEditableCustomerInputs(order, rawCustomerInputs) {
+  const existingInputs = Array.isArray(order?.customerInputs)
+    ? order.customerInputs
+    : [];
+  const rawArray = Array.isArray(rawCustomerInputs) ? rawCustomerInputs : [];
+
+  if (existingInputs.length === 0) {
+    return rawArray.map((item) => ({
+      name: toStringValue(item?.name),
+      title: toStringValue(item?.title),
+      type: toStringValue(item?.type) || "text",
+      value: toStringValue(item?.value),
+    }));
+  }
+
+  return existingInputs.map((input, index) => ({
+    name: toStringValue(input?.name),
+    title: toStringValue(input?.title),
+    type: toStringValue(input?.type) || "text",
+    value: toStringValue(rawArray[index]?.value ?? input?.value),
+  }));
+}
+
+function normalizeEditableContactDetail(rawContactDetail, fallbackContactDetail = {}) {
+  const contactDetail =
+    rawContactDetail && typeof rawContactDetail === "object" ? rawContactDetail : {};
+  const fallback =
+    fallbackContactDetail && typeof fallbackContactDetail === "object"
+      ? fallbackContactDetail
+      : {};
+
+  return {
+    email: toStringValue(contactDetail.email || fallback.email).toLowerCase(),
+    phoneCountryCode:
+      toStringValue(contactDetail.phoneCountryCode || fallback.phoneCountryCode) ||
+      "+62",
+    phoneNumber: toStringValue(contactDetail.phoneNumber || fallback.phoneNumber).replace(
+      /[^0-9]/g,
+      ""
+    ),
+  };
+}
+
+function reconcileAdminEditedOrderTimestamps(order) {
+  const now = new Date();
+  const currentStatus = normalizeCode(order.status);
+
+  if (currentStatus === "UNPAID") {
+    order.processingAt = null;
+    order.completedAt = null;
+    order.failedAt = null;
+    return;
+  }
+
+  if (currentStatus === "PAID") {
+    order.paidAt = order.paidAt || now;
+    order.processingAt = null;
+    order.completedAt = null;
+    order.failedAt = null;
+    order.expiredAt = null;
+    return;
+  }
+
+  if (currentStatus === "PROCESSING") {
+    order.paidAt = order.paidAt || now;
+    order.processingAt = order.processingAt || now;
+    order.completedAt = null;
+    order.failedAt = null;
+    order.expiredAt = null;
+    return;
+  }
+
+  if (currentStatus === "SUCCESS") {
+    order.paidAt = order.paidAt || now;
+    order.processingAt = order.processingAt || now;
+    order.completedAt = order.completedAt || now;
+    order.failedAt = null;
+    order.expiredAt = null;
+    return;
+  }
+
+  if (currentStatus === "FAILED") {
+    order.failedAt = order.failedAt || now;
+    order.completedAt = null;
+    return;
+  }
+
+  if (currentStatus === "EXPIRED") {
+    order.expiredAt = order.expiredAt || now;
+    order.completedAt = null;
+    order.failedAt = null;
+    return;
+  }
+
+  if (currentStatus === "REFUNDED") {
+    order.completedAt = null;
+    order.failedAt = null;
+  }
+}
+
+function resetBangjeffOrderForRetry(order) {
+  const isPaymentPaid = normalizeCode(order.paymentStatus) === "PAID";
+
+  order.providerInvoiceNumber = "";
+  order.providerReferenceNumber = "";
+  order.providerStatus = "PENDING";
+  order.providerMessage = "";
+  order.notes = "";
+  order.processingAt = null;
+  order.completedAt = null;
+  order.failedAt = null;
+  order.expiredAt = isPaymentPaid ? null : order.expiredAt;
+  order.status = isPaymentPaid ? "PAID" : "UNPAID";
+}
+
 async function generateInvoiceNumber() {
   const siteSetting = await SiteSetting.findOne({}, { siteName: 1 }).lean();
   const prefix = getInvoicePrefix(siteSetting?.siteName);
@@ -1102,6 +1224,110 @@ async function createOrderDraft(req, res) {
   }
 }
 
+async function updateOrderByAdmin(req, res) {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order tidak ditemukan",
+      });
+    }
+
+    const {
+      customerInputs,
+      contactDetail,
+      status,
+      providerStatus,
+      providerMessage,
+      notes,
+    } = req.body || {};
+
+    if (customerInputs !== undefined) {
+      order.customerInputs = normalizeEditableCustomerInputs(order, customerInputs);
+      order.customerDisplay = buildCustomerDisplay(order.customerInputs);
+    }
+
+    if (contactDetail !== undefined) {
+      const normalizedContactDetail = normalizeEditableContactDetail(
+        contactDetail,
+        order.contactDetail
+      );
+
+      if (!normalizedContactDetail.phoneNumber) {
+        return res.status(400).json({
+          message: "Nomor kontak wajib diisi",
+        });
+      }
+
+      order.contactDetail = normalizedContactDetail;
+    }
+
+    if (status !== undefined) {
+      const normalizedStatus = normalizeCode(status);
+
+      if (!ORDER_STATUSES.includes(normalizedStatus)) {
+        return res.status(400).json({
+          message: "Status order tidak valid",
+        });
+      }
+
+      order.status = normalizedStatus;
+    }
+
+    if (providerStatus !== undefined) {
+      const normalizedProviderStatus = normalizeCode(providerStatus);
+
+      if (!PROVIDER_STATUSES.includes(normalizedProviderStatus)) {
+        return res.status(400).json({
+          message: "Status provider tidak valid",
+        });
+      }
+
+      order.providerStatus = normalizedProviderStatus;
+    }
+
+    if (providerMessage !== undefined) {
+      order.providerMessage = toStringValue(providerMessage);
+    }
+
+    if (notes !== undefined) {
+      order.notes = toStringValue(notes);
+    }
+
+    if (status !== undefined) {
+      reconcileAdminEditedOrderTimestamps(order);
+    }
+
+    await order.save();
+
+    return res.status(200).json({
+      message: "Perubahan order berhasil disimpan",
+      order,
+    });
+  } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "order",
+      message: "Error update order oleh admin",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        orderId: req.params?.id,
+      },
+      error,
+    });
+
+    return res.status(500).json({
+      message: "Error update order",
+      error: error.message,
+    });
+  }
+}
+
 async function markManualOrderAsPaid(req, res) {
   try {
     const order = await Order.findById(req.params.id);
@@ -1182,6 +1408,140 @@ async function markManualOrderAsPaid(req, res) {
     });
     return res.status(500).json({
       message: "Error update status pembayaran manual",
+      error: error.message,
+    });
+  }
+}
+
+async function resendOrderCallback(req, res) {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order tidak ditemukan",
+      });
+    }
+
+    const before = {
+      paymentStatus: toStringValue(order.paymentStatus),
+      status: toStringValue(order.status),
+      providerStatus: toStringValue(order.providerStatus),
+      providerMessage: toStringValue(order.providerMessage),
+      providerInvoiceNumber: toStringValue(order.providerInvoiceNumber),
+      providerReferenceNumber: toStringValue(order.providerReferenceNumber),
+    };
+
+    await syncTokopayPaymentStatus(order);
+    await maybeProcessBangjeffAfterPaid(order);
+    await syncBangjeffOrderStatus(order);
+
+    const after = {
+      paymentStatus: toStringValue(order.paymentStatus),
+      status: toStringValue(order.status),
+      providerStatus: toStringValue(order.providerStatus),
+      providerMessage: toStringValue(order.providerMessage),
+      providerInvoiceNumber: toStringValue(order.providerInvoiceNumber),
+      providerReferenceNumber: toStringValue(order.providerReferenceNumber),
+    };
+
+    const hasChanges = Object.keys(before).some((key) => before[key] !== after[key]);
+
+    return res.status(200).json({
+      message: hasChanges
+        ? "Callback dan status order berhasil disinkronkan ulang"
+        : "Sinkronisasi callback selesai. Belum ada perubahan status terbaru.",
+      order,
+    });
+  } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "order",
+      message: "Error kirim ulang callback order",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        orderId: req.params?.id,
+      },
+      error,
+    });
+
+    return res.status(500).json({
+      message: "Error kirim ulang callback order",
+      error: error.message,
+    });
+  }
+}
+
+async function resendOrderToProvider(req, res) {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order tidak ditemukan",
+      });
+    }
+
+    if (toStringValue(order.provider).toLowerCase() !== "bangjeff") {
+      return res.status(400).json({
+        message:
+          "Saat ini kirim ulang order otomatis baru tersedia untuk provider BangJeff",
+      });
+    }
+
+    if (normalizeCode(order.paymentStatus) !== "PAID") {
+      return res.status(400).json({
+        message: "Pembayaran harus PAID sebelum order bisa dikirim ulang",
+      });
+    }
+
+    if (
+      ["SUCCESS", "PROCESSING"].includes(normalizeCode(order.status))
+    ) {
+      return res.status(400).json({
+        message: "Order ini sudah sedang diproses atau sudah berhasil",
+      });
+    }
+
+    resetBangjeffOrderForRetry(order);
+    await order.save();
+
+    const result = await processBangjeffOrder(order);
+
+    if (!result.ok) {
+      return res.status(200).json({
+        message: "Order gagal diproses ulang ke BangJeff",
+        warning: result.error,
+        order: result.order,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Order berhasil dikirim ulang ke BangJeff",
+      order: result.order,
+    });
+  } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "provider",
+      message: "Error kirim ulang order ke provider",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        orderId: req.params?.id,
+      },
+      error,
+    });
+
+    return res.status(500).json({
+      message: "Error kirim ulang order ke provider",
       error: error.message,
     });
   }
@@ -1462,5 +1822,8 @@ module.exports = {
   getPublicOrderByInvoice,
   getRecentPublicOrders,
   markManualOrderAsPaid,
+  resendOrderCallback,
+  resendOrderToProvider,
   tokopayCallback,
+  updateOrderByAdmin,
 };

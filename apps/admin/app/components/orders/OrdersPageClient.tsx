@@ -4,6 +4,7 @@ import { useDeferredValue, useEffect, useState } from "react";
 import Card from "@/app/components/ui/Card";
 import PaginationControls from "@/app/components/ui/PaginationControls";
 import SectionTitle from "@/app/components/ui/SectionTitle";
+import OrderEditorDialog from "@/app/components/orders/OrderEditorDialog";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import type { Order, OrderSummary } from "@/app/types/Order";
 
@@ -189,6 +190,7 @@ export default function OrdersPageClient() {
   const [error, setError] = useState("");
   const [updatingOrderId, setUpdatingOrderId] = useState("");
   const [isPolling, setIsPolling] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const deferredSearch = useDeferredValue(search);
 
@@ -279,6 +281,18 @@ export default function OrdersPageClient() {
     return () => window.clearInterval(intervalId);
   }, [page, deferredSearch, statusFilter, paymentStatusFilter, updatingOrderId]);
 
+  useEffect(() => {
+    if (!selectedOrder) {
+      return;
+    }
+
+    const nextSelectedOrder = orders.find((order) => order._id === selectedOrder._id);
+
+    if (nextSelectedOrder && nextSelectedOrder !== selectedOrder) {
+      setSelectedOrder(nextSelectedOrder);
+    }
+  }, [orders, selectedOrder]);
+
   const handleMarkPaid = async (orderId: string) => {
     try {
       setUpdatingOrderId(orderId);
@@ -309,6 +323,19 @@ export default function OrdersPageClient() {
     } finally {
       setUpdatingOrderId("");
     }
+  };
+
+  const handleOrderMutated = (nextOrder?: Order) => {
+    if (nextOrder) {
+      setOrders((currentOrders) =>
+        currentOrders.map((currentOrder) =>
+          currentOrder._id === nextOrder._id ? nextOrder : currentOrder
+        )
+      );
+      setSelectedOrder(nextOrder);
+    }
+
+    void fetchOrders({ silent: true });
   };
 
   return (
@@ -432,7 +459,7 @@ export default function OrdersPageClient() {
               ) : null}
 
               <div className="overflow-hidden rounded-2xl border border-gray-200">
-                <div className="hidden grid-cols-[1.2fr_1.1fr_1fr_0.8fr_0.8fr_0.9fr_1fr] gap-4 border-b border-gray-200 bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 lg:grid">
+                <div className="hidden grid-cols-[1.15fr_1.1fr_1fr_0.78fr_0.82fr_0.9fr_1fr_0.5fr] gap-4 border-b border-gray-200 bg-gray-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 lg:grid">
                   <span>Invoice</span>
                   <span>Game & Customer</span>
                   <span>Variant</span>
@@ -440,6 +467,7 @@ export default function OrdersPageClient() {
                   <span>Status</span>
                   <span>Dibuat</span>
                   <span>KET</span>
+                  <span className="text-right">Aksi</span>
                 </div>
 
                 <div className="divide-y divide-gray-100">
@@ -448,7 +476,7 @@ export default function OrdersPageClient() {
 
                     return (
                       <div key={order._id} className="px-5 py-4">
-                        <div className="grid gap-4 lg:grid-cols-[1.2fr_1.1fr_1fr_0.8fr_0.8fr_0.9fr_1fr] lg:items-start">
+                        <div className="grid gap-4 lg:grid-cols-[1.15fr_1.1fr_1fr_0.78fr_0.82fr_0.9fr_1fr_0.5fr] lg:items-start">
                           <div>
                             <p className="font-semibold text-gray-900">
                               {order.invoiceNumber}
@@ -578,6 +606,31 @@ export default function OrdersPageClient() {
                               </div>
                             ) : null}
                           </div>
+
+                          <div className="flex items-start justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrder(order)}
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-500 transition hover:border-gray-900 hover:text-gray-900"
+                              aria-label={`Edit order ${order.invoiceNumber}`}
+                              title="Edit order"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                className="h-4 w-4"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.25 19.04l-4.5 1.125L4.875 15.7 16.862 4.487z"
+                                />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -597,6 +650,13 @@ export default function OrdersPageClient() {
           />
         </div>
       </Card>
+
+      <OrderEditorDialog
+        open={Boolean(selectedOrder)}
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        onOrderMutated={handleOrderMutated}
+      />
     </div>
   );
 }

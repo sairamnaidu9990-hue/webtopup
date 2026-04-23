@@ -97,6 +97,11 @@ export type Order = {
   status?: OrderStatus;
   providerMessage?: string;
   notes?: string;
+  paidAt?: string | null;
+  processingAt?: string | null;
+  completedAt?: string | null;
+  failedAt?: string | null;
+  expiredAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };

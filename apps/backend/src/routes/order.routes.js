@@ -8,7 +8,10 @@ const {
   getPublicOrderByInvoice,
   getRecentPublicOrders,
   markManualOrderAsPaid,
+  resendOrderCallback,
+  resendOrderToProvider,
   tokopayCallback,
+  updateOrderByAdmin,
 } = require("../controllers/order.controller");
 const { protectAdmin } = require("../middleware/authMiddleware");
 const { createRateLimit } = require("../middleware/rateLimit");
@@ -62,6 +65,9 @@ router.get("/recent", publicRecentOrdersRateLimit, getRecentPublicOrders);
 router.post("/", createOrderRateLimit, createOrderDraft);
 router.get("/dashboard", protectAdmin, getOrderDashboard);
 router.get("/", protectAdmin, getOrders);
+router.patch("/:id", protectAdmin, updateOrderByAdmin);
 router.patch("/:id/mark-paid", protectAdmin, markManualOrderAsPaid);
+router.post("/:id/resend-callback", protectAdmin, resendOrderCallback);
+router.post("/:id/resend-provider", protectAdmin, resendOrderToProvider);
 
 module.exports = router;
