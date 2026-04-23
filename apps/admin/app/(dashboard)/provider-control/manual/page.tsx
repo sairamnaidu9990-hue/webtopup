@@ -16,8 +16,6 @@ import { Variant } from "@/app/types/Variant";
 import Card from "../../../components/ui/Card";
 import SectionTitle from "../../../components/ui/SectionTitle";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
-
 type Game = {
   _id: string;
   status?: string;
@@ -40,11 +38,11 @@ export default function ManualProviderPage() {
       const requests: Array<Promise<Response>> = [];
 
       if (refreshGames) {
-        requests.push(fetch(`${API}/api/games`));
+        requests.push(fetch("/api/games"));
       }
 
       if (refreshVariants) {
-        requests.push(fetch(`${API}/api/variants`));
+        requests.push(fetch("/api/variants"));
       }
 
       const responses = await Promise.all(requests);

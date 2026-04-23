@@ -6,7 +6,6 @@ import VariantList from "./VariantList";
 import { Variant } from "@/app/types/Variant";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
 const PAGE_LIMIT = 20;
 
 type Game = {
@@ -61,7 +60,7 @@ export default function VariantsPageClient({
   const fetchGames = async () => {
     try {
       const response = await fetch(
-        `${API}/api/games${providerQuery ? `?${providerQuery}` : ""}`,
+        `/api/games${providerQuery ? `?${providerQuery}` : ""}`,
         {
           cache: "no-store",
         }
@@ -102,7 +101,7 @@ export default function VariantsPageClient({
         params.set("status", statusFilter);
       }
 
-      const response = await fetch(`${API}/api/variants?${params.toString()}`, {
+      const response = await fetch(`/api/variants?${params.toString()}`, {
         cache: "no-store",
       });
       const payload = await parseJsonSafely<{
@@ -198,7 +197,7 @@ export default function VariantsPageClient({
     if (!confirm("Yakin ingin menghapus variant ini?")) return;
 
     try {
-      await fetch(`${API}/api/variants/${id}`, {
+      await fetch(`/api/variants/${id}`, {
         method: "DELETE",
       });
 
@@ -217,9 +216,7 @@ export default function VariantsPageClient({
     setSubmitting(true);
 
     try {
-      const url = editingId
-        ? `${API}/api/variants/${editingId}`
-        : `${API}/api/variants`;
+      const url = editingId ? `/api/variants/${editingId}` : "/api/variants";
       const method = editingId ? "PATCH" : "POST";
 
       const response = await fetch(url, {

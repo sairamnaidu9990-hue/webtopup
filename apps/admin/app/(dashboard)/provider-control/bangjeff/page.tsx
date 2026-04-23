@@ -17,8 +17,6 @@ import {
   writeSessionCache,
 } from "@/app/lib/sessionCache";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
-
 type Game = {
   _id: string;
   status?: string;
@@ -128,11 +126,11 @@ export default function BangjeffDashboardPage() {
       const requests: Array<Promise<Response>> = [];
 
       if (refreshGames) {
-        requests.push(fetch(`${API}/api/games?syncSource=bangjeff`));
+        requests.push(fetch("/api/games?syncSource=bangjeff"));
       }
 
       if (refreshVariants) {
-        requests.push(fetch(`${API}/api/variants?syncSource=bangjeff`));
+        requests.push(fetch("/api/variants?syncSource=bangjeff"));
       }
 
       const responses = await Promise.all(requests);

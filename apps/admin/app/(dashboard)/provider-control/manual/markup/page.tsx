@@ -17,8 +17,6 @@ import { Variant } from "@/app/types/Variant";
 import Card from "../../../../components/ui/Card";
 import SectionTitle from "../../../../components/ui/SectionTitle";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
-
 type Game = {
   _id: string;
   name: string;
@@ -44,11 +42,11 @@ export default function ManualMarkupPage() {
       const requests: Array<Promise<Response>> = [];
 
       if (refreshGames) {
-        requests.push(fetch(`${API}/api/games?syncSource=manual`));
+        requests.push(fetch("/api/games?syncSource=manual"));
       }
 
       if (refreshVariants) {
-        requests.push(fetch(`${API}/api/variants?syncSource=manual`));
+        requests.push(fetch("/api/variants?syncSource=manual"));
       }
 
       const responses = await Promise.all(requests);

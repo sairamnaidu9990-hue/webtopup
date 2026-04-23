@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import ProductForm from "@/app/components/products/ProductForm";
 import ProductList from "@/app/components/products/ProductList";
+import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import { Product } from "@/app/types/Product";
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 type Game = {
   _id: string;
@@ -32,17 +31,33 @@ export default function ProductsPage() {
   const fetchData = async () => {
     try {
       const [gRes, pRes] = await Promise.all([
-        fetch(`${API}/api/games`),
-        fetch(`${API}/api/products`),
+        fetch("/api/games", {
+          cache: "no-store",
+        }),
+        fetch("/api/products", {
+          cache: "no-store",
+        }),
       ]);
 
-      const gamesData = await gRes.json();
-      const productsData = await pRes.json();
+      const gamesData = await parseJsonSafely<Game[]>(gRes);
+      const productsData = await parseJsonSafely<Product[]>(pRes);
 
-      setGames(gamesData);
-      setProducts(productsData);
+      if (!gRes.ok) {
+        throw new Error(getResponseMessage(gamesData, "Gagal ambil data game"));
+      }
+
+      if (!pRes.ok) {
+        throw new Error(
+          getResponseMessage(productsData, "Gagal ambil data produk")
+        );
+      }
+
+      setGames(Array.isArray(gamesData) ? gamesData : []);
+      setProducts(Array.isArray(productsData) ? productsData : []);
     } catch (err) {
       console.error(err);
+      setGames([]);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -56,11 +71,21 @@ export default function ProductsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Yakin ingin menghapus produk ini?")) return;
 
-    await fetch(`${API}/api/products/${id}`, {
-      method: "DELETE",
-    });
+    try {
+      const response = await fetch(`/api/products/${id}`, {
+        method: "DELETE",
+      });
+      const payload = await parseJsonSafely<{ message?: string }>(response);
 
-    fetchData();
+      if (!response.ok) {
+        throw new Error(getResponseMessage(payload, "Gagal menghapus produk"));
+      }
+
+      fetchData();
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Gagal menghapus produk");
+    }
   };
 
   // EDIT
@@ -84,9 +109,7 @@ export default function ProductsPage() {
 
     setSubmitting(true);
 
-    const url = editingId
-      ? `${API}/api/products/${editingId}`
-      : `${API}/api/products`;
+    const url = editingId ? `/api/products/${editingId}` : "/api/products";
 
     const method = editingId ? "PATCH" : "POST";
 
@@ -104,10 +127,10 @@ export default function ProductsPage() {
         }),
       });
 
-      const payload = await response.json();
+      const payload = await parseJsonSafely<{ message?: string }>(response);
 
       if (!response.ok) {
-        throw new Error(payload.message || "Gagal menyimpan produk");
+        throw new Error(getResponseMessage(payload, "Gagal menyimpan produk"));
       }
 
       setSuccess(

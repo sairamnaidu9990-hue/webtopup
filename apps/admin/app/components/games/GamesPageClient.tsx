@@ -31,7 +31,6 @@ type Game = {
   }>;
 };
 
-const API = process.env.NEXT_PUBLIC_API_URL;
 const DEFAULT_CATEGORY_OPTIONS = [
   "Topup Game",
   "Topup Pulsa",
@@ -131,7 +130,7 @@ export default function GamesPageClient({
         params.set("category", categoryFilter);
       }
 
-      const res = await fetch(`${API}/api/games?${params.toString()}`, {
+      const res = await fetch(`/api/games?${params.toString()}`, {
         cache: "no-store",
       });
       const data = await parseJsonSafely<{
@@ -207,7 +206,7 @@ export default function GamesPageClient({
     if (!confirm("Yakin ingin menghapus game ini?")) return;
 
     try {
-      await fetch(`${API}/api/games/${id}`, {
+      await fetch(`/api/games/${id}`, {
         method: "DELETE",
       });
 
@@ -272,9 +271,7 @@ export default function GamesPageClient({
     setSubmitting(true);
 
     try {
-      const url = editingId
-        ? `${API}/api/games/${editingId}`
-        : `${API}/api/games`;
+      const url = editingId ? `/api/games/${editingId}` : "/api/games";
 
       const method = editingId ? "PATCH" : "POST";
 
