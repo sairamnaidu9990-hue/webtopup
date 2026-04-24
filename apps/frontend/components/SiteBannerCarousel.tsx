@@ -61,6 +61,15 @@ export default function SiteBannerCarousel({
               >
                 <Image
                   src={banner.imageUrl}
+                  alt=""
+                  aria-hidden="true"
+                  fill
+                  sizes="100vw"
+                  className="scale-110 object-cover object-center blur-2xl sm:hidden"
+                />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,12,18,0.04),rgba(10,12,18,0.36))] sm:hidden" />
+                <Image
+                  src={banner.imageUrl}
                   alt={
                     banner.title || `${siteSetting.siteName} banner ${index + 1}`
                   }
