@@ -36,6 +36,18 @@ body {
   font-family: var(--font-jakarta), sans-serif;
 }
 
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -62,6 +74,11 @@ img {
   margin-inline: auto;
 }
 
+.page-transition-shell {
+  animation: page-enter 220ms ease-out;
+  will-change: opacity, transform;
+}
+
 @media (min-width: 640px) {
   .site-shell {
     width: min(calc(100% - 3rem), 1260px);
@@ -77,4 +94,14 @@ img {
 ::selection {
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .page-transition-shell {
+    animation: none;
+  }
 }

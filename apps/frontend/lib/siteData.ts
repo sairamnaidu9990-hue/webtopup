@@ -513,7 +513,9 @@ export const getPublicSiteSetting = cache(async (): Promise<PublicSiteSetting> =
     const response = await fetch(
       await buildFrontendApiUrl("/api/site-settings/public"),
       {
-        cache: "no-store",
+        next: {
+          revalidate: 60,
+        },
       }
     );
 
@@ -624,7 +626,9 @@ export const getPublicPaymentMethods = cache(
       const response = await fetch(
         await buildFrontendApiUrl("/api/payment-methods/public"),
         {
-          cache: "no-store",
+          next: {
+            revalidate: 60,
+          },
         }
       );
 
@@ -659,7 +663,9 @@ export const getPublicOrderByInvoice = cache(
           `/api/orders/invoice/${encodeURIComponent(normalizedInvoiceNumber)}`
         ),
         {
-          cache: "no-store",
+          next: {
+            revalidate: 10,
+          },
         }
       );
 
@@ -684,7 +690,9 @@ export const getRecentPublicOrders = cache(
           `/api/orders/recent?limit=${encodeURIComponent(String(safeLimit))}`
         ),
         {
-          cache: "no-store",
+          next: {
+            revalidate: 20,
+          },
         }
       );
 
