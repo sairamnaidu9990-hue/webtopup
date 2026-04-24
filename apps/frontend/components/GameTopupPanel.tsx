@@ -46,10 +46,11 @@ function getPaymentTotal(
     return baseAmount;
   }
 
-  const fee =
-    paymentMethod.feeType === "percent"
-      ? Math.ceil((baseAmount * Number(paymentMethod.feeValue || 0)) / 100)
-      : Number(paymentMethod.feeValue || 0);
+  const feeFixed = Number(paymentMethod.feeFixed || 0);
+  const feePercent = Math.ceil(
+    (baseAmount * Number(paymentMethod.feePercent || 0)) / 100
+  );
+  const fee = feeFixed + feePercent;
 
   return baseAmount + fee;
 }

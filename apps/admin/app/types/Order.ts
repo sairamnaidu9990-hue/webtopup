@@ -59,6 +59,8 @@ export type Order = {
     currency?: string;
     feeType?: string;
     feeValue?: number;
+    feeFixed?: number;
+    feePercent?: number;
     gatewayChannelCode?: string;
     description?: string;
     accountHolderName?: string;
@@ -88,6 +90,8 @@ export type Order = {
     sellPrice?: number;
     profit?: number;
     paymentFee?: number;
+    paymentFeeFixed?: number;
+    paymentFeePercent?: number;
     totalAmount?: number;
   };
   paymentMethodCode?: string;

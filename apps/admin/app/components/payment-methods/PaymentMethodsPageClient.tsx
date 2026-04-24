@@ -7,7 +7,6 @@ import PaymentMethodList from "./PaymentMethodList";
 import SectionTitle from "@/app/components/ui/SectionTitle";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import type {
-  PaymentFeeType,
   PaymentMethod,
   PaymentMethodCategory,
   PaymentMethodType,
@@ -18,6 +17,26 @@ const PAGE_LIMIT = 20;
 function resetNumber(value: string, fallback: string) {
   const normalized = value.trim();
   return normalized === "" ? fallback : normalized;
+}
+
+function getPaymentMethodFeeFixed(paymentMethod: PaymentMethod) {
+  if (paymentMethod.feeFixed != null) {
+    return Number(paymentMethod.feeFixed || 0);
+  }
+
+  return paymentMethod.feeType === "percent"
+    ? 0
+    : Number(paymentMethod.feeValue || 0);
+}
+
+function getPaymentMethodFeePercent(paymentMethod: PaymentMethod) {
+  if (paymentMethod.feePercent != null) {
+    return Number(paymentMethod.feePercent || 0);
+  }
+
+  return paymentMethod.feeType === "percent"
+    ? Number(paymentMethod.feeValue || 0)
+    : 0;
 }
 
 export default function PaymentMethodsPageClient() {
@@ -50,8 +69,8 @@ export default function PaymentMethodsPageClient() {
   const [categoryId, setCategoryId] = useState("");
   const [logo, setLogo] = useState("");
   const [type, setType] = useState<PaymentMethodType>("bank_transfer");
-  const [feeType, setFeeType] = useState<PaymentFeeType>("fixed");
-  const [feeValue, setFeeValue] = useState("0");
+  const [feeFixed, setFeeFixed] = useState("0");
+  const [feePercent, setFeePercent] = useState("0");
   const [currency, setCurrency] = useState("IDR");
   const [gatewayChannelCode, setGatewayChannelCode] = useState("");
   const [description, setDescription] = useState("");
@@ -80,8 +99,8 @@ export default function PaymentMethodsPageClient() {
     setCategoryId("");
     setLogo("");
     setType("bank_transfer");
-    setFeeType("fixed");
-    setFeeValue("0");
+    setFeeFixed("0");
+    setFeePercent("0");
     setCurrency("IDR");
     setGatewayChannelCode("");
     setDescription("");
@@ -188,8 +207,8 @@ export default function PaymentMethodsPageClient() {
     setCategoryId(paymentMethod.category?._id || "");
     setLogo(paymentMethod.logo || "");
     setType(paymentMethod.type);
-    setFeeType(paymentMethod.feeType);
-    setFeeValue(String(paymentMethod.feeValue ?? 0));
+    setFeeFixed(String(getPaymentMethodFeeFixed(paymentMethod)));
+    setFeePercent(String(getPaymentMethodFeePercent(paymentMethod)));
     setCurrency(paymentMethod.currency || "IDR");
     setGatewayChannelCode(paymentMethod.gatewayChannelCode || "");
     setDescription(paymentMethod.description || "");
@@ -340,8 +359,8 @@ export default function PaymentMethodsPageClient() {
           category: categoryId,
           logo,
           type,
-          feeType,
-          feeValue: Number(resetNumber(feeValue, "0")),
+          feeFixed: Number(resetNumber(feeFixed, "0")),
+          feePercent: Number(resetNumber(feePercent, "0")),
           currency,
           gatewayChannelCode,
           description,
@@ -429,8 +448,8 @@ export default function PaymentMethodsPageClient() {
         categories={categories}
         logo={logo}
         type={type}
-        feeType={feeType}
-        feeValue={feeValue}
+        feeFixed={feeFixed}
+        feePercent={feePercent}
         currency={currency}
         gatewayChannelCode={gatewayChannelCode}
         description={description}
@@ -444,8 +463,8 @@ export default function PaymentMethodsPageClient() {
         setCategoryId={setCategoryId}
         setLogo={setLogo}
         setType={setType}
-        setFeeType={setFeeType}
-        setFeeValue={setFeeValue}
+        setFeeFixed={setFeeFixed}
+        setFeePercent={setFeePercent}
         setCurrency={setCurrency}
         setGatewayChannelCode={setGatewayChannelCode}
         setDescription={setDescription}

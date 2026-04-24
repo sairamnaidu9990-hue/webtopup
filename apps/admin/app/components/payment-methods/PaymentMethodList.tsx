@@ -35,11 +35,43 @@ type Props = {
 };
 
 function formatFee(paymentMethod: PaymentMethod) {
-  if (paymentMethod.feeType === "percent") {
-    return `${paymentMethod.feeValue}%`;
+  const feeFixed =
+    paymentMethod.feeFixed != null
+      ? Number(paymentMethod.feeFixed || 0)
+      : paymentMethod.feeType === "percent"
+      ? 0
+      : Number(paymentMethod.feeValue || 0);
+  const feePercent =
+    paymentMethod.feePercent != null
+      ? Number(paymentMethod.feePercent || 0)
+      : paymentMethod.feeType === "percent"
+      ? Number(paymentMethod.feeValue || 0)
+      : 0;
+  const parts = [];
+
+  if (feeFixed > 0) {
+    try {
+      parts.push(
+        new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: paymentMethod.currency || "IDR",
+          maximumFractionDigits: 0,
+        }).format(feeFixed)
+      );
+    } catch {
+      parts.push(`${paymentMethod.currency || "IDR"} ${feeFixed}`);
+    }
   }
 
-  return `${paymentMethod.currency || "IDR"} ${paymentMethod.feeValue}`;
+  if (feePercent > 0) {
+    parts.push(
+      Number.isInteger(feePercent)
+        ? `${feePercent}%`
+        : `${feePercent.toFixed(2)}%`
+    );
+  }
+
+  return parts.length > 0 ? parts.join(" + ") : "Tanpa biaya";
 }
 
 export default function PaymentMethodList({

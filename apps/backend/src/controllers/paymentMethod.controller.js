@@ -8,11 +8,15 @@ const PAYMENT_METHOD_TYPES = [
   "retail",
   "virtual_account",
 ];
-const PAYMENT_FEE_TYPES = ["fixed", "percent"];
+const PAYMENT_FEE_TYPES = ["fixed", "percent", "mixed"];
 
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toNonNegativeNumber(value, fallback = 0) {
+  return Math.max(toNumber(value, fallback), 0);
 }
 
 function toPositiveInteger(value, fallback) {
@@ -39,6 +43,80 @@ function normalizeType(value) {
 function normalizeFeeType(value) {
   const normalized = String(value || "").trim().toLowerCase();
   return PAYMENT_FEE_TYPES.includes(normalized) ? normalized : "fixed";
+}
+
+function deriveLegacyFeeFields(feeFixed, feePercent) {
+  if (feeFixed > 0 && feePercent > 0) {
+    return {
+      feeType: "mixed",
+      feeValue: feeFixed,
+    };
+  }
+
+  if (feePercent > 0) {
+    return {
+      feeType: "percent",
+      feeValue: feePercent,
+    };
+  }
+
+  return {
+    feeType: "fixed",
+    feeValue: feeFixed,
+  };
+}
+
+function normalizeFeeConfiguration(input = {}, fallback = {}) {
+  const fallbackFeeFixed =
+    fallback.feeFixed != null
+      ? toNonNegativeNumber(fallback.feeFixed, 0)
+      : normalizeFeeType(fallback.feeType) === "percent"
+      ? 0
+      : toNonNegativeNumber(fallback.feeValue, 0);
+  const fallbackFeePercent =
+    fallback.feePercent != null
+      ? toNonNegativeNumber(fallback.feePercent, 0)
+      : normalizeFeeType(fallback.feeType) === "percent"
+      ? toNonNegativeNumber(fallback.feeValue, 0)
+      : 0;
+  const hasExplicitCombinedFields =
+    Object.prototype.hasOwnProperty.call(input, "feeFixed") ||
+    Object.prototype.hasOwnProperty.call(input, "feePercent");
+
+  if (hasExplicitCombinedFields) {
+    const feeFixed = toNonNegativeNumber(
+      input.feeFixed,
+      fallbackFeeFixed
+    );
+    const feePercent = toNonNegativeNumber(
+      input.feePercent,
+      fallbackFeePercent
+    );
+
+    return {
+      feeFixed,
+      feePercent,
+      ...deriveLegacyFeeFields(feeFixed, feePercent),
+    };
+  }
+
+  const normalizedFeeType = normalizeFeeType(input.feeType ?? fallback.feeType);
+  const normalizedFeeValue = toNonNegativeNumber(
+    input.feeValue,
+    toNonNegativeNumber(fallback.feeValue, 0)
+  );
+
+  const feeFixed =
+    normalizedFeeType === "percent" ? 0 : normalizedFeeValue;
+  const feePercent =
+    normalizedFeeType === "percent" ? normalizedFeeValue : 0;
+
+  return {
+    feeType: normalizedFeeType,
+    feeValue: normalizedFeeValue,
+    feeFixed,
+    feePercent,
+  };
 }
 
 function normalizeCode(value) {
@@ -151,7 +229,7 @@ exports.getPublicPaymentMethods = async (req, res) => {
       PaymentMethod.find({ isActive: true })
         .sort({ order: 1, createdAt: -1 })
         .select(
-          "name code provider logo type feeType feeValue currency gatewayChannelCode description order category"
+          "name code provider logo type feeType feeValue feeFixed feePercent currency gatewayChannelCode description order category"
         )
     );
 
@@ -179,8 +257,6 @@ exports.createPaymentMethod = async (req, res) => {
       logo = "",
       type = "bank_transfer",
       category = "",
-      feeType = "fixed",
-      feeValue = 0,
       currency = "IDR",
       gatewayChannelCode = "",
       description = "",
@@ -225,6 +301,7 @@ exports.createPaymentMethod = async (req, res) => {
         message: "Kategori metode pembayaran tidak valid",
       });
     }
+    const feeConfiguration = normalizeFeeConfiguration(req.body);
 
     const item = await PaymentMethod.create({
       name: String(name).trim(),
@@ -233,8 +310,7 @@ exports.createPaymentMethod = async (req, res) => {
       category: categoryDocument?._id || null,
       logo: String(logo || "").trim(),
       type: normalizeType(type),
-      feeType: normalizeFeeType(feeType),
-      feeValue: toNumber(feeValue),
+      ...feeConfiguration,
       currency: normalizeCurrency(currency),
       gatewayChannelCode: String(gatewayChannelCode || "").trim(),
       description: String(description || "").trim(),
@@ -298,12 +374,13 @@ exports.updatePaymentMethod = async (req, res) => {
       updatePayload.type = normalizeType(req.body.type);
     }
 
-    if (Object.prototype.hasOwnProperty.call(req.body, "feeType")) {
-      updatePayload.feeType = normalizeFeeType(req.body.feeType);
-    }
-
-    if (Object.prototype.hasOwnProperty.call(req.body, "feeValue")) {
-      updatePayload.feeValue = toNumber(req.body.feeValue);
+    if (
+      Object.prototype.hasOwnProperty.call(req.body, "feeType") ||
+      Object.prototype.hasOwnProperty.call(req.body, "feeValue") ||
+      Object.prototype.hasOwnProperty.call(req.body, "feeFixed") ||
+      Object.prototype.hasOwnProperty.call(req.body, "feePercent")
+    ) {
+      Object.assign(updatePayload, normalizeFeeConfiguration(req.body, currentItem));
     }
 
     if (Object.prototype.hasOwnProperty.call(req.body, "currency")) {

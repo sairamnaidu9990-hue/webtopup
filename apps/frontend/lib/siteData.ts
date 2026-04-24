@@ -111,8 +111,10 @@ export type StorefrontPaymentMethod = {
     code: string;
     order: number;
   } | null;
-  feeType: "fixed" | "percent";
+  feeType: "fixed" | "percent" | "mixed";
   feeValue: number;
+  feeFixed: number;
+  feePercent: number;
   currency: string;
   gatewayChannelCode?: string;
   description?: string;
@@ -149,6 +151,8 @@ export type StorefrontOrder = {
     currency: string;
     feeType: string;
     feeValue: number;
+    feeFixed: number;
+    feePercent: number;
     gatewayChannelCode: string;
     description: string;
     accountHolderName: string;
@@ -179,11 +183,13 @@ export type StorefrontOrder = {
   price: {
     currency: string;
     buyPrice: number;
-    sellPrice: number;
-    profit: number;
-    paymentFee: number;
-    totalAmount: number;
-  };
+      sellPrice: number;
+      profit: number;
+      paymentFee: number;
+      paymentFeeFixed: number;
+      paymentFeePercent: number;
+      totalAmount: number;
+    };
   region: string;
   gameSnapshot: {
     name: string;
@@ -309,6 +315,15 @@ function normalizeStorefrontVariant(
 function normalizeStorefrontPaymentMethod(
   paymentMethod?: Partial<StorefrontPaymentMethod> | null
 ): StorefrontPaymentMethod {
+  const feeFixed = Number(
+    paymentMethod?.feeFixed ??
+      (paymentMethod?.feeType === "percent" ? 0 : paymentMethod?.feeValue || 0)
+  );
+  const feePercent = Number(
+    paymentMethod?.feePercent ??
+      (paymentMethod?.feeType === "percent" ? paymentMethod?.feeValue || 0 : 0)
+  );
+
   return {
     _id: String(paymentMethod?._id || ""),
     name: String(paymentMethod?.name || "").trim(),
@@ -326,8 +341,13 @@ function normalizeStorefrontPaymentMethod(
             order: Number(paymentMethod.category.order || 9999),
           }
         : null,
-    feeType: paymentMethod?.feeType === "percent" ? "percent" : "fixed",
+    feeType:
+      paymentMethod?.feeType === "percent" || paymentMethod?.feeType === "mixed"
+        ? paymentMethod.feeType
+        : "fixed",
     feeValue: Number(paymentMethod?.feeValue || 0),
+    feeFixed,
+    feePercent,
     currency: String(paymentMethod?.currency || "IDR").trim().toUpperCase(),
     gatewayChannelCode: String(paymentMethod?.gatewayChannelCode || "").trim(),
     description: String(paymentMethod?.description || "").trim(),
@@ -374,6 +394,8 @@ function normalizeStorefrontOrder(
         .toUpperCase(),
       feeType: String(order?.paymentMethodSnapshot?.feeType || "").trim(),
       feeValue: Number(order?.paymentMethodSnapshot?.feeValue || 0),
+      feeFixed: Number(order?.paymentMethodSnapshot?.feeFixed || 0),
+      feePercent: Number(order?.paymentMethodSnapshot?.feePercent || 0),
       gatewayChannelCode: String(
         order?.paymentMethodSnapshot?.gatewayChannelCode || ""
       ).trim(),
@@ -415,6 +437,8 @@ function normalizeStorefrontOrder(
       sellPrice: Number(order?.price?.sellPrice || 0),
       profit: Number(order?.price?.profit || 0),
       paymentFee: Number(order?.price?.paymentFee || 0),
+      paymentFeeFixed: Number(order?.price?.paymentFeeFixed || 0),
+      paymentFeePercent: Number(order?.price?.paymentFeePercent || 0),
       totalAmount: Number(order?.price?.totalAmount || 0),
     },
     region: String(order?.region || "ID").trim().toUpperCase(),

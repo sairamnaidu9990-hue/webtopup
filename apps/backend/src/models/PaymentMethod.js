@@ -37,12 +37,23 @@ const paymentMethodSchema = new mongoose.Schema(
     },
     feeType: {
       type: String,
-      enum: ["fixed", "percent"],
+      enum: ["fixed", "percent", "mixed"],
       default: "fixed",
     },
     feeValue: {
       type: Number,
       default: 0,
+      min: 0,
+    },
+    feeFixed: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    feePercent: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     currency: {
       type: String,

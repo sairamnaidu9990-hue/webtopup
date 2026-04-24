@@ -44,6 +44,14 @@ const priceSnapshotSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    paymentFeeFixed: {
+      type: Number,
+      default: 0,
+    },
+    paymentFeePercent: {
+      type: Number,
+      default: 0,
+    },
     totalAmount: {
       type: Number,
       default: 0,
@@ -165,6 +173,14 @@ const paymentMethodSnapshotSchema = new mongoose.Schema(
       default: "fixed",
     },
     feeValue: {
+      type: Number,
+      default: 0,
+    },
+    feeFixed: {
+      type: Number,
+      default: 0,
+    },
+    feePercent: {
       type: Number,
       default: 0,
     },

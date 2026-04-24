@@ -5,7 +5,7 @@ export type PaymentMethodType =
   | "retail"
   | "virtual_account";
 
-export type PaymentFeeType = "fixed" | "percent";
+export type PaymentFeeType = "fixed" | "percent" | "mixed";
 
 export type PaymentMethodCategory = {
   _id: string;
@@ -28,6 +28,8 @@ export type PaymentMethod = {
   type: PaymentMethodType;
   feeType: PaymentFeeType;
   feeValue: number;
+  feeFixed?: number;
+  feePercent?: number;
   currency?: string;
   gatewayChannelCode?: string;
   description?: string;

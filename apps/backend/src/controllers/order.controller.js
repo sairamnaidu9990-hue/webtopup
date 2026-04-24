@@ -167,6 +167,15 @@ function isManualPaymentMethod(paymentMethod) {
 }
 
 function buildPaymentMethodSnapshot(paymentMethod) {
+  const feeFixed = Number(
+    paymentMethod?.feeFixed ??
+      (paymentMethod?.feeType === "percent" ? 0 : paymentMethod?.feeValue || 0)
+  );
+  const feePercent = Number(
+    paymentMethod?.feePercent ??
+      (paymentMethod?.feeType === "percent" ? paymentMethod?.feeValue || 0 : 0)
+  );
+
   return {
     name: toStringValue(paymentMethod?.name),
     code: normalizeCode(paymentMethod?.code),
@@ -178,10 +187,31 @@ function buildPaymentMethodSnapshot(paymentMethod) {
     currency: normalizeCode(paymentMethod?.currency || "IDR"),
     feeType: toStringValue(paymentMethod?.feeType || "fixed"),
     feeValue: Number(paymentMethod?.feeValue || 0),
+    feeFixed,
+    feePercent,
     gatewayChannelCode: toStringValue(paymentMethod?.gatewayChannelCode),
     description: toStringValue(paymentMethod?.description),
     accountHolderName: toStringValue(paymentMethod?.accountHolderName),
     accountNumber: toStringValue(paymentMethod?.accountNumber),
+  };
+}
+
+function calculatePaymentFeeBreakdown(baseAmount, paymentMethod) {
+  const normalizedBaseAmount = Number(baseAmount || 0);
+  const feeFixed = Number(
+    paymentMethod?.feeFixed ??
+      (paymentMethod?.feeType === "percent" ? 0 : paymentMethod?.feeValue || 0)
+  );
+  const feePercentRate = Number(
+    paymentMethod?.feePercent ??
+      (paymentMethod?.feeType === "percent" ? paymentMethod?.feeValue || 0 : 0)
+  );
+  const percentFee = Math.ceil((normalizedBaseAmount * feePercentRate) / 100);
+
+  return {
+    fixedFee: feeFixed,
+    percentFee,
+    totalFee: feeFixed + percentFee,
   };
 }
 
@@ -1128,10 +1158,11 @@ async function createOrderDraft(req, res) {
     const invoiceNumber = await generateInvoiceNumber();
     const sellPrice = Number(variant.price || 0);
     const buyPrice = Number(variant.basePrice || 0);
-    const paymentFee =
-      paymentMethod.feeType === "percent"
-        ? Math.ceil((sellPrice * Number(paymentMethod.feeValue || 0)) / 100)
-        : Number(paymentMethod.feeValue || 0);
+    const paymentFeeBreakdown = calculatePaymentFeeBreakdown(
+      sellPrice,
+      paymentMethod
+    );
+    const paymentFee = paymentFeeBreakdown.totalFee;
     const totalAmount = sellPrice + paymentFee;
     const profit = sellPrice - buyPrice;
     const siteSetting = await SiteSetting.findOne(
@@ -1175,6 +1206,8 @@ async function createOrderDraft(req, res) {
         sellPrice,
         profit,
         paymentFee,
+        paymentFeeFixed: paymentFeeBreakdown.fixedFee,
+        paymentFeePercent: paymentFeeBreakdown.percentFee,
         totalAmount,
       },
       paymentMethodCode: paymentMethod.code,

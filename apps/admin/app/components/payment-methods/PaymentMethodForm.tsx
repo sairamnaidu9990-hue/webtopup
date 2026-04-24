@@ -1,7 +1,6 @@
 "use client";
 
 import type {
-  PaymentFeeType,
   PaymentMethodCategory,
   PaymentMethodType,
 } from "@/app/types/PaymentMethod";
@@ -13,7 +12,22 @@ const PAYMENT_TYPES: PaymentMethodType[] = [
   "qris",
   "retail",
 ];
-const FEE_TYPES: PaymentFeeType[] = ["fixed", "percent"];
+
+function formatFixedFee(value: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: currency || "IDR",
+      maximumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    return `${currency || "IDR"} ${value}`;
+  }
+}
+
+function formatPercent(value: number) {
+  return Number.isInteger(value) ? `${value}%` : `${value.toFixed(2)}%`;
+}
 
 type Props = {
   isOpen: boolean;
@@ -28,8 +42,8 @@ type Props = {
   categories: PaymentMethodCategory[];
   logo: string;
   type: PaymentMethodType;
-  feeType: PaymentFeeType;
-  feeValue: string;
+  feeFixed: string;
+  feePercent: string;
   currency: string;
   gatewayChannelCode: string;
   description: string;
@@ -43,8 +57,8 @@ type Props = {
   setCategoryId: (value: string) => void;
   setLogo: (value: string) => void;
   setType: (value: PaymentMethodType) => void;
-  setFeeType: (value: PaymentFeeType) => void;
-  setFeeValue: (value: string) => void;
+  setFeeFixed: (value: string) => void;
+  setFeePercent: (value: string) => void;
   setCurrency: (value: string) => void;
   setGatewayChannelCode: (value: string) => void;
   setDescription: (value: string) => void;
@@ -70,8 +84,8 @@ export default function PaymentMethodForm({
   categories,
   logo,
   type,
-  feeType,
-  feeValue,
+  feeFixed,
+  feePercent,
   currency,
   gatewayChannelCode,
   description,
@@ -85,8 +99,8 @@ export default function PaymentMethodForm({
   setCategoryId,
   setLogo,
   setType,
-  setFeeType,
-  setFeeValue,
+  setFeeFixed,
+  setFeePercent,
   setCurrency,
   setGatewayChannelCode,
   setDescription,
@@ -101,6 +115,17 @@ export default function PaymentMethodForm({
   const title = editingId ? "Perbarui Metode Pembayaran" : "Tambah Metode Pembayaran";
   const fieldClassName = "w-full rounded-xl border border-gray-200 px-4 py-2.5";
   const labelClassName = "mb-2 block text-sm font-medium text-gray-700";
+  const normalizedFeeFixed = Number(feeFixed || 0);
+  const normalizedFeePercent = Number(feePercent || 0);
+  const feeSummaryParts: string[] = [];
+
+  if (normalizedFeeFixed > 0) {
+    feeSummaryParts.push(formatFixedFee(normalizedFeeFixed, currency || "IDR"));
+  }
+
+  if (normalizedFeePercent > 0) {
+    feeSummaryParts.push(formatPercent(normalizedFeePercent));
+  }
 
   return (
     <div className="rounded-2xl border bg-white p-5 sm:p-6">
@@ -204,34 +229,36 @@ export default function PaymentMethodForm({
           </label>
 
           <label className="block">
-            <span className={labelClassName}>Tipe Biaya</span>
-            <select
-              value={feeType}
-              onChange={(event) =>
-                setFeeType(event.target.value as PaymentFeeType)
-              }
+            <span className={labelClassName}>Biaya Admin Tetap</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={feeFixed}
+              onChange={(event) => setFeeFixed(event.target.value)}
+              placeholder="Contoh: 100"
               className={fieldClassName}
-            >
-              {FEE_TYPES.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
+            />
+            <p className="mt-2 text-xs leading-5 text-gray-500">
+              Biaya tetap yang selalu ditambahkan ke total pembayaran.
+            </p>
           </label>
 
           <label className="block">
-            <span className={labelClassName}>
-              {feeType === "percent" ? "Biaya (%)" : "Biaya Tetap"}
-            </span>
+            <span className={labelClassName}>Biaya Admin Persen (%)</span>
             <input
               type="number"
-              value={feeValue}
-              onChange={(event) => setFeeValue(event.target.value)}
-              placeholder={feeType === "percent" ? "Contoh: 2.5" : "Contoh: 2500"}
+              min="0"
+              step="0.01"
+              value={feePercent}
+              onChange={(event) => setFeePercent(event.target.value)}
+              placeholder="Contoh: 0.70"
               className={fieldClassName}
-              required
             />
+            <p className="mt-2 text-xs leading-5 text-gray-500">
+              Biaya persentase dari harga produk. Bisa dipakai bersamaan dengan
+              biaya tetap.
+            </p>
           </label>
 
           <label className="block">
@@ -311,9 +338,13 @@ export default function PaymentMethodForm({
           <div className="rounded-xl bg-gray-50 p-4 sm:col-span-2 xl:col-span-3">
             <p className="text-sm text-gray-500">Ringkasan biaya</p>
             <p className="mt-1 text-lg font-semibold text-gray-800">
-              {feeType === "percent"
-                ? `${Number(feeValue || 0)}% dari total pembayaran`
-                : `${currency || "IDR"} ${Number(feeValue || 0)}`}
+              {feeSummaryParts.length > 0
+                ? feeSummaryParts.join(" + ")
+                : "Tanpa biaya admin"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-gray-500">
+              Contoh Tokopay: isi biaya tetap `100` dan biaya persen `0.70`
+              untuk menghasilkan format `Rp100 + 0.70%`.
             </p>
           </div>
 
