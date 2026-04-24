@@ -23,6 +23,9 @@ export type SiteSetting = {
   gameCategories: string[];
   bannerCount: number;
   bannerAutoSlideSeconds: number;
+  floatingContactEnabled: boolean;
+  floatingContactLabel: string;
+  floatingContactUrl: string;
   banners: SiteBanner[];
   footerDescription: string;
   footerBottomText: string;

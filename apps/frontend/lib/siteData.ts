@@ -27,6 +27,9 @@ export type PublicSiteSetting = {
   gameCategories: string[];
   bannerCount: number;
   bannerAutoSlideSeconds: number;
+  floatingContactEnabled: boolean;
+  floatingContactLabel: string;
+  floatingContactUrl: string;
   banners: SiteBanner[];
   footerDescription: string;
   footerBottomText: string;
@@ -224,6 +227,9 @@ const defaultSiteSetting: PublicSiteSetting = {
   gameCategories: ["Topup Game", "Topup Pulsa", "Voucher", "Live Streaming"],
   bannerCount: 3,
   bannerAutoSlideSeconds: 5,
+  floatingContactEnabled: false,
+  floatingContactLabel: "Chat CS",
+  floatingContactUrl: "",
   banners: [],
   footerDescription:
     "Top up game dan voucher digital dengan katalog yang dikelola langsung dari panel admin.",
@@ -478,6 +484,11 @@ function normalizeSiteSetting(
       ),
       30
     ),
+    floatingContactEnabled: Boolean(siteSetting?.floatingContactEnabled),
+    floatingContactLabel:
+      String(siteSetting?.floatingContactLabel || "").trim() ||
+      defaultSiteSetting.floatingContactLabel,
+    floatingContactUrl: String(siteSetting?.floatingContactUrl || "").trim(),
     banners: syncBannerLength(
       Array.isArray(siteSetting?.banners) ? siteSetting.banners : [],
       bannerCount

@@ -79,6 +79,20 @@ const siteSettingSchema = new mongoose.Schema(
       min: 1,
       max: 30,
     },
+    floatingContactEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    floatingContactLabel: {
+      type: String,
+      default: "Chat CS",
+      trim: true,
+    },
+    floatingContactUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     banners: [
       new mongoose.Schema(
         {

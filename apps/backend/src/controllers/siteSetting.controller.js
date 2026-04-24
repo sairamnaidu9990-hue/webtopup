@@ -27,6 +27,9 @@ const defaultSiteSetting = {
   gameCategories: DEFAULT_GAME_CATEGORIES,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_BANNER_SLIDE_SECONDS,
+  floatingContactEnabled: false,
+  floatingContactLabel: "Chat CS",
+  floatingContactUrl: "",
   banners: [
     {
       title: "",
@@ -102,6 +105,53 @@ function normalizeBannerItem(item) {
     title: String(item?.title || "").trim(),
     imageUrl: String(item?.imageUrl || "").trim(),
   };
+}
+
+function normalizeBoolean(value, fallback = false) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalizedValue = value.trim().toLowerCase();
+
+    if (["true", "1", "yes", "on"].includes(normalizedValue)) {
+      return true;
+    }
+
+    if (["false", "0", "no", "off"].includes(normalizedValue)) {
+      return false;
+    }
+  }
+
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+
+  return fallback;
+}
+
+function normalizeFloatingContactLabel(value) {
+  const label = String(value || "").trim();
+  return label || defaultSiteSetting.floatingContactLabel;
+}
+
+function normalizeFloatingContactUrl(value) {
+  const rawValue = String(value || "").trim();
+
+  if (!rawValue) {
+    return "";
+  }
+
+  if (/^(https?:\/\/|mailto:|tel:|\/)/i.test(rawValue)) {
+    return rawValue;
+  }
+
+  try {
+    return new URL(`https://${rawValue}`).toString();
+  } catch {
+    return rawValue;
+  }
 }
 
 function normalizeGameCategories(items, fallback = DEFAULT_GAME_CATEGORIES) {
@@ -220,6 +270,16 @@ function serializeSiteSetting(siteSetting) {
       siteSetting.bannerAutoSlideSeconds ??
         defaultSiteSetting.bannerAutoSlideSeconds
     ),
+    floatingContactEnabled: normalizeBoolean(
+      siteSetting.floatingContactEnabled,
+      defaultSiteSetting.floatingContactEnabled
+    ),
+    floatingContactLabel: normalizeFloatingContactLabel(
+      siteSetting.floatingContactLabel
+    ),
+    floatingContactUrl: normalizeFloatingContactUrl(
+      siteSetting.floatingContactUrl
+    ),
     banners,
     footerDescription:
       siteSetting.footerDescription ?? defaultSiteSetting.footerDescription,
@@ -312,6 +372,25 @@ exports.updateSiteSetting = async (req, res) => {
     if (req.body.bannerAutoSlideSeconds != null) {
       siteSetting.bannerAutoSlideSeconds = normalizeBannerAutoSlideSeconds(
         req.body.bannerAutoSlideSeconds
+      );
+    }
+
+    if (req.body.floatingContactEnabled != null) {
+      siteSetting.floatingContactEnabled = normalizeBoolean(
+        req.body.floatingContactEnabled,
+        defaultSiteSetting.floatingContactEnabled
+      );
+    }
+
+    if (req.body.floatingContactLabel != null) {
+      siteSetting.floatingContactLabel = normalizeFloatingContactLabel(
+        req.body.floatingContactLabel
+      );
+    }
+
+    if (req.body.floatingContactUrl != null) {
+      siteSetting.floatingContactUrl = normalizeFloatingContactUrl(
+        req.body.floatingContactUrl
       );
     }
 

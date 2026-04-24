@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import FloatingContactButton from "@/components/FloatingContactButton";
 import { getPublicSiteSetting } from "@/lib/siteData";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -115,6 +116,7 @@ async function FrontendShell({
       <SiteHeader siteSetting={siteSetting} />
       <div className="pt-14 sm:pt-[76px]">{children}</div>
       <SiteFooter siteSetting={siteSetting} />
+      <FloatingContactButton siteSetting={siteSetting} />
     </div>
   );
 }

@@ -59,6 +59,9 @@ const defaultForm: SiteSetting = {
   gameCategories: DEFAULT_GAME_CATEGORIES,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_AUTO_SLIDE_SECONDS,
+  floatingContactEnabled: false,
+  floatingContactLabel: "Chat CS",
+  floatingContactUrl: "",
   banners: Array.from({ length: DEFAULT_BANNER_COUNT }, () => ({
     title: "",
     imageUrl: "",
@@ -252,6 +255,9 @@ export default function WebsiteSettingsPage() {
           gameCategories: form.gameCategories,
           bannerCount: form.bannerCount,
           bannerAutoSlideSeconds: form.bannerAutoSlideSeconds,
+          floatingContactEnabled: form.floatingContactEnabled,
+          floatingContactLabel: form.floatingContactLabel,
+          floatingContactUrl: form.floatingContactUrl,
           banners: form.banners,
           footerDescription: form.footerDescription,
           footerBottomText: form.footerBottomText,
@@ -537,6 +543,74 @@ export default function WebsiteSettingsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </SettingsSubsection>
+
+          <SettingsSubsection
+            title="Sticky Contact Button"
+            description="Tampilkan tombol sticky di kanan bawah storefront. Saat user klik, mereka akan langsung diarahkan ke link yang kamu tentukan."
+          >
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Aktifkan Tombol Sticky
+              </label>
+              <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={form.floatingContactEnabled}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      floatingContactEnabled: event.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
+                />
+                <span className="text-sm text-gray-700">
+                  Tampilkan tombol sticky chat/contact di frontend
+                </span>
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Label Tombol
+              </label>
+              <input
+                value={form.floatingContactLabel}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    floatingContactLabel: event.target.value,
+                  }))
+                }
+                placeholder="Contoh: Chat CS"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Gunakan label singkat agar tetap rapi di desktop dan mobile.
+              </p>
+            </div>
+
+            <div className="space-y-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Link Redirect
+              </label>
+              <input
+                value={form.floatingContactUrl}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    floatingContactUrl: event.target.value,
+                  }))
+                }
+                placeholder="Contoh: https://wa.me/6281234567890"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Bisa diisi link WhatsApp, Telegram, live chat, atau halaman
+                internal seperti /contact.
+              </p>
             </div>
           </SettingsSubsection>
 
