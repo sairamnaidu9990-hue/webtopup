@@ -8,6 +8,47 @@ import {
   getStorefrontGameDetail,
 } from "@/lib/siteData";
 
+function buildGameSeoTitle(gameName: string, siteName: string) {
+  return `Top Up ${gameName} Murah & Cepat 24 Jam | ${siteName}`;
+}
+
+function buildGameSeoDescription({
+  gameName,
+  provider,
+  siteName,
+}: {
+  gameName: string;
+  provider?: string;
+  siteName: string;
+}) {
+  const providerText = provider
+    ? ` Didukung provider ${provider} dengan proses yang tetap cepat dan stabil.`
+    : "";
+
+  return `Top up ${gameName} murah, cepat, dan aman di ${siteName}. Nikmati transaksi realtime, pilihan pembayaran lengkap, dan layanan 24 jam untuk kebutuhan ${gameName} kamu.${providerText}`;
+}
+
+function buildGameSeoKeywords({
+  gameName,
+  provider,
+  siteName,
+}: {
+  gameName: string;
+  provider?: string;
+  siteName: string;
+}) {
+  return [
+    `top up ${gameName}`,
+    `${gameName} murah`,
+    `${gameName} cepat`,
+    `${gameName} aman`,
+    `beli ${gameName}`,
+    `${gameName} 24 jam`,
+    provider ? `${gameName} ${provider}` : "",
+    `${siteName} ${gameName}`,
+  ].filter(Boolean);
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -21,26 +62,56 @@ export async function generateMetadata({
 
   if (!detail) {
     return {
-      title: `Game tidak ditemukan | ${siteSetting.siteName}`,
+      title: `Top Up Game Tidak Ditemukan | ${siteSetting.siteName}`,
+      description: `Halaman game yang kamu cari tidak ditemukan di ${siteSetting.siteName}. Coba pilih game lain yang tersedia di katalog top up kami.`,
     };
   }
 
+  const gameCode = String(detail.game.code || code).trim().toLowerCase();
+  const seoTitle = buildGameSeoTitle(detail.game.name, siteSetting.siteName);
+  const seoDescription = buildGameSeoDescription({
+    gameName: detail.game.name,
+    provider: detail.game.provider,
+    siteName: siteSetting.siteName,
+  });
+  const seoKeywords = buildGameSeoKeywords({
+    gameName: detail.game.name,
+    provider: detail.game.provider,
+    siteName: siteSetting.siteName,
+  });
+
   return {
-    title: `${detail.game.name} | ${siteSetting.siteName}`,
-    description:
-      detail.game.provider
-        ? `Pilih variant top up ${detail.game.name} dari provider ${detail.game.provider}.`
-        : `Pilih variant top up ${detail.game.name}.`,
-    openGraph: detail.game.bannerUrl || detail.game.logo
-      ? {
-          images: [
-            {
-              url: detail.game.bannerUrl || detail.game.logo || "",
-              alt: detail.game.name,
-            },
-          ],
-        }
-      : undefined,
+    title: seoTitle,
+    description: seoDescription,
+    keywords: seoKeywords,
+    alternates: {
+      canonical: `/games/${gameCode}`,
+    },
+    openGraph: {
+      title: seoTitle,
+      description: seoDescription,
+      type: "website",
+      ...(detail.game.bannerUrl || detail.game.logo
+        ? {
+            images: [
+              {
+                url: detail.game.bannerUrl || detail.game.logo || "",
+                alt: detail.game.name,
+              },
+            ],
+          }
+        : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seoTitle,
+      description: seoDescription,
+      ...(detail.game.bannerUrl || detail.game.logo
+        ? {
+            images: [detail.game.bannerUrl || detail.game.logo || ""],
+          }
+        : {}),
+    },
   };
 }
 
