@@ -57,17 +57,8 @@ export default function SiteBannerCarousel({
             {banners.map((banner, index) => (
               <div
                 key={`${banner.imageUrl}-${index}`}
-                className="relative aspect-[16/8.2] w-full shrink-0 sm:aspect-[16/7.8] lg:h-[490px] lg:aspect-auto"
+                className="relative aspect-[16/6.35] w-full shrink-0 sm:aspect-[16/7.8] lg:h-[490px] lg:aspect-auto"
               >
-                <Image
-                  src={banner.imageUrl}
-                  alt=""
-                  aria-hidden="true"
-                  fill
-                  sizes="100vw"
-                  className="scale-110 object-cover object-center blur-2xl sm:hidden"
-                />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,12,18,0.04),rgba(10,12,18,0.36))] sm:hidden" />
                 <Image
                   src={banner.imageUrl}
                   alt={
@@ -76,7 +67,7 @@ export default function SiteBannerCarousel({
                   fill
                   priority={index === 0}
                   sizes="(max-width: 640px) calc(100vw - 1.25rem), (max-width: 1024px) calc(100vw - 3rem), 1260px"
-                  className="object-contain object-center sm:object-cover"
+                  className="object-cover object-center"
                 />
               </div>
             ))}
@@ -88,7 +79,7 @@ export default function SiteBannerCarousel({
                 type="button"
                 aria-label="Banner sebelumnya"
                 onClick={handlePrevious}
-                className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(12,13,18,0.24)] text-base text-white shadow-[0_10px_20px_rgba(0,0,0,0.16)] backdrop-blur-sm transition hover:bg-[rgba(12,13,18,0.42)] sm:left-5 sm:h-11 sm:w-11 sm:text-lg lg:left-6 lg:h-12 lg:w-12"
+                className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(12,13,18,0.24)] text-[15px] text-white shadow-[0_10px_20px_rgba(0,0,0,0.16)] backdrop-blur-sm transition hover:bg-[rgba(12,13,18,0.42)] sm:left-5 sm:h-11 sm:w-11 sm:text-lg lg:left-6 lg:h-12 lg:w-12"
               >
                 &lt;
               </button>
@@ -96,7 +87,7 @@ export default function SiteBannerCarousel({
                 type="button"
                 aria-label="Banner berikutnya"
                 onClick={handleNext}
-                className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(12,13,18,0.24)] text-base text-white shadow-[0_10px_20px_rgba(0,0,0,0.16)] backdrop-blur-sm transition hover:bg-[rgba(12,13,18,0.42)] sm:right-5 sm:h-11 sm:w-11 sm:text-lg lg:right-6 lg:h-12 lg:w-12"
+                className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(12,13,18,0.24)] text-[15px] text-white shadow-[0_10px_20px_rgba(0,0,0,0.16)] backdrop-blur-sm transition hover:bg-[rgba(12,13,18,0.42)] sm:right-5 sm:h-11 sm:w-11 sm:text-lg lg:right-6 lg:h-12 lg:w-12"
               >
                 &gt;
               </button>
