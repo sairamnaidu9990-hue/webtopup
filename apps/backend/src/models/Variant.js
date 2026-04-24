@@ -37,6 +37,10 @@ const variantSchema = new mongoose.Schema(
     },
 
     status: String,
+    statusLockedByAdmin: {
+      type: Boolean,
+      default: false,
+    },
     syncSource: {
       type: String,
       enum: ["manual", "bangjeff"],

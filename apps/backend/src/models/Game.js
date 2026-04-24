@@ -89,6 +89,10 @@ const gameSchema = new mongoose.Schema({
     type: String,
     default: "ACTIVE",
   },
+  statusLockedByAdmin: {
+    type: Boolean,
+    default: false,
+  },
   isTrending: {
     type: Boolean,
     default: false,

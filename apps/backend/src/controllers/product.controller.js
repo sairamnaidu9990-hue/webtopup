@@ -54,6 +54,55 @@ function trimSyncErrors(errors, limit = 15) {
   return errors.slice(0, limit);
 }
 
+function normalizeRemoteStatus(status, fallback = "INACTIVE") {
+  const normalized = String(status || fallback).trim().toUpperCase();
+  return normalized || fallback;
+}
+
+function resolveSyncedGameStatus(existingGame, remoteStatus) {
+  const nextRemoteStatus = normalizeRemoteStatus(
+    remoteStatus,
+    existingGame?.status || "INACTIVE"
+  );
+
+  if (
+    existingGame?.statusLockedByAdmin ||
+    (existingGame?.status === "INACTIVE" && nextRemoteStatus === "ACTIVE")
+  ) {
+    return {
+      status: "INACTIVE",
+      statusLockedByAdmin: true,
+    };
+  }
+
+  return {
+    status: nextRemoteStatus,
+    statusLockedByAdmin: false,
+  };
+}
+
+function resolveSyncedVariantStatus(existingVariant, remoteStatus) {
+  const nextRemoteStatus = normalizeRemoteStatus(
+    remoteStatus,
+    existingVariant?.status || "INACTIVE"
+  );
+
+  if (
+    existingVariant?.statusLockedByAdmin ||
+    (existingVariant?.status === "INACTIVE" && nextRemoteStatus === "ACTIVE")
+  ) {
+    return {
+      status: "INACTIVE",
+      statusLockedByAdmin: true,
+    };
+  }
+
+  return {
+    status: nextRemoteStatus,
+    statusLockedByAdmin: false,
+  };
+}
+
 async function startSyncLog(logPayload) {
   return createSyncLog({
     ...logPayload,
@@ -104,8 +153,10 @@ async function syncGamesData(region) {
     const existing = await Game.findOne({ code });
 
     if (existing) {
+      const syncedStatus = resolveSyncedGameStatus(existing, item.status);
       existing.name = item.name || existing.name;
-      existing.status = item.status || existing.status || "INACTIVE";
+      existing.status = syncedStatus.status;
+      existing.statusLockedByAdmin = syncedStatus.statusLockedByAdmin;
       existing.syncSource = "bangjeff";
       existing.inputs = Array.isArray(existing.inputs) ? existing.inputs : [];
       existing.provider = existing.provider || "";
@@ -210,7 +261,7 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
       const isCreate = !game;
 
       if (!game) {
-        game = new Game({
+      game = new Game({
           code: productCode,
           provider: "",
           logo: "",
@@ -219,12 +270,15 @@ async function syncGameDetailsData(region, requestedProductCode = "") {
           trendingOrder: ORDER_PLACEHOLDER,
           variantCategories: [],
           syncSource: "bangjeff",
+          statusLockedByAdmin: false,
         });
         nextCatalogOrder += 1;
       }
 
+      const syncedStatus = resolveSyncedGameStatus(game, detail?.status);
       game.name = detail?.name || game.name || productCode;
-      game.status = detail?.status || game.status || "INACTIVE";
+      game.status = syncedStatus.status;
+      game.statusLockedByAdmin = syncedStatus.statusLockedByAdmin;
       game.inputs = inputs;
       game.provider = game.provider || "";
       game.logo = game.logo || "";
@@ -338,6 +392,7 @@ async function syncVariantsData(region, requestedProductCode = "") {
           ? toNumber(existing.markup, DEFAULT_VARIANT_MARKUP)
           : DEFAULT_VARIANT_MARKUP;
         const basePrice = toNumber(item?.price?.value);
+        const syncedStatus = resolveSyncedVariantStatus(existing, item?.status);
         const variantPayload = {
           game: game._id,
           name: item.name || providerCode,
@@ -351,8 +406,9 @@ async function syncVariantsData(region, requestedProductCode = "") {
           region: item?.region || region,
           logo: existing?.logo || "",
           variantCategoryId: existing?.variantCategoryId || "",
-          isActive: item?.status === "ACTIVE",
-          status: item?.status || "INACTIVE",
+          isActive: syncedStatus.status === "ACTIVE",
+          status: syncedStatus.status,
+          statusLockedByAdmin: syncedStatus.statusLockedByAdmin,
           syncSource: "bangjeff",
         };
 

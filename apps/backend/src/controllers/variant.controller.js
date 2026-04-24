@@ -211,6 +211,7 @@ exports.createVariant = async (req, res) => {
       logo,
       status: String(status).toUpperCase(),
       isActive: String(status).toUpperCase() === "ACTIVE",
+      statusLockedByAdmin: String(status).toUpperCase() === "INACTIVE",
       region: String(region).toUpperCase(),
       currency: String(currency).toUpperCase(),
       duration: toNumber(duration),
@@ -299,6 +300,7 @@ exports.updateVariant = async (req, res) => {
     if (req.body.status) {
       updatePayload.status = String(req.body.status).toUpperCase();
       updatePayload.isActive = updatePayload.status === "ACTIVE";
+      updatePayload.statusLockedByAdmin = updatePayload.status === "INACTIVE";
     }
 
     const nextBasePrice =

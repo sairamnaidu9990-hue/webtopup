@@ -317,6 +317,7 @@ exports.createGame = async (req, res) => {
       ),
       provider,
       status: String(status || "ACTIVE").toUpperCase(),
+      statusLockedByAdmin: String(status || "ACTIVE").toUpperCase() === "INACTIVE",
       isTrending: isTrendingValue,
       trendingOrder: trendingOrderValue,
       catalogOrder: catalogOrderValue,
@@ -365,6 +366,7 @@ exports.updateGame = async (req, res) => {
 
     if (req.body.status) {
       updatePayload.status = String(req.body.status).toUpperCase();
+      updatePayload.statusLockedByAdmin = updatePayload.status === "INACTIVE";
     }
 
     if (Object.prototype.hasOwnProperty.call(req.body, "category")) {
