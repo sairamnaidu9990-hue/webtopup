@@ -74,13 +74,13 @@ export default async function GameVariantsPage({
               fill
               priority
               sizes="100vw"
-              className="object-cover object-center"
+              className="object-cover object-center brightness-[1.06] saturate-[1.08]"
             />
           ) : (
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(211,59,59,0.24),transparent_36%),linear-gradient(180deg,#1d2129_0%,#12151c_100%)]" />
           )}
 
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,14,0.06)_0%,rgba(8,10,14,0.18)_62%,rgba(10,12,16,0.56)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,14,0.02)_0%,rgba(8,10,14,0.06)_58%,rgba(10,12,16,0.24)_100%)]" />
         </div>
 
         <div className="relative bg-[linear-gradient(135deg,#1f2127_0%,#1b1d24_52%,#23252d_100%)] px-4 pb-2 pt-0 sm:px-6 sm:pb-3 lg:px-8 lg:pb-4">

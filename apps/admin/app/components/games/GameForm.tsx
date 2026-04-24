@@ -233,8 +233,9 @@ export default function GameForm({
               onChange={(e) => setBannerUrl(e.target.value)}
             />
             <span className="mt-2 block text-xs leading-6 text-gray-500">
-              Rekomendasi ukuran banner halaman game: 1600 x 720 px atau lebih,
-              format landscape, dengan fokus objek utama di tengah gambar.
+              Gunakan gambar panoramic untuk banner halaman game. Rekomendasi:
+              1600 x 720 px atau lebih, format landscape lebar, dengan fokus
+              objek utama di tengah gambar.
             </span>
           </label>
 
