@@ -1,8 +1,50 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+
+function isSafePopupHref(value: string) {
+  return /^(https?:\/\/|mailto:|tel:|\/)/i.test(String(value || "").trim());
+}
+
+function renderPopupLine(line: string) {
+  const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null = null;
+
+  while ((match = pattern.exec(line)) !== null) {
+    const [fullMatch, label, href] = match;
+    const matchIndex = match.index;
+
+    if (matchIndex > lastIndex) {
+      nodes.push(line.slice(lastIndex, matchIndex));
+    }
+
+    if (isSafePopupHref(href)) {
+      nodes.push(
+        <a
+          key={`${href}-${matchIndex}`}
+          href={href}
+          className="font-semibold text-white underline decoration-[#d33b3b] decoration-2 underline-offset-4 transition hover:text-[#ffb2b2]"
+        >
+          {label}
+        </a>
+      );
+    } else {
+      nodes.push(fullMatch);
+    }
+
+    lastIndex = matchIndex + fullMatch.length;
+  }
+
+  if (lastIndex < line.length) {
+    nodes.push(line.slice(lastIndex));
+  }
+
+  return nodes.length > 0 ? nodes : line;
+}
 
 export default function StorefrontPopupDialog({
   open,
@@ -78,7 +120,7 @@ export default function StorefrontPopupDialog({
                   .split(/\r?\n/)
                   .filter((line) => line.trim().length > 0)
                   .map((line, index) => (
-                    <p key={`popup-line-${index}`}>{line}</p>
+                    <p key={`popup-line-${index}`}>{renderPopupLine(line)}</p>
                   ))}
               </div>
             ) : null}

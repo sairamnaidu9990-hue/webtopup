@@ -628,6 +628,13 @@ export default function WebsiteSettingsPage() {
               />
               <p className="text-xs leading-6 text-gray-500">
                 Bisa dikosongkan jika popup hanya ingin berisi banner visual.
+                Untuk membuat teks tertentu bisa diklik, gunakan format
+                {" "}
+                <span className="font-mono text-[11px] text-gray-700">
+                  [Klik Disini](https://instagram.com/akunmu)
+                </span>
+                {" "}
+                lalu lanjutkan kalimat biasa setelahnya.
               </p>
             </div>
 

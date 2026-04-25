@@ -291,6 +291,13 @@ export default function GameForm({
             />
             <span className="mt-2 block text-xs leading-6 text-gray-500">
               Bisa dikosongkan jika popup hanya ingin menampilkan banner visual.
+              Untuk membuat teks tertentu bisa diklik, gunakan format
+              {" "}
+              <span className="font-mono text-[11px] text-gray-700">
+                [Klik Disini](https://instagram.com/akunmu)
+              </span>
+              {" "}
+              lalu lanjutkan kalimat biasa setelahnya.
             </span>
           </label>
 
