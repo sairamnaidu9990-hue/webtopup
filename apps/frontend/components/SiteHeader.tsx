@@ -357,28 +357,25 @@ export default function SiteHeader({
           <div className="flex items-center justify-between gap-3 py-2.5 sm:py-4">
             <Link
               href="/"
-              className="flex min-w-0 shrink-0 items-center gap-2.5 sm:gap-3"
+              aria-label={siteSetting.siteName}
+              className="flex min-w-0 shrink-0 items-center"
             >
               {siteSetting.siteLogoUrl ? (
-                <Image
-                  src={siteSetting.siteLogoUrl}
-                  alt={siteSetting.siteName}
-                  width={44}
-                  height={44}
-                  sizes="(max-width: 640px) 36px, 44px"
-                  className="h-9 w-9 rounded-2xl object-cover ring-1 ring-white/10 sm:h-11 sm:w-11"
-                />
+                <div className="relative h-9 w-[92px] sm:h-11 sm:w-[120px]">
+                  <Image
+                    src={siteSetting.siteLogoUrl}
+                    alt={siteSetting.siteName}
+                    fill
+                    sizes="(max-width: 640px) 92px, 120px"
+                    className="object-contain object-left"
+                  />
+                </div>
               ) : (
                 <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/10 text-xs font-semibold tracking-[0.18em] text-white ring-1 ring-white/10 sm:h-11 sm:w-11 sm:text-sm sm:tracking-[0.2em]">
                   {getInitials(siteSetting.siteName || "WT") || "WT"}
                 </div>
               )}
-
-              <div className="min-w-0">
-                <p className="truncate font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-white sm:text-lg">
-                  {siteSetting.siteName}
-                </p>
-              </div>
+              <span className="sr-only">{siteSetting.siteName}</span>
             </Link>
 
             <div
@@ -414,7 +411,7 @@ export default function SiteHeader({
             <div className="hidden shrink-0 items-center md:flex">
               <Link
                 href="/cek-transaksi"
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#23262d] px-4 py-2 text-sm font-medium text-white/78 transition hover:border-white/18 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(211,59,59,0.28)] transition hover:brightness-110"
               >
                 <ReceiptSearchIcon />
                 <span>Cek Transaksi</span>
@@ -432,10 +429,6 @@ export default function SiteHeader({
               >
                 <SearchIcon />
               </HeaderIconButton>
-
-              <HeaderIconLink href="/cek-transaksi" label="Buka cek transaksi">
-                <ReceiptSearchIcon />
-              </HeaderIconLink>
 
               <HeaderIconButton
                 label="Buka menu"
@@ -496,10 +489,21 @@ export default function SiteHeader({
           <aside className="absolute left-0 top-0 flex h-full w-[280px] flex-col border-r border-white/10 bg-[#15181f] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
             <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
               <div className="min-w-0">
-                <p className="truncate font-[family-name:var(--font-display)] text-base font-semibold tracking-tight text-white">
-                  {siteSetting.siteName}
-                </p>
-                <p className="mt-1 text-xs text-white/45">Menu navigasi</p>
+                {siteSetting.siteLogoUrl ? (
+                  <div className="relative h-9 w-[96px]">
+                    <Image
+                      src={siteSetting.siteLogoUrl}
+                      alt={siteSetting.siteName}
+                      fill
+                      sizes="96px"
+                      className="object-contain object-left"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-xs font-semibold tracking-[0.18em] text-white ring-1 ring-white/10">
+                    {getInitials(siteSetting.siteName || "WT") || "WT"}
+                  </div>
+                )}
               </div>
 
               <button
@@ -522,7 +526,7 @@ export default function SiteHeader({
               <Link
                 href="/cek-transaksi"
                 onClick={() => setMenuOpen(false)}
-                className="block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-white/88 transition hover:bg-white/5 hover:text-white"
+                className="block w-full rounded-2xl bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 py-3 text-left text-sm font-semibold text-white shadow-[0_14px_28px_rgba(211,59,59,0.2)] transition hover:brightness-110"
               >
                 Cek Transaksi
               </Link>

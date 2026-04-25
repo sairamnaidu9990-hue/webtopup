@@ -57,17 +57,17 @@ export default function SiteFooter({
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)] lg:gap-12">
           <div className="space-y-6">
             <div className="flex items-center gap-3">
-              {siteSetting.siteLogoUrl ? (
+              {siteSetting.siteFaviconUrl ? (
                 <Image
-                  src={siteSetting.siteLogoUrl}
+                  src={siteSetting.siteFaviconUrl}
                   alt={siteSetting.siteName}
-                  width={56}
-                  height={56}
-                  sizes="56px"
-                  className="h-14 w-14 rounded-2xl object-cover ring-1 ring-white/10"
+                  width={48}
+                  height={48}
+                  sizes="48px"
+                  className="h-12 w-12 rounded-2xl object-contain ring-1 ring-white/10"
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-base font-semibold tracking-[0.16em] text-white ring-1 ring-white/10">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-base font-semibold tracking-[0.16em] text-white ring-1 ring-white/10">
                   {getInitials(siteSetting.siteName || "WT") || "WT"}
                 </div>
               )}

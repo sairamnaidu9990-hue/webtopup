@@ -42,12 +42,12 @@ export default function FloatingContactButton({
       <a
         href={buttonUrl}
         aria-label={siteSetting.floatingContactLabel}
-        className="pointer-events-auto inline-flex items-center gap-2 rounded-[18px] border border-[rgba(226,75,75,0.42)] bg-[linear-gradient(135deg,#d33b3b_0%,#e24b4b_100%)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white shadow-[0_18px_40px_rgba(211,59,59,0.3)] transition hover:-translate-y-0.5 hover:border-[rgba(255,155,155,0.55)] hover:shadow-[0_22px_44px_rgba(211,59,59,0.36)] sm:px-4 sm:py-3"
+        className="pointer-events-auto inline-flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(226,75,75,0.42)] bg-[linear-gradient(135deg,#d33b3b_0%,#e24b4b_100%)] text-[11px] font-semibold uppercase tracking-[0.22em] text-white shadow-[0_18px_40px_rgba(211,59,59,0.3)] transition hover:-translate-y-0.5 hover:border-[rgba(255,155,155,0.55)] hover:shadow-[0_22px_44px_rgba(211,59,59,0.36)] sm:h-auto sm:w-auto sm:gap-2 sm:rounded-[18px] sm:px-4 sm:py-3"
       >
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(255,255,255,0.14)] text-white">
           <HeadsetIcon />
         </span>
-        <span className="whitespace-nowrap">
+        <span className="hidden whitespace-nowrap sm:inline">
           {siteSetting.floatingContactLabel}
         </span>
       </a>
