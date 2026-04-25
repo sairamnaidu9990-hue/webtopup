@@ -82,7 +82,7 @@ function SidebarNav({
         onClick={onNavigate}
         className="flex min-h-[72px] flex-col justify-center border-b border-white/10 px-5 py-4 transition hover:bg-[#171a22] sm:min-h-[79px] sm:px-6"
       >
-        <h1 className="text-lg font-semibold tracking-tight">WebTopup</h1>
+        <h1 className="text-lg font-semibold tracking-tight">KITAGG</h1>
         <p className="mt-1 text-xs text-gray-400">Admin Panel</p>
       </Link>
 
