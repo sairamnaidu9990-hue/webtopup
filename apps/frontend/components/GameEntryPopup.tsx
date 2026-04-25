@@ -55,11 +55,6 @@ export default function GameEntryPopup({
     }
 
     const timeout = window.setTimeout(() => {
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: "auto",
-      });
       setOpen(true);
     }, 180);
 

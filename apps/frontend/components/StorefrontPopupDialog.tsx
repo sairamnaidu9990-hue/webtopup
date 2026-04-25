@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 export default function StorefrontPopupDialog({
   open,
@@ -22,20 +23,13 @@ export default function StorefrontPopupDialog({
   onDontShowAgainChange: (checked: boolean) => void;
   onClose: () => void;
 }) {
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
+    setMounted(true);
+  }, []);
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open]);
-
-  if (!open) {
+  if (!open || !mounted) {
     return null;
   }
 
@@ -43,7 +37,7 @@ export default function StorefrontPopupDialog({
   const hasMessage = Boolean(message);
   const hasImage = Boolean(imageUrl);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/72 px-4 py-6 backdrop-blur-sm">
       <div className="relative w-full max-w-2xl overflow-hidden rounded-[28px] border border-white/10 bg-[#171a21] text-white shadow-[0_32px_90px_rgba(0,0,0,0.45)]">
         <button
@@ -111,6 +105,7 @@ export default function StorefrontPopupDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
