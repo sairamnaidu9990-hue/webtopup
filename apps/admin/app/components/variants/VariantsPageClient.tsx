@@ -12,6 +12,7 @@ type Game = {
   _id: string;
   name: string;
   code: string;
+  category?: string;
   variantCategories?: Array<{
     _id: string;
     name: string;
@@ -36,6 +37,7 @@ export default function VariantsPageClient({
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [gameFilter, setGameFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -97,6 +99,10 @@ export default function VariantsPageClient({
         params.set("game", gameFilter);
       }
 
+      if (categoryFilter !== "ALL") {
+        params.set("category", categoryFilter);
+      }
+
       if (statusFilter !== "ALL") {
         params.set("status", statusFilter);
       }
@@ -142,7 +148,7 @@ export default function VariantsPageClient({
   useEffect(() => {
     setLoading(true);
     fetchVariants();
-  }, [page, syncSource, deferredSearch, gameFilter, statusFilter]);
+  }, [page, syncSource, deferredSearch, gameFilter, categoryFilter, statusFilter]);
 
   const resetForm = () => {
     setEditingId(null);
@@ -166,6 +172,12 @@ export default function VariantsPageClient({
 
   const handleGameFilterChange = (value: string) => {
     setGameFilter(value);
+    setPage(1);
+  };
+
+  const handleCategoryFilterChange = (value: string) => {
+    setCategoryFilter(value);
+    setGameFilter("ALL");
     setPage(1);
   };
 
@@ -309,6 +321,7 @@ export default function VariantsPageClient({
         variants={variants}
         search={search}
         gameFilter={gameFilter}
+        categoryFilter={categoryFilter}
         statusFilter={statusFilter}
         totalItems={totalItems}
         page={page}
@@ -316,6 +329,7 @@ export default function VariantsPageClient({
         loading={loading}
         onSearchChange={handleSearchChange}
         onGameFilterChange={handleGameFilterChange}
+        onCategoryFilterChange={handleCategoryFilterChange}
         onStatusFilterChange={handleStatusFilterChange}
         onPageChange={setPage}
         onEdit={handleEdit}

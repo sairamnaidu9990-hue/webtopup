@@ -2,6 +2,7 @@ export type VariantGame = {
   _id: string;
   name: string;
   code?: string;
+  category?: string;
   variantCategories?: Array<{
     _id: string;
     name: string;

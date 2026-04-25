@@ -7,10 +7,12 @@ type Props = {
   games: Array<{
     _id: string;
     name: string;
+    category?: string;
   }>;
   variants: Variant[];
   search: string;
   gameFilter: string;
+  categoryFilter: string;
   statusFilter: string;
   totalItems: number;
   page: number;
@@ -18,6 +20,7 @@ type Props = {
   loading: boolean;
   onSearchChange: (value: string) => void;
   onGameFilterChange: (value: string) => void;
+  onCategoryFilterChange: (value: string) => void;
   onStatusFilterChange: (value: string) => void;
   onPageChange: (page: number) => void;
   onEdit: (variant: Variant) => void;
@@ -29,6 +32,7 @@ export default function VariantList({
   variants,
   search,
   gameFilter,
+  categoryFilter,
   statusFilter,
   totalItems,
   page,
@@ -36,6 +40,7 @@ export default function VariantList({
   loading,
   onSearchChange,
   onGameFilterChange,
+  onCategoryFilterChange,
   onStatusFilterChange,
   onPageChange,
   onEdit,
@@ -47,6 +52,17 @@ export default function VariantList({
     )?.name || "Tanpa kategori";
 
   const statusOptions = ["ACTIVE", "INACTIVE"];
+  const categoryOptions = Array.from(
+    new Set(
+      games
+        .map((game) => String(game.category || "").trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
+  const visibleGames =
+    categoryFilter === "ALL"
+      ? games
+      : games.filter((game) => (game.category || "") === categoryFilter);
 
   return (
     <div className="rounded-2xl border bg-white p-5 sm:p-6">
@@ -58,7 +74,7 @@ export default function VariantList({
           </p>
         </div>
 
-        <div className="grid w-full gap-3 md:grid-cols-3 lg:max-w-3xl">
+        <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-4 lg:max-w-5xl">
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Cari variant
@@ -74,6 +90,24 @@ export default function VariantList({
 
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
+              Kategori
+            </label>
+            <select
+              value={categoryFilter}
+              onChange={(event) => onCategoryFilterChange(event.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+            >
+              <option value="ALL">Semua kategori</option>
+              {categoryOptions.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Game
             </label>
             <select
@@ -82,7 +116,7 @@ export default function VariantList({
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
             >
               <option value="ALL">Semua game</option>
-              {games.map((game) => (
+              {visibleGames.map((game) => (
                 <option key={game._id} value={game._id}>
                   {game.name}
                 </option>

@@ -80,6 +80,7 @@ exports.getVariants = async (req, res) => {
   try {
     const filter = {};
     const search = String(req.query.search || "").trim();
+    const category = String(req.query.category || "").trim();
     const page = toPositiveInteger(req.query.page, 1);
     const limit = Math.min(toPositiveInteger(req.query.limit, 20), 100);
     const usePagination =
@@ -103,6 +104,20 @@ exports.getVariants = async (req, res) => {
       filter.syncSource = String(req.query.syncSource).trim().toLowerCase();
     }
 
+    if (category) {
+      const matchingGames = await Game.find({ category }).distinct("_id");
+
+      if (req.query.game) {
+        filter.game = matchingGames.some(
+          (gameId) => String(gameId) === String(req.query.game)
+        )
+          ? req.query.game
+          : null;
+      } else {
+        filter.game = { $in: matchingGames };
+      }
+    }
+
     if (search) {
       const regex = new RegExp(escapeRegex(search), "i");
       const matchingGames = await Game.find({
@@ -120,7 +135,7 @@ exports.getVariants = async (req, res) => {
     }
 
     const baseQuery = Variant.find(filter)
-      .populate("game", "name code variantCategories")
+      .populate("game", "name code category variantCategories")
       .sort({ createdAt: -1 });
 
     if (!usePagination) {
@@ -132,7 +147,7 @@ exports.getVariants = async (req, res) => {
     const totalPages = Math.max(Math.ceil(totalItems / limit), 1);
     const safePage = Math.min(page, totalPages);
     const variants = await Variant.find(filter)
-      .populate("game", "name code variantCategories")
+      .populate("game", "name code category variantCategories")
       .sort({ createdAt: -1 })
       .skip((safePage - 1) * limit)
       .limit(limit);
