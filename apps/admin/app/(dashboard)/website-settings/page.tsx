@@ -59,6 +59,10 @@ const defaultForm: SiteSetting = {
   gameCategories: DEFAULT_GAME_CATEGORIES,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_AUTO_SLIDE_SECONDS,
+  homepagePopupEnabled: false,
+  homepagePopupTitle: "",
+  homepagePopupMessage: "",
+  homepagePopupImageUrl: "",
   floatingContactEnabled: false,
   floatingContactLabel: "Chat CS",
   floatingContactUrl: "",
@@ -155,6 +159,10 @@ function normalizeSiteSetting(
       30,
       defaultForm.bannerAutoSlideSeconds
     ),
+    homepagePopupEnabled: Boolean(value?.homepagePopupEnabled),
+    homepagePopupTitle: String(value?.homepagePopupTitle || "").trim(),
+    homepagePopupMessage: String(value?.homepagePopupMessage || "").trim(),
+    homepagePopupImageUrl: String(value?.homepagePopupImageUrl || "").trim(),
     banners: syncBannerLength(
       Array.isArray(value?.banners) ? value.banners : defaultForm.banners,
       bannerCount
@@ -259,6 +267,10 @@ export default function WebsiteSettingsPage() {
           gameCategories: form.gameCategories,
           bannerCount: form.bannerCount,
           bannerAutoSlideSeconds: form.bannerAutoSlideSeconds,
+          homepagePopupEnabled: form.homepagePopupEnabled,
+          homepagePopupTitle: form.homepagePopupTitle,
+          homepagePopupMessage: form.homepagePopupMessage,
+          homepagePopupImageUrl: form.homepagePopupImageUrl,
           floatingContactEnabled: form.floatingContactEnabled,
           floatingContactLabel: form.floatingContactLabel,
           floatingContactUrl: form.floatingContactUrl,
@@ -550,6 +562,93 @@ export default function WebsiteSettingsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </SettingsSubsection>
+
+          <SettingsSubsection
+            title="Homepage Popup"
+            description="Tampilkan popup promosi atau pengumuman saat user pertama kali membuka homepage. Bisa dipakai untuk teks saja, banner saja, atau kombinasi keduanya."
+          >
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Aktifkan Popup Homepage
+              </label>
+              <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={form.homepagePopupEnabled}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      homepagePopupEnabled: event.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
+                />
+                <span className="text-sm text-gray-700">
+                  Popup hanya tampil di homepage storefront
+                </span>
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Judul Popup
+              </label>
+              <input
+                value={form.homepagePopupTitle}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    homepagePopupTitle: event.target.value,
+                  }))
+                }
+                placeholder="Contoh: Promo Weekend Spesial"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Bisa dikosongkan jika kamu hanya ingin menampilkan banner saja.
+              </p>
+            </div>
+
+            <div className="space-y-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Isi Popup / Teks Pengumuman
+              </label>
+              <textarea
+                value={form.homepagePopupMessage}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    homepagePopupMessage: event.target.value,
+                  }))
+                }
+                placeholder="Tulis pengumuman, promo, atau informasi penting yang ingin langsung dilihat user."
+                className="min-h-[140px] w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Bisa dikosongkan jika popup hanya ingin berisi banner visual.
+              </p>
+            </div>
+
+            <div className="space-y-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                URL Banner Popup
+              </label>
+              <input
+                value={form.homepagePopupImageUrl}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    homepagePopupImageUrl: event.target.value,
+                  }))
+                }
+                placeholder="https://..."
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Rekomendasi ukuran banner popup: 1600 x 900 px atau landscape lebar agar tetap rapi di desktop dan mobile.
+              </p>
             </div>
           </SettingsSubsection>
 

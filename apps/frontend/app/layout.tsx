@@ -4,6 +4,7 @@ import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import FloatingContactButton from "@/components/FloatingContactButton";
+import HomepagePopup from "@/components/HomepagePopup";
 import FrontendMaintenanceScreen from "@/components/FrontendMaintenanceScreen";
 import { getPublicSiteSetting } from "@/lib/siteData";
 
@@ -138,6 +139,7 @@ async function FrontendShell({
       <SiteHeader siteSetting={siteSetting} />
       <div className="pt-14 sm:pt-[76px]">{children}</div>
       <SiteFooter siteSetting={siteSetting} />
+      <HomepagePopup siteSetting={siteSetting} />
       <FloatingContactButton siteSetting={siteSetting} />
     </div>
   );

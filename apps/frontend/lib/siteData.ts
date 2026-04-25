@@ -27,6 +27,10 @@ export type PublicSiteSetting = {
   gameCategories: string[];
   bannerCount: number;
   bannerAutoSlideSeconds: number;
+  homepagePopupEnabled: boolean;
+  homepagePopupTitle: string;
+  homepagePopupMessage: string;
+  homepagePopupImageUrl: string;
   floatingContactEnabled: boolean;
   floatingContactLabel: string;
   floatingContactUrl: string;
@@ -236,6 +240,10 @@ const defaultSiteSetting: PublicSiteSetting = {
   gameCategories: ["Topup Game", "Topup Pulsa", "Voucher", "Live Streaming"],
   bannerCount: 3,
   bannerAutoSlideSeconds: 5,
+  homepagePopupEnabled: false,
+  homepagePopupTitle: "",
+  homepagePopupMessage: "",
+  homepagePopupImageUrl: "",
   floatingContactEnabled: false,
   floatingContactLabel: "Chat CS",
   floatingContactUrl: "",
@@ -515,6 +523,10 @@ function normalizeSiteSetting(
       ),
       30
     ),
+    homepagePopupEnabled: Boolean(siteSetting?.homepagePopupEnabled),
+    homepagePopupTitle: String(siteSetting?.homepagePopupTitle || "").trim(),
+    homepagePopupMessage: String(siteSetting?.homepagePopupMessage || "").trim(),
+    homepagePopupImageUrl: String(siteSetting?.homepagePopupImageUrl || "").trim(),
     floatingContactEnabled: Boolean(siteSetting?.floatingContactEnabled),
     floatingContactLabel:
       String(siteSetting?.floatingContactLabel || "").trim() ||

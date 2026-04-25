@@ -27,6 +27,10 @@ const defaultSiteSetting = {
   gameCategories: DEFAULT_GAME_CATEGORIES,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_BANNER_SLIDE_SECONDS,
+  homepagePopupEnabled: false,
+  homepagePopupTitle: "",
+  homepagePopupMessage: "",
+  homepagePopupImageUrl: "",
   floatingContactEnabled: false,
   floatingContactLabel: "Chat CS",
   floatingContactUrl: "",
@@ -138,6 +142,18 @@ function normalizeBoolean(value, fallback = false) {
 function normalizeFloatingContactLabel(value) {
   const label = String(value || "").trim();
   return label || defaultSiteSetting.floatingContactLabel;
+}
+
+function normalizeHomepagePopupTitle(value) {
+  return String(value || "").trim();
+}
+
+function normalizeHomepagePopupMessage(value) {
+  return String(value || "").trim();
+}
+
+function normalizeHomepagePopupImageUrl(value) {
+  return String(value || "").trim();
 }
 
 function normalizeFloatingContactUrl(value) {
@@ -284,6 +300,19 @@ function serializeSiteSetting(siteSetting) {
       siteSetting.bannerAutoSlideSeconds ??
         defaultSiteSetting.bannerAutoSlideSeconds
     ),
+    homepagePopupEnabled: normalizeBoolean(
+      siteSetting.homepagePopupEnabled,
+      defaultSiteSetting.homepagePopupEnabled
+    ),
+    homepagePopupTitle: normalizeHomepagePopupTitle(
+      siteSetting.homepagePopupTitle
+    ),
+    homepagePopupMessage: normalizeHomepagePopupMessage(
+      siteSetting.homepagePopupMessage
+    ),
+    homepagePopupImageUrl: normalizeHomepagePopupImageUrl(
+      siteSetting.homepagePopupImageUrl
+    ),
     floatingContactEnabled: normalizeBoolean(
       siteSetting.floatingContactEnabled,
       defaultSiteSetting.floatingContactEnabled
@@ -396,6 +425,31 @@ exports.updateSiteSetting = async (req, res) => {
     if (req.body.bannerAutoSlideSeconds != null) {
       siteSetting.bannerAutoSlideSeconds = normalizeBannerAutoSlideSeconds(
         req.body.bannerAutoSlideSeconds
+      );
+    }
+
+    if (req.body.homepagePopupEnabled != null) {
+      siteSetting.homepagePopupEnabled = normalizeBoolean(
+        req.body.homepagePopupEnabled,
+        defaultSiteSetting.homepagePopupEnabled
+      );
+    }
+
+    if (req.body.homepagePopupTitle != null) {
+      siteSetting.homepagePopupTitle = normalizeHomepagePopupTitle(
+        req.body.homepagePopupTitle
+      );
+    }
+
+    if (req.body.homepagePopupMessage != null) {
+      siteSetting.homepagePopupMessage = normalizeHomepagePopupMessage(
+        req.body.homepagePopupMessage
+      );
+    }
+
+    if (req.body.homepagePopupImageUrl != null) {
+      siteSetting.homepagePopupImageUrl = normalizeHomepagePopupImageUrl(
+        req.body.homepagePopupImageUrl
       );
     }
 

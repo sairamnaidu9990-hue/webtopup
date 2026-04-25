@@ -23,6 +23,10 @@ export type SiteSetting = {
   gameCategories: string[];
   bannerCount: number;
   bannerAutoSlideSeconds: number;
+  homepagePopupEnabled: boolean;
+  homepagePopupTitle: string;
+  homepagePopupMessage: string;
+  homepagePopupImageUrl: string;
   floatingContactEnabled: boolean;
   floatingContactLabel: string;
   floatingContactUrl: string;

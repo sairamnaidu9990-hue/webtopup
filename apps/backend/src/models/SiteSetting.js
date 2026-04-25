@@ -79,6 +79,25 @@ const siteSettingSchema = new mongoose.Schema(
       min: 1,
       max: 30,
     },
+    homepagePopupEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    homepagePopupTitle: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    homepagePopupMessage: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    homepagePopupImageUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     floatingContactEnabled: {
       type: Boolean,
       default: false,
