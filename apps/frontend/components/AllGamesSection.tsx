@@ -31,7 +31,7 @@ function AllGamesCard({ game }: { game: StorefrontGame }) {
   return (
     <Link
       href={`/games/${game.code.toLowerCase()}`}
-      className="group block overflow-hidden rounded-[18px] border border-[rgba(214,168,104,0.44)] bg-[#10131a] transition duration-300 hover:-translate-y-1 hover:border-[#d33b3b] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.24),0_18px_38px_rgba(0,0,0,0.26)] focus-visible:-translate-y-1 focus-visible:border-[#d33b3b] focus-visible:shadow-[0_0_0_1px_rgba(211,59,59,0.24),0_18px_38px_rgba(0,0,0,0.26)] active:-translate-y-1 active:border-[#d33b3b] active:shadow-[0_0_0_1px_rgba(211,59,59,0.24),0_18px_38px_rgba(0,0,0,0.26)] sm:rounded-[20px]"
+      className="group block overflow-hidden rounded-[18px] border border-transparent bg-[#10131a] transition duration-300 hover:-translate-y-1 hover:border-[#d33b3b] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.24),0_18px_38px_rgba(0,0,0,0.26)] focus-visible:-translate-y-1 focus-visible:border-[#d33b3b] focus-visible:shadow-[0_0_0_1px_rgba(211,59,59,0.24),0_18px_38px_rgba(0,0,0,0.26)] active:-translate-y-1 active:border-[#d33b3b] active:shadow-[0_0_0_1px_rgba(211,59,59,0.24),0_18px_38px_rgba(0,0,0,0.26)] sm:rounded-[20px]"
     >
       <div className="relative overflow-hidden rounded-[18px] bg-[#10131a] sm:rounded-[20px]">
         <div className="relative aspect-[3/4.35] w-full">
