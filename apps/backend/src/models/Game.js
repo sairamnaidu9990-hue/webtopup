@@ -81,6 +81,22 @@ const gameSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  popupEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  popupTitle: {
+    type: String,
+    default: "",
+  },
+  popupMessage: {
+    type: String,
+    default: "",
+  },
+  popupImageUrl: {
+    type: String,
+    default: "",
+  },
   category: {
     type: String,
     default: "Topup Game",

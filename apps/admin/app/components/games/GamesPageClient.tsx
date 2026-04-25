@@ -11,6 +11,10 @@ type Game = {
   code: string;
   logo?: string;
   bannerUrl?: string;
+  popupEnabled?: boolean;
+  popupTitle?: string;
+  popupMessage?: string;
+  popupImageUrl?: string;
   category?: string;
   provider?: string;
   status?: string;
@@ -69,6 +73,10 @@ export default function GamesPageClient({
   const [code, setCode] = useState("");
   const [logo, setLogo] = useState("");
   const [bannerUrl, setBannerUrl] = useState("");
+  const [popupEnabled, setPopupEnabled] = useState(false);
+  const [popupTitle, setPopupTitle] = useState("");
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupImageUrl, setPopupImageUrl] = useState("");
   const [category, setCategory] = useState("Topup Game");
   const [categoryOptions, setCategoryOptions] = useState<string[]>(
     DEFAULT_CATEGORY_OPTIONS
@@ -96,6 +104,10 @@ export default function GamesPageClient({
     setCode("");
     setLogo("");
     setBannerUrl("");
+    setPopupEnabled(false);
+    setPopupTitle("");
+    setPopupMessage("");
+    setPopupImageUrl("");
     setCategory(categoryOptions[0] || "Topup Game");
     setProvider("");
     setStatus("ACTIVE");
@@ -242,6 +254,10 @@ export default function GamesPageClient({
     setCode(game.code);
     setLogo(game.logo || "");
     setBannerUrl(game.bannerUrl || "");
+    setPopupEnabled(Boolean(game.popupEnabled));
+    setPopupTitle(game.popupTitle || "");
+    setPopupMessage(game.popupMessage || "");
+    setPopupImageUrl(game.popupImageUrl || "");
     setCategory(game.category || "Topup Game");
     setProvider(game.provider || "");
     setStatus(game.status || "ACTIVE");
@@ -285,6 +301,10 @@ export default function GamesPageClient({
           code,
           logo,
           bannerUrl,
+          popupEnabled,
+          popupTitle,
+          popupMessage,
+          popupImageUrl,
           category,
           provider,
           status,
@@ -329,6 +349,10 @@ export default function GamesPageClient({
           code={code}
           logo={logo}
           bannerUrl={bannerUrl}
+          popupEnabled={popupEnabled}
+          popupTitle={popupTitle}
+          popupMessage={popupMessage}
+          popupImageUrl={popupImageUrl}
           category={category}
           categoryOptions={categoryOptions}
           provider={provider}
@@ -342,6 +366,10 @@ export default function GamesPageClient({
           setCode={setCode}
           setLogo={setLogo}
           setBannerUrl={setBannerUrl}
+          setPopupEnabled={setPopupEnabled}
+          setPopupTitle={setPopupTitle}
+          setPopupMessage={setPopupMessage}
+          setPopupImageUrl={setPopupImageUrl}
           setCategory={setCategory}
           setProvider={setProvider}
           setStatus={setStatus}

@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import GameTopupPanel from "@/components/GameTopupPanel";
+import GameEntryPopup from "@/components/GameEntryPopup";
 import {
   getPublicPaymentMethods,
   getPublicSiteSetting,
@@ -226,6 +227,7 @@ export default async function GameVariantsPage({
         variants={variants}
         paymentMethods={paymentMethods}
       />
+      <GameEntryPopup game={game} />
     </main>
   );
 }

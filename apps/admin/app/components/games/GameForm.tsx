@@ -7,6 +7,10 @@ type Props = {
   code: string;
   logo: string;
   bannerUrl: string;
+  popupEnabled: boolean;
+  popupTitle: string;
+  popupMessage: string;
+  popupImageUrl: string;
   category: string;
   categoryOptions: string[];
   provider: string;
@@ -25,6 +29,10 @@ type Props = {
   setCode: (v: string) => void;
   setLogo: (v: string) => void;
   setBannerUrl: (v: string) => void;
+  setPopupEnabled: (v: boolean) => void;
+  setPopupTitle: (v: string) => void;
+  setPopupMessage: (v: string) => void;
+  setPopupImageUrl: (v: string) => void;
   setCategory: (v: string) => void;
   setProvider: (v: string) => void;
   setStatus: (v: string) => void;
@@ -53,6 +61,10 @@ export default function GameForm({
   code,
   logo,
   bannerUrl,
+  popupEnabled,
+  popupTitle,
+  popupMessage,
+  popupImageUrl,
   category,
   categoryOptions,
   provider,
@@ -66,6 +78,10 @@ export default function GameForm({
   setCode,
   setLogo,
   setBannerUrl,
+  setPopupEnabled,
+  setPopupTitle,
+  setPopupMessage,
+  setPopupImageUrl,
   setCategory,
   setProvider,
   setStatus,
@@ -236,6 +252,59 @@ export default function GameForm({
               Gunakan gambar panoramic untuk banner halaman game. Rekomendasi:
               1600 x 720 px atau lebih, format landscape lebar, dengan fokus
               objek utama di tengah gambar.
+            </span>
+          </label>
+
+          <label className="block">
+            <span className={labelClassName}>Aktifkan Popup Game</span>
+            <span className="flex items-center gap-3 rounded-xl border px-4 py-2.5 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={popupEnabled}
+                onChange={(e) => setPopupEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              Tampilkan popup saat user membuka halaman game ini
+            </span>
+          </label>
+
+          <label className="block">
+            <span className={labelClassName}>Judul Popup Game</span>
+            <input
+              placeholder="Contoh: Promo Diamond Hari Ini"
+              className={fieldClassName}
+              value={popupTitle}
+              onChange={(e) => setPopupTitle(e.target.value)}
+            />
+            <span className="mt-2 block text-xs leading-6 text-gray-500">
+              Bisa dikosongkan jika popup hanya ingin berisi banner saja.
+            </span>
+          </label>
+
+          <label className="block sm:col-span-2 xl:col-span-4">
+            <span className={labelClassName}>Isi Popup Game</span>
+            <textarea
+              placeholder="Tulis promo, pengumuman, atau arahan penting untuk user."
+              className={`${fieldClassName} min-h-[120px]`}
+              value={popupMessage}
+              onChange={(e) => setPopupMessage(e.target.value)}
+            />
+            <span className="mt-2 block text-xs leading-6 text-gray-500">
+              Bisa dikosongkan jika popup hanya ingin menampilkan banner visual.
+            </span>
+          </label>
+
+          <label className="block sm:col-span-2 xl:col-span-4">
+            <span className={labelClassName}>URL Banner Popup Game</span>
+            <input
+              placeholder="Masukkan URL banner popup game"
+              className={fieldClassName}
+              value={popupImageUrl}
+              onChange={(e) => setPopupImageUrl(e.target.value)}
+            />
+            <span className="mt-2 block text-xs leading-6 text-gray-500">
+              Rekomendasi ukuran popup game: 1600 x 900 px atau landscape lebar
+              agar tampil rapi di desktop dan mobile.
             </span>
           </label>
 

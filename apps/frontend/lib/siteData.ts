@@ -51,6 +51,10 @@ export type StorefrontGame = {
   code: string;
   logo?: string;
   bannerUrl?: string;
+  popupEnabled?: boolean;
+  popupTitle?: string;
+  popupMessage?: string;
+  popupImageUrl?: string;
   category?: string;
   provider?: string;
   syncSource?: string;
@@ -268,6 +272,10 @@ function normalizeStorefrontGame(
     code: String(game?.code || "").trim().toUpperCase(),
     logo: String(game?.logo || "").trim(),
     bannerUrl: String(game?.bannerUrl || "").trim(),
+    popupEnabled: Boolean(game?.popupEnabled),
+    popupTitle: String(game?.popupTitle || "").trim(),
+    popupMessage: String(game?.popupMessage || "").trim(),
+    popupImageUrl: String(game?.popupImageUrl || "").trim(),
     category: String(game?.category || "Topup Game").trim(),
     provider: String(game?.provider || "").trim(),
     syncSource: String(game?.syncSource || "").trim(),

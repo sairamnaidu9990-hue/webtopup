@@ -56,6 +56,10 @@ function escapeRegex(value) {
   return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function normalizePopupText(value) {
+  return String(value || "").trim();
+}
+
 // GET ALL GAMES
 exports.getGames = async (req, res) => {
   try {
@@ -232,7 +236,7 @@ exports.getStorefrontGameDetail = async (req, res) => {
       code,
       status: "ACTIVE",
     }).select(
-      "name code logo bannerUrl provider category status syncSource isTrending trendingOrder catalogOrder inputs variantCategories"
+      "name code logo bannerUrl popupEnabled popupTitle popupMessage popupImageUrl provider category status syncSource isTrending trendingOrder catalogOrder inputs variantCategories"
     );
 
     if (!game) {
@@ -273,6 +277,10 @@ exports.createGame = async (req, res) => {
       code,
       logo = "",
       bannerUrl = "",
+      popupEnabled = false,
+      popupTitle = "",
+      popupMessage = "",
+      popupImageUrl = "",
       category = DEFAULT_GAME_CATEGORY,
       provider = "",
       status = "ACTIVE",
@@ -310,6 +318,10 @@ exports.createGame = async (req, res) => {
       code: normalizedCode,
       logo,
       bannerUrl,
+      popupEnabled: toBoolean(popupEnabled, false),
+      popupTitle: normalizePopupText(popupTitle),
+      popupMessage: normalizePopupText(popupMessage),
+      popupImageUrl: normalizePopupText(popupImageUrl),
       category: normalizeGameCategory(
         category,
         configuredCategories,
@@ -367,6 +379,25 @@ exports.updateGame = async (req, res) => {
     if (req.body.status) {
       updatePayload.status = String(req.body.status).toUpperCase();
       updatePayload.statusLockedByAdmin = updatePayload.status === "INACTIVE";
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "popupEnabled")) {
+      updatePayload.popupEnabled = toBoolean(
+        req.body.popupEnabled,
+        currentGame.popupEnabled
+      );
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "popupTitle")) {
+      updatePayload.popupTitle = normalizePopupText(req.body.popupTitle);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "popupMessage")) {
+      updatePayload.popupMessage = normalizePopupText(req.body.popupMessage);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "popupImageUrl")) {
+      updatePayload.popupImageUrl = normalizePopupText(req.body.popupImageUrl);
     }
 
     if (Object.prototype.hasOwnProperty.call(req.body, "category")) {
