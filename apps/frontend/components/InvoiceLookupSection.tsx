@@ -86,7 +86,7 @@ export default function InvoiceLookupSection() {
 
           <button
             type="submit"
-            className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-[#b39a7a] px-4 text-sm font-semibold text-white transition hover:bg-[#c0a686]"
+            className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 text-sm font-semibold text-white shadow-[0_16px_34px_rgba(211,59,59,0.22)] transition hover:brightness-110"
           >
             Cari Invoice
           </button>
