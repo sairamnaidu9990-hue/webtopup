@@ -93,6 +93,21 @@ const siteSettingSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    maintenanceModeEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    maintenanceTitle: {
+      type: String,
+      default: "Website Sedang Maintenance",
+      trim: true,
+    },
+    maintenanceMessage: {
+      type: String,
+      default:
+        "Kami sedang melakukan peningkatan sistem agar layanan lebih stabil. Silakan kembali lagi dalam beberapa saat.",
+      trim: true,
+    },
     banners: [
       new mongoose.Schema(
         {

@@ -30,6 +30,10 @@ const defaultSiteSetting = {
   floatingContactEnabled: false,
   floatingContactLabel: "Chat CS",
   floatingContactUrl: "",
+  maintenanceModeEnabled: false,
+  maintenanceTitle: "Website Sedang Maintenance",
+  maintenanceMessage:
+    "Kami sedang melakukan peningkatan sistem agar layanan lebih stabil. Silakan kembali lagi dalam beberapa saat.",
   banners: [
     {
       title: "",
@@ -152,6 +156,16 @@ function normalizeFloatingContactUrl(value) {
   } catch {
     return rawValue;
   }
+}
+
+function normalizeMaintenanceTitle(value) {
+  const title = String(value || "").trim();
+  return title || defaultSiteSetting.maintenanceTitle;
+}
+
+function normalizeMaintenanceMessage(value) {
+  const message = String(value || "").trim();
+  return message || defaultSiteSetting.maintenanceMessage;
 }
 
 function normalizeGameCategories(items, fallback = DEFAULT_GAME_CATEGORIES) {
@@ -280,6 +294,16 @@ function serializeSiteSetting(siteSetting) {
     floatingContactUrl: normalizeFloatingContactUrl(
       siteSetting.floatingContactUrl
     ),
+    maintenanceModeEnabled: normalizeBoolean(
+      siteSetting.maintenanceModeEnabled,
+      defaultSiteSetting.maintenanceModeEnabled
+    ),
+    maintenanceTitle: normalizeMaintenanceTitle(
+      siteSetting.maintenanceTitle
+    ),
+    maintenanceMessage: normalizeMaintenanceMessage(
+      siteSetting.maintenanceMessage
+    ),
     banners,
     footerDescription:
       siteSetting.footerDescription ?? defaultSiteSetting.footerDescription,
@@ -391,6 +415,25 @@ exports.updateSiteSetting = async (req, res) => {
     if (req.body.floatingContactUrl != null) {
       siteSetting.floatingContactUrl = normalizeFloatingContactUrl(
         req.body.floatingContactUrl
+      );
+    }
+
+    if (req.body.maintenanceModeEnabled != null) {
+      siteSetting.maintenanceModeEnabled = normalizeBoolean(
+        req.body.maintenanceModeEnabled,
+        defaultSiteSetting.maintenanceModeEnabled
+      );
+    }
+
+    if (req.body.maintenanceTitle != null) {
+      siteSetting.maintenanceTitle = normalizeMaintenanceTitle(
+        req.body.maintenanceTitle
+      );
+    }
+
+    if (req.body.maintenanceMessage != null) {
+      siteSetting.maintenanceMessage = normalizeMaintenanceMessage(
+        req.body.maintenanceMessage
       );
     }
 

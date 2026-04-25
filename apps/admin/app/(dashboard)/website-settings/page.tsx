@@ -62,6 +62,10 @@ const defaultForm: SiteSetting = {
   floatingContactEnabled: false,
   floatingContactLabel: "Chat CS",
   floatingContactUrl: "",
+  maintenanceModeEnabled: false,
+  maintenanceTitle: "Website Sedang Maintenance",
+  maintenanceMessage:
+    "Kami sedang melakukan peningkatan sistem agar layanan lebih stabil. Silakan kembali lagi dalam beberapa saat.",
   banners: Array.from({ length: DEFAULT_BANNER_COUNT }, () => ({
     title: "",
     imageUrl: "",
@@ -258,6 +262,9 @@ export default function WebsiteSettingsPage() {
           floatingContactEnabled: form.floatingContactEnabled,
           floatingContactLabel: form.floatingContactLabel,
           floatingContactUrl: form.floatingContactUrl,
+          maintenanceModeEnabled: form.maintenanceModeEnabled,
+          maintenanceTitle: form.maintenanceTitle,
+          maintenanceMessage: form.maintenanceMessage,
           banners: form.banners,
           footerDescription: form.footerDescription,
           footerBottomText: form.footerBottomText,
@@ -610,6 +617,72 @@ export default function WebsiteSettingsPage() {
               <p className="text-xs leading-6 text-gray-500">
                 Bisa diisi link WhatsApp, Telegram, live chat, atau halaman
                 internal seperti /contact.
+              </p>
+            </div>
+          </SettingsSubsection>
+
+          <SettingsSubsection
+            title="Maintenance Mode"
+            description="Nonaktifkan sementara semua halaman storefront user dan tampilkan halaman maintenance khusus saat website sedang diperbaiki."
+          >
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Aktifkan Maintenance Frontend
+              </label>
+              <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={form.maintenanceModeEnabled}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      maintenanceModeEnabled: event.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
+                />
+                <span className="text-sm text-gray-700">
+                  Saat aktif, seluruh halaman frontend user akan menampilkan
+                  halaman maintenance
+                </span>
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Judul Maintenance
+              </label>
+              <input
+                value={form.maintenanceTitle}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    maintenanceTitle: event.target.value,
+                  }))
+                }
+                placeholder="Contoh: Website Sedang Maintenance"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+            </div>
+
+            <div className="space-y-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Pesan Maintenance
+              </label>
+              <textarea
+                value={form.maintenanceMessage}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    maintenanceMessage: event.target.value,
+                  }))
+                }
+                placeholder="Tulis pesan yang akan dilihat user saat storefront sedang maintenance"
+                className="min-h-[120px] w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Cocok dipakai saat deploy besar, migrasi data, atau maintenance
+                gateway agar user tidak masuk ke flow order yang belum stabil.
               </p>
             </div>
           </SettingsSubsection>

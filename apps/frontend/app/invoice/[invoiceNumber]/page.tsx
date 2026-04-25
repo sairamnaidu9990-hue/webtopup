@@ -308,6 +308,18 @@ export async function generateMetadata({
     params,
     getPublicSiteSetting(),
   ]);
+
+  if (siteSetting.maintenanceModeEnabled) {
+    return {
+      title: `${siteSetting.siteName} Sedang Maintenance`,
+      description: siteSetting.maintenanceMessage,
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
   const order = await getPublicOrderByInvoice(invoiceNumber);
 
   if (!order) {

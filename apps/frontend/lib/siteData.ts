@@ -30,6 +30,9 @@ export type PublicSiteSetting = {
   floatingContactEnabled: boolean;
   floatingContactLabel: string;
   floatingContactUrl: string;
+  maintenanceModeEnabled: boolean;
+  maintenanceTitle: string;
+  maintenanceMessage: string;
   banners: SiteBanner[];
   footerDescription: string;
   footerBottomText: string;
@@ -236,6 +239,10 @@ const defaultSiteSetting: PublicSiteSetting = {
   floatingContactEnabled: false,
   floatingContactLabel: "Chat CS",
   floatingContactUrl: "",
+  maintenanceModeEnabled: false,
+  maintenanceTitle: "Website Sedang Maintenance",
+  maintenanceMessage:
+    "Kami sedang melakukan peningkatan sistem agar layanan lebih stabil. Silakan kembali lagi dalam beberapa saat.",
   banners: [],
   footerDescription:
     "Top up game dan voucher digital dengan katalog yang dikelola langsung dari panel admin.",
@@ -513,6 +520,13 @@ function normalizeSiteSetting(
       String(siteSetting?.floatingContactLabel || "").trim() ||
       defaultSiteSetting.floatingContactLabel,
     floatingContactUrl: String(siteSetting?.floatingContactUrl || "").trim(),
+    maintenanceModeEnabled: Boolean(siteSetting?.maintenanceModeEnabled),
+    maintenanceTitle:
+      String(siteSetting?.maintenanceTitle || "").trim() ||
+      defaultSiteSetting.maintenanceTitle,
+    maintenanceMessage:
+      String(siteSetting?.maintenanceMessage || "").trim() ||
+      defaultSiteSetting.maintenanceMessage,
     banners: syncBannerLength(
       Array.isArray(siteSetting?.banners) ? siteSetting.banners : [],
       bannerCount

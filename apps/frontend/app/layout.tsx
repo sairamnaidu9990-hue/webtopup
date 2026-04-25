@@ -4,6 +4,7 @@ import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import FloatingContactButton from "@/components/FloatingContactButton";
+import FrontendMaintenanceScreen from "@/components/FrontendMaintenanceScreen";
 import { getPublicSiteSetting } from "@/lib/siteData";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -35,10 +36,16 @@ export async function generateMetadata(): Promise<Metadata> {
     siteSetting.banners.find((banner) => banner.imageUrl)?.imageUrl ||
     siteSetting.siteLogoUrl ||
     undefined;
+  const title = siteSetting.maintenanceModeEnabled
+    ? `${siteSetting.siteName} Sedang Maintenance`
+    : siteSetting.siteTitle;
+  const description = siteSetting.maintenanceModeEnabled
+    ? siteSetting.maintenanceMessage
+    : siteSetting.siteDescription;
 
   return {
-    title: siteSetting.siteTitle,
-    description: siteSetting.siteDescription,
+    title,
+    description,
     applicationName: siteSetting.siteName,
     metadataBase,
     alternates: metadataBase
@@ -54,15 +61,15 @@ export async function generateMetadata(): Promise<Metadata> {
         }
       : undefined,
     openGraph: {
-      title: siteSetting.siteTitle,
-      description: siteSetting.siteDescription,
+      title,
+      description,
       siteName: siteSetting.siteName,
       ...(primaryBannerImage
         ? {
             images: [
               {
                 url: primaryBannerImage,
-                alt: siteSetting.siteTitle,
+                alt: title,
               },
             ],
           }
@@ -73,6 +80,12 @@ export async function generateMetadata(): Promise<Metadata> {
           }
         : {}),
     },
+    robots: siteSetting.maintenanceModeEnabled
+      ? {
+          index: false,
+          follow: false,
+        }
+      : undefined,
   };
 }
 
@@ -110,6 +123,15 @@ async function FrontendShell({
   siteSettingPromise: ReturnType<typeof getPublicSiteSetting>;
 }>) {
   const siteSetting = await siteSettingPromise;
+
+  if (siteSetting.maintenanceModeEnabled) {
+    return (
+      <div className="min-h-screen bg-[#111217] text-white">
+        <FrontendMaintenanceScreen siteSetting={siteSetting} />
+        <FloatingContactButton siteSetting={siteSetting} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#111217] text-white">

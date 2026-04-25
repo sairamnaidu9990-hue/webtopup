@@ -26,6 +26,9 @@ export type SiteSetting = {
   floatingContactEnabled: boolean;
   floatingContactLabel: string;
   floatingContactUrl: string;
+  maintenanceModeEnabled: boolean;
+  maintenanceTitle: string;
+  maintenanceMessage: string;
   banners: SiteBanner[];
   footerDescription: string;
   footerBottomText: string;
