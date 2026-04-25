@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect } from "react";
 
 export default function StorefrontPopupDialog({
   open,
@@ -21,6 +22,19 @@ export default function StorefrontPopupDialog({
   onDontShowAgainChange: (checked: boolean) => void;
   onClose: () => void;
 }) {
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   if (!open) {
     return null;
   }
