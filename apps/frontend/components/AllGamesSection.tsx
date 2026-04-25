@@ -31,7 +31,7 @@ function AllGamesCard({ game }: { game: StorefrontGame }) {
   return (
     <Link
       href={`/games/${game.code.toLowerCase()}`}
-      className="group block overflow-hidden rounded-[18px] border border-[rgba(214,168,104,0.44)] bg-[#10131a] transition duration-300 hover:-translate-y-1 hover:border-[rgba(242,194,124,0.88)] hover:shadow-[0_0_0_1px_rgba(242,194,124,0.24),0_18px_38px_rgba(0,0,0,0.26)] focus-visible:-translate-y-1 focus-visible:border-[rgba(242,194,124,0.88)] focus-visible:shadow-[0_0_0_1px_rgba(242,194,124,0.24),0_18px_38px_rgba(0,0,0,0.26)] active:-translate-y-1 active:border-[rgba(242,194,124,0.88)] active:shadow-[0_0_0_1px_rgba(242,194,124,0.24),0_18px_38px_rgba(0,0,0,0.26)] sm:rounded-[20px]"
+      className="group block overflow-hidden rounded-[18px] border border-[rgba(214,168,104,0.44)] bg-[#10131a] transition duration-300 hover:-translate-y-1 hover:border-[#d33b3b] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.24),0_18px_38px_rgba(0,0,0,0.26)] focus-visible:-translate-y-1 focus-visible:border-[#d33b3b] focus-visible:shadow-[0_0_0_1px_rgba(211,59,59,0.24),0_18px_38px_rgba(0,0,0,0.26)] active:-translate-y-1 active:border-[#d33b3b] active:shadow-[0_0_0_1px_rgba(211,59,59,0.24),0_18px_38px_rgba(0,0,0,0.26)] sm:rounded-[20px]"
     >
       <div className="relative overflow-hidden rounded-[18px] bg-[#10131a] sm:rounded-[20px]">
         <div className="relative aspect-[3/4.35] w-full">
@@ -52,7 +52,7 @@ function AllGamesCard({ game }: { game: StorefrontGame }) {
 
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,14,0)_0%,rgba(8,10,14,0.04)_48%,rgba(8,10,14,0.14)_100%)] opacity-0 transition duration-300 group-hover:opacity-100 group-focus-visible:opacity-100 group-active:opacity-100" />
 
-        <div className="absolute inset-x-0 bottom-0 translate-y-4 border-t border-[rgba(242,194,124,0.34)] bg-[linear-gradient(180deg,rgba(10,12,16,0.08)_0%,rgba(10,12,16,0.44)_18%,rgba(10,12,16,0.88)_100%)] px-2.5 pb-3 pt-5 text-left opacity-0 shadow-[0_14px_28px_rgba(0,0,0,0.28)] backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 group-active:translate-y-0 group-active:opacity-100 sm:px-3 sm:pb-3.5 sm:pt-6">
+        <div className="absolute inset-x-0 bottom-0 translate-y-4 border-t border-[rgba(211,59,59,0.34)] bg-[linear-gradient(180deg,rgba(10,12,16,0.08)_0%,rgba(10,12,16,0.44)_18%,rgba(10,12,16,0.88)_100%)] px-2.5 pb-3 pt-5 text-left opacity-0 shadow-[0_14px_28px_rgba(0,0,0,0.28)] backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 group-active:translate-y-0 group-active:opacity-100 sm:px-3 sm:pb-3.5 sm:pt-6">
           <p className="truncate font-[family-name:var(--font-display)] text-[13px] font-semibold leading-[1.28] tracking-tight text-white sm:text-[14px]">
             {game.name}
           </p>
