@@ -5,16 +5,18 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { StorefrontGame } from "@/lib/siteData";
 
-function getColumnCount(width: number) {
+const DEFAULT_CHUNK_SIZE = 12;
+
+function getChunkSize(width: number) {
   if (width >= 1024) {
-    return 6;
+    return 12;
   }
 
   if (width >= 768) {
-    return 4;
+    return 8;
   }
 
-  return 3;
+  return 12;
 }
 
 function AllGamesCard({ game }: { game: StorefrontGame }) {
@@ -70,17 +72,19 @@ export default function AllGamesSection({
   games: StorefrontGame[];
   categories: string[];
 }) {
-  const [chunkSize, setChunkSize] = useState(6);
-  const [visibleCount, setVisibleCount] = useState(6);
+  const [chunkSize, setChunkSize] = useState(DEFAULT_CHUNK_SIZE);
+  const [visibleCount, setVisibleCount] = useState(DEFAULT_CHUNK_SIZE);
   const [activeCategory, setActiveCategory] = useState(categories[0] || "Topup Game");
 
   useEffect(() => {
     const updateGridSize = () => {
-      const nextChunkSize = getColumnCount(window.innerWidth) * 2;
+      const nextChunkSize = getChunkSize(window.innerWidth);
 
       setChunkSize(nextChunkSize);
       setVisibleCount((current) =>
-        current <= 6 ? nextChunkSize : Math.max(current, nextChunkSize)
+        current <= DEFAULT_CHUNK_SIZE
+          ? nextChunkSize
+          : Math.max(current, nextChunkSize)
       );
     };
 
@@ -130,7 +134,7 @@ export default function AllGamesSection({
 
       {filteredGames.length === 0 ? (
         <div className="rounded-[24px] border border-dashed border-white/10 bg-[#171922] px-6 py-10 text-center text-sm text-white/45 sm:rounded-[28px]">
-          Belum ada game pada kategori {activeCategory}.
+          Belum ada Product pada kategori {activeCategory}.
         </div>
       ) : null}
 
