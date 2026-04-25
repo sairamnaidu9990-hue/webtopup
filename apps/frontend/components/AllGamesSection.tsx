@@ -31,7 +31,7 @@ function AllGamesCard({ game }: { game: StorefrontGame }) {
   return (
     <Link
       href={`/games/${game.code.toLowerCase()}`}
-      className="block overflow-hidden rounded-[18px] border border-transparent bg-[#1a1c23] transition duration-300 hover:-translate-y-1 hover:border-[#d33b3b] hover:shadow-[0_0_0_1px_rgba(211,59,59,0.22),0_16px_34px_rgba(0,0,0,0.22)] sm:rounded-[20px]"
+      className="group block overflow-hidden rounded-[18px] border border-[rgba(214,168,104,0.44)] bg-[#10131a] transition duration-300 hover:-translate-y-1 hover:border-[rgba(242,194,124,0.88)] hover:shadow-[0_0_0_1px_rgba(242,194,124,0.24),0_18px_38px_rgba(0,0,0,0.26)] focus-visible:-translate-y-1 focus-visible:border-[rgba(242,194,124,0.88)] focus-visible:shadow-[0_0_0_1px_rgba(242,194,124,0.24),0_18px_38px_rgba(0,0,0,0.26)] active:-translate-y-1 active:border-[rgba(242,194,124,0.88)] active:shadow-[0_0_0_1px_rgba(242,194,124,0.24),0_18px_38px_rgba(0,0,0,0.26)] sm:rounded-[20px]"
     >
       <div className="relative overflow-hidden rounded-[18px] bg-[#10131a] sm:rounded-[20px]">
         <div className="relative aspect-[3/4.35] w-full">
@@ -41,18 +41,18 @@ function AllGamesCard({ game }: { game: StorefrontGame }) {
               alt={game.name}
               fill
               sizes="(max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
-              className="object-cover object-center"
+              className="object-cover object-center transition duration-300 group-hover:scale-[1.035] group-hover:brightness-[0.72] group-focus-visible:scale-[1.035] group-focus-visible:brightness-[0.72] group-active:scale-[1.035] group-active:brightness-[0.72]"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-white/10 text-lg font-semibold tracking-[0.18em] text-white">
+            <div className="flex h-full w-full items-center justify-center bg-white/10 text-lg font-semibold tracking-[0.18em] text-white transition duration-300 group-hover:bg-white/[0.14] group-focus-visible:bg-white/[0.14] group-active:bg-white/[0.14]">
               {initials || "GM"}
             </div>
           )}
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] bg-[linear-gradient(180deg,rgba(8,10,14,0)_0%,rgba(8,10,14,0.14)_18%,rgba(8,10,14,0.88)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,10,14,0)_0%,rgba(8,10,14,0.04)_48%,rgba(8,10,14,0.14)_100%)] opacity-0 transition duration-300 group-hover:opacity-100 group-focus-visible:opacity-100 group-active:opacity-100" />
 
-        <div className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-[rgba(12,14,19,0.58)] px-2.5 pb-3 pt-5 text-center shadow-[0_10px_24px_rgba(0,0,0,0.24)] backdrop-blur-md sm:px-3 sm:pb-3.5 sm:pt-6">
+        <div className="absolute inset-x-0 bottom-0 translate-y-4 border-t border-[rgba(242,194,124,0.34)] bg-[linear-gradient(180deg,rgba(10,12,16,0.08)_0%,rgba(10,12,16,0.44)_18%,rgba(10,12,16,0.88)_100%)] px-2.5 pb-3 pt-5 text-left opacity-0 shadow-[0_14px_28px_rgba(0,0,0,0.28)] backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 group-active:translate-y-0 group-active:opacity-100 sm:px-3 sm:pb-3.5 sm:pt-6">
           <p className="truncate font-[family-name:var(--font-display)] text-[13px] font-semibold leading-[1.28] tracking-tight text-white sm:text-[14px]">
             {game.name}
           </p>
