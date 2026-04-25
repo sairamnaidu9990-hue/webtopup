@@ -23,15 +23,15 @@ router.get("/balance", protectAdmin, getBalance);
 
 
 // GET all products
-router.get("/", getProducts);
+router.get("/", protectAdmin, getProducts);
 
 // CREATE product
-router.post("/", createProduct);
+router.post("/", protectAdmin, createProduct);
 
 // UPDATE product
-router.patch("/:id", updateProduct);
+router.patch("/:id", protectAdmin, updateProduct);
 
 // DELETE product
-router.delete("/:id", deleteProduct);
+router.delete("/:id", protectAdmin, deleteProduct);
 
 module.exports = router;
