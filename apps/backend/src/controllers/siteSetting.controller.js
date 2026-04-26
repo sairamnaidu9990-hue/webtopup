@@ -26,6 +26,10 @@ const defaultSiteSetting = {
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
   gameCategories: DEFAULT_GAME_CATEGORIES,
+  categoryDescriptions: DEFAULT_GAME_CATEGORIES.map((category) => ({
+    category,
+    description: "",
+  })),
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_BANNER_SLIDE_SECONDS,
   homepagePopupEnabled: false,
@@ -208,6 +212,35 @@ function normalizeGameCategories(items, fallback = DEFAULT_GAME_CATEGORIES) {
   return deduped.length > 0 ? deduped : [...DEFAULT_GAME_CATEGORIES];
 }
 
+function normalizeCategoryDescriptionItem(item) {
+  return {
+    category: String(item?.category || "").trim(),
+    description: String(item?.description || "").trim(),
+  };
+}
+
+function normalizeCategoryDescriptions(items, categories, fallback = []) {
+  const normalizedCategories = normalizeGameCategories(categories);
+  const source = Array.isArray(items) ? items : fallback;
+  const descriptionMap = new Map();
+
+  source.forEach((item) => {
+    const normalizedItem = normalizeCategoryDescriptionItem(item);
+    const normalizedKey = normalizedItem.category.toLowerCase();
+
+    if (!normalizedKey || descriptionMap.has(normalizedKey)) {
+      return;
+    }
+
+    descriptionMap.set(normalizedKey, normalizedItem.description);
+  });
+
+  return normalizedCategories.map((category) => ({
+    category,
+    description: descriptionMap.get(category.toLowerCase()) || "",
+  }));
+}
+
 function normalizeFooterLink(item) {
   return {
     label: String(item?.label || "").trim(),
@@ -283,6 +316,10 @@ async function getOrCreateSiteSetting() {
 }
 
 function serializeSiteSetting(siteSetting) {
+  const gameCategories = normalizeGameCategories(
+    siteSetting.gameCategories,
+    defaultSiteSetting.gameCategories
+  );
   const bannerCount = normalizeBannerCount(
     siteSetting.bannerCount ?? defaultSiteSetting.bannerCount
   );
@@ -299,9 +336,11 @@ function serializeSiteSetting(siteSetting) {
     siteTitle: siteSetting.siteTitle || defaultSiteSetting.siteTitle,
     siteDescription:
       siteSetting.siteDescription || defaultSiteSetting.siteDescription,
-    gameCategories: normalizeGameCategories(
-      siteSetting.gameCategories,
-      defaultSiteSetting.gameCategories
+    gameCategories,
+    categoryDescriptions: normalizeCategoryDescriptions(
+      siteSetting.categoryDescriptions,
+      gameCategories,
+      defaultSiteSetting.categoryDescriptions
     ),
     bannerCount,
     bannerAutoSlideSeconds: normalizeBannerAutoSlideSeconds(
@@ -391,6 +430,10 @@ exports.getAdminSiteSetting = async (req, res) => {
 exports.updateSiteSetting = async (req, res) => {
   try {
     const siteSetting = await getOrCreateSiteSetting();
+    const nextGameCategories =
+      req.body.gameCategories != null
+        ? normalizeGameCategories(req.body.gameCategories)
+        : normalizeGameCategories(siteSetting.gameCategories);
     const nextBannerCount =
       req.body.bannerCount != null
         ? normalizeBannerCount(req.body.bannerCount)
@@ -427,8 +470,20 @@ exports.updateSiteSetting = async (req, res) => {
     }
 
     if (Array.isArray(req.body.gameCategories)) {
-      siteSetting.gameCategories = normalizeGameCategories(
-        req.body.gameCategories
+      siteSetting.gameCategories = nextGameCategories;
+    }
+
+    if (Array.isArray(req.body.categoryDescriptions)) {
+      siteSetting.categoryDescriptions = normalizeCategoryDescriptions(
+        req.body.categoryDescriptions,
+        nextGameCategories,
+        siteSetting.categoryDescriptions
+      );
+    } else if (Array.isArray(req.body.gameCategories)) {
+      siteSetting.categoryDescriptions = normalizeCategoryDescriptions(
+        siteSetting.categoryDescriptions,
+        nextGameCategories,
+        siteSetting.categoryDescriptions
       );
     }
 

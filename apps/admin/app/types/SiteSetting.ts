@@ -13,6 +13,11 @@ export type SiteFooterColumn = {
   links: SiteFooterLink[];
 };
 
+export type SiteCategoryDescription = {
+  category: string;
+  description: string;
+};
+
 export type SiteSetting = {
   siteName: string;
   siteLogoUrl: string;
@@ -22,6 +27,7 @@ export type SiteSetting = {
   siteTitle: string;
   siteDescription: string;
   gameCategories: string[];
+  categoryDescriptions: SiteCategoryDescription[];
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   homepagePopupEnabled: boolean;

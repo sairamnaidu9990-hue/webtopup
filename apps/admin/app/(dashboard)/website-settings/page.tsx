@@ -5,6 +5,7 @@ import SectionTitle from "../../components/ui/SectionTitle";
 import Card from "../../components/ui/Card";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import type {
+  SiteCategoryDescription,
   SiteFooterColumn,
   SiteFooterLink,
   SiteSetting,
@@ -47,6 +48,11 @@ const DEFAULT_FOOTER_COLUMNS: SiteFooterColumn[] = [
     ],
   },
 ];
+const DEFAULT_CATEGORY_DESCRIPTIONS: SiteCategoryDescription[] =
+  DEFAULT_GAME_CATEGORIES.map((category) => ({
+    category,
+    description: "",
+  }));
 
 const defaultForm: SiteSetting = {
   siteName: "WebTopup",
@@ -58,6 +64,7 @@ const defaultForm: SiteSetting = {
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
   gameCategories: DEFAULT_GAME_CATEGORIES,
+  categoryDescriptions: DEFAULT_CATEGORY_DESCRIPTIONS,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_AUTO_SLIDE_SECONDS,
   homepagePopupEnabled: false,
@@ -100,6 +107,37 @@ function syncBannerLength(
   }));
 }
 
+function normalizeGameCategories(categories?: string[] | null): string[] {
+  const nextCategories = Array.isArray(categories)
+    ? categories.map((item) => String(item || "").trim()).filter(Boolean)
+    : [];
+
+  return nextCategories.length > 0
+    ? nextCategories
+    : defaultForm.gameCategories;
+}
+
+function syncCategoryDescriptions(
+  categoryDescriptions: SiteSetting["categoryDescriptions"],
+  categories: string[]
+): SiteSetting["categoryDescriptions"] {
+  const descriptionMap = new Map(
+    (Array.isArray(categoryDescriptions) ? categoryDescriptions : []).map(
+      (item) => [
+        String(item?.category || "")
+          .trim()
+          .toLowerCase(),
+        String(item?.description || ""),
+      ]
+    )
+  );
+
+  return categories.map((category) => ({
+    category,
+    description: descriptionMap.get(category.toLowerCase()) || "",
+  }));
+}
+
 function normalizeFooterSocialLinks(
   links: SiteSetting["footerSocialLinks"]
 ): SiteSetting["footerSocialLinks"] {
@@ -130,6 +168,7 @@ function normalizeFooterLinkColumns(
 function normalizeSiteSetting(
   value?: Partial<SiteSetting> | null
 ): SiteSetting {
+  const gameCategories = normalizeGameCategories(value?.gameCategories);
   const bannerCount = clampNumber(
     Number(value?.bannerCount ?? defaultForm.bannerCount),
     0,
@@ -140,17 +179,11 @@ function normalizeSiteSetting(
   return {
     ...defaultForm,
     ...value,
-    gameCategories: (() => {
-      const nextCategories = Array.isArray(value?.gameCategories)
-        ? value.gameCategories
-            .map((item) => String(item || "").trim())
-            .filter(Boolean)
-        : [];
-
-      return nextCategories.length > 0
-        ? nextCategories
-        : defaultForm.gameCategories;
-    })(),
+    gameCategories,
+    categoryDescriptions: syncCategoryDescriptions(
+      value?.categoryDescriptions ?? defaultForm.categoryDescriptions,
+      gameCategories
+    ),
     bannerCount,
     bannerAutoSlideSeconds: clampNumber(
       Number(
@@ -268,6 +301,7 @@ export default function WebsiteSettingsPage() {
           siteTitle: form.siteTitle,
           siteDescription: form.siteDescription,
           gameCategories: form.gameCategories,
+          categoryDescriptions: form.categoryDescriptions,
           bannerCount: form.bannerCount,
           bannerAutoSlideSeconds: form.bannerAutoSlideSeconds,
           homepagePopupEnabled: form.homepagePopupEnabled,
@@ -833,6 +867,10 @@ export default function WebsiteSettingsPage() {
                     setForm((current) => ({
                       ...current,
                       gameCategories: [...current.gameCategories, ""],
+                      categoryDescriptions: [
+                        ...current.categoryDescriptions,
+                        { category: "", description: "" },
+                      ],
                     }))
                   }
                   className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-white"
@@ -855,6 +893,15 @@ export default function WebsiteSettingsPage() {
                           gameCategories: current.gameCategories.map((item, itemIndex) =>
                             itemIndex === index ? event.target.value : item
                           ),
+                          categoryDescriptions: current.categoryDescriptions.map(
+                            (item, itemIndex) =>
+                              itemIndex === index
+                                ? {
+                                    ...item,
+                                    category: event.target.value,
+                                  }
+                                : item
+                          ),
                         }))
                       }
                       placeholder={`Category ${index + 1}`}
@@ -871,6 +918,12 @@ export default function WebsiteSettingsPage() {
                               : current.gameCategories.filter(
                                   (_, itemIndex) => itemIndex !== index
                                 ),
+                          categoryDescriptions:
+                            current.categoryDescriptions.length <= 1
+                              ? current.categoryDescriptions
+                              : current.categoryDescriptions.filter(
+                                  (_, itemIndex) => itemIndex !== index
+                                ),
                         }))
                       }
                       className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -880,6 +933,66 @@ export default function WebsiteSettingsPage() {
                     </button>
                   </div>
                 ))}
+              </div>
+
+              <div className="space-y-4 border-t border-gray-200 pt-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Deskripsi Dinamis Per Kategori
+                  </label>
+                  <p className="mt-1 text-xs leading-6 text-gray-500">
+                    Deskripsi ini akan tampil otomatis di halaman game sesuai
+                    kategorinya. Kamu bisa pakai token{" "}
+                    <span className="font-mono text-[11px] text-gray-700">
+                      {"{gameName}"}
+                    </span>
+                    ,{" "}
+                    <span className="font-mono text-[11px] text-gray-700">
+                      {"{provider}"}
+                    </span>
+                    ,{" "}
+                    <span className="font-mono text-[11px] text-gray-700">
+                      {"{category}"}
+                    </span>
+                    , dan{" "}
+                    <span className="font-mono text-[11px] text-gray-700">
+                      {"{siteName}"}
+                    </span>
+                    .
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {form.categoryDescriptions.map((item, index) => (
+                    <div
+                      key={`category-description-${index}`}
+                      className="rounded-2xl border border-gray-200 bg-white/80 p-4"
+                    >
+                      <p className="text-sm font-semibold text-gray-800">
+                        Deskripsi {item.category || `Category ${index + 1}`}
+                      </p>
+                      <textarea
+                        value={item.description}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            categoryDescriptions: current.categoryDescriptions.map(
+                              (currentItem, itemIndex) =>
+                                itemIndex === index
+                                  ? {
+                                      ...currentItem,
+                                      description: event.target.value,
+                                    }
+                                  : currentItem
+                            ),
+                          }))
+                        }
+                        placeholder={`Contoh: Top up {gameName} murah, cepat, dan aman di {siteName}.`}
+                        className="mt-3 min-h-[160px] w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </SettingsSubsection>

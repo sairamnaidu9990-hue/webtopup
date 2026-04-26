@@ -28,6 +28,22 @@ const siteFooterColumnSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const siteCategoryDescriptionSchema = new mongoose.Schema(
+  {
+    category: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
 const siteSettingSchema = new mongoose.Schema(
   {
     siteName: {
@@ -72,6 +88,7 @@ const siteSettingSchema = new mongoose.Schema(
         trim: true,
       },
     ],
+    categoryDescriptions: [siteCategoryDescriptionSchema],
     bannerCount: {
       type: Number,
       default: 3,

@@ -17,6 +17,11 @@ export type SiteFooterColumn = {
   links: SiteFooterLink[];
 };
 
+export type SiteCategoryDescription = {
+  category: string;
+  description: string;
+};
+
 export type PublicSiteSetting = {
   siteName: string;
   siteLogoUrl: string;
@@ -26,6 +31,7 @@ export type PublicSiteSetting = {
   siteTitle: string;
   siteDescription: string;
   gameCategories: string[];
+  categoryDescriptions: SiteCategoryDescription[];
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   homepagePopupEnabled: boolean;
@@ -279,6 +285,12 @@ const defaultSiteSetting: PublicSiteSetting = {
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
   gameCategories: ["Topup Game", "Topup Pulsa", "Voucher", "Live Streaming"],
+  categoryDescriptions: [
+    { category: "Topup Game", description: "" },
+    { category: "Topup Pulsa", description: "" },
+    { category: "Voucher", description: "" },
+    { category: "Live Streaming", description: "" },
+  ],
   bannerCount: 3,
   bannerAutoSlideSeconds: 5,
   homepagePopupEnabled: false,
@@ -554,9 +566,41 @@ function syncBannerLength(
   }));
 }
 
+function normalizeSiteCategories(categories?: string[] | null): string[] {
+  const nextCategories = Array.isArray(categories)
+    ? categories.map((item) => String(item || "").trim()).filter(Boolean)
+    : [];
+
+  return nextCategories.length > 0
+    ? nextCategories
+    : defaultSiteSetting.gameCategories;
+}
+
+function syncCategoryDescriptions(
+  categoryDescriptions: SiteCategoryDescription[] | undefined,
+  categories: string[]
+): SiteCategoryDescription[] {
+  const descriptionMap = new Map(
+    (Array.isArray(categoryDescriptions) ? categoryDescriptions : []).map(
+      (item) => [
+        String(item?.category || "")
+          .trim()
+          .toLowerCase(),
+        String(item?.description || ""),
+      ]
+    )
+  );
+
+  return categories.map((category) => ({
+    category,
+    description: descriptionMap.get(category.toLowerCase()) || "",
+  }));
+}
+
 function normalizeSiteSetting(
   siteSetting?: Partial<PublicSiteSetting> | null
 ): PublicSiteSetting {
+  const gameCategories = normalizeSiteCategories(siteSetting?.gameCategories);
   const bannerCount = Math.min(
     Math.max(Number(siteSetting?.bannerCount ?? defaultSiteSetting.bannerCount) || 0, 0),
     10
@@ -568,18 +612,11 @@ function normalizeSiteSetting(
     googleSiteVerification: String(
       siteSetting?.googleSiteVerification || ""
     ).trim(),
-    gameCategories: (() => {
-      const nextCategories =
-        Array.isArray(siteSetting?.gameCategories)
-          ? siteSetting.gameCategories
-              .map((item) => String(item || "").trim())
-              .filter(Boolean)
-          : [];
-
-      return nextCategories.length > 0
-        ? nextCategories
-        : defaultSiteSetting.gameCategories;
-    })(),
+    gameCategories,
+    categoryDescriptions: syncCategoryDescriptions(
+      siteSetting?.categoryDescriptions,
+      gameCategories
+    ),
     bannerCount,
     bannerAutoSlideSeconds: Math.min(
       Math.max(

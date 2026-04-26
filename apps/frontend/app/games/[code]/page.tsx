@@ -50,6 +50,27 @@ function buildGameSeoKeywords({
   ].filter(Boolean);
 }
 
+function renderCategoryDescriptionTemplate({
+  template,
+  gameName,
+  provider,
+  category,
+  siteName,
+}: {
+  template: string;
+  gameName: string;
+  provider?: string;
+  category?: string;
+  siteName: string;
+}) {
+  return String(template || "")
+    .replace(/\{gameName\}/gi, gameName)
+    .replace(/\{provider\}/gi, provider || "")
+    .replace(/\{category\}/gi, category || "")
+    .replace(/\{siteName\}/gi, siteName)
+    .trim();
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -134,9 +155,10 @@ export default async function GameVariantsPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const [detail, paymentMethods] = await Promise.all([
+  const [detail, paymentMethods, siteSetting] = await Promise.all([
     getStorefrontGameDetail(code),
     getPublicPaymentMethods(),
+    getPublicSiteSetting(),
   ]);
 
   if (!detail) {
@@ -146,6 +168,19 @@ export default async function GameVariantsPage({
   const { game, variants } = detail;
   const heroBanner = game.bannerUrl || game.logo || "";
   const heroPoster = game.logo || game.bannerUrl || "";
+  const categoryDescriptionTemplate =
+    siteSetting.categoryDescriptions.find(
+      (item) =>
+        String(item.category || "").trim().toLowerCase() ===
+        String(game.category || "").trim().toLowerCase()
+    )?.description || "";
+  const categoryDescription = renderCategoryDescriptionTemplate({
+    template: categoryDescriptionTemplate,
+    gameName: game.name,
+    provider: game.provider,
+    category: game.category,
+    siteName: siteSetting.siteName,
+  });
 
   return (
     <main className="pb-10 sm:pb-12">
@@ -226,6 +261,7 @@ export default async function GameVariantsPage({
         game={game}
         variants={variants}
         paymentMethods={paymentMethods}
+        categoryDescription={categoryDescription}
       />
       <GameEntryPopup game={game} />
     </main>

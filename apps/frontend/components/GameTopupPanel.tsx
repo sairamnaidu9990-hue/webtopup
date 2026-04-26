@@ -19,6 +19,7 @@ type GameTopupPanelProps = {
   game: GameDetail;
   variants: StorefrontVariant[];
   paymentMethods: StorefrontPaymentMethod[];
+  categoryDescription?: string;
 };
 
 function getBangjeffInputs(game: GameDetail) {
@@ -335,10 +336,36 @@ function StepPanel({
   );
 }
 
+function DetailInfoPanel({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
+      <div className="flex min-h-[39px] items-stretch border-b border-white/8 bg-[#474747] sm:min-h-[40px]">
+        <div className="w-8 shrink-0 bg-[var(--accent-soft)] sm:w-9" />
+        <div className="flex min-w-0 items-center px-3 sm:px-3.5">
+          <h2 className="truncate text-[11px] font-semibold text-white sm:text-[12px]">
+            {title}
+          </h2>
+        </div>
+      </div>
+
+      <div className="bg-[#2d2d31] px-4 py-4 text-[13px] leading-7 text-white/88 sm:px-5 sm:py-4 sm:text-[14px]">
+        {children}
+      </div>
+    </section>
+  );
+}
+
 export default function GameTopupPanel({
   game,
   variants,
   paymentMethods,
+  categoryDescription = "",
 }: GameTopupPanelProps) {
   const router = useRouter();
   const resolvedInputs = getBangjeffInputs(game);
@@ -1084,137 +1111,138 @@ export default function GameTopupPanel({
               />
             </StepPanel>
           </div>
-
-          <div className="hidden space-y-3 md:block">
-            <section className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
-              {selectedVariant ? (
-                <div className="space-y-4 p-4 sm:p-[18px]">
-                  {createdOrder ? (
-                    <div className="rounded-[14px] border border-emerald-400/20 bg-emerald-500/10 px-3.5 py-3 text-[12px] text-emerald-100">
-                      <p className="font-semibold text-white">
-                        Draft order berhasil dibuat
-                      </p>
-                      <p className="mt-1">
-                        Invoice:{" "}
-                        <span className="font-semibold text-white">
-                          {createdOrder.invoiceNumber}
-                        </span>
-                      </p>
-                    </div>
-                  ) : null}
-
-                  <div className="flex items-start gap-3">
-                    <div className="overflow-hidden rounded-[14px] border border-white/8 bg-[#34353b]">
-                      {selectedVariant.logo ? (
-                        <Image
-                          src={selectedVariant.logo}
-                          alt={selectedVariant.name}
-                          width={58}
-                          height={58}
-                          sizes="58px"
-                          className="h-[58px] w-[58px] object-cover object-center"
-                        />
-                      ) : (
-                        <div className="flex h-[58px] w-[58px] items-center justify-center bg-[#34353b] text-xl text-white/78">
-                          ◆
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-[14px] font-semibold leading-5 text-white">
-                        {game.name}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-white/75">
-                        {selectedVariant.name}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 text-[13px] text-white/84">
-                    <div className="flex items-center justify-between gap-4">
-                      <span>Harga</span>
-                      <span className="font-medium text-white">
-                        {formatCurrency(
-                          baseSubtotal,
-                          selectedVariant.currency
-                        )}
-                      </span>
-                    </div>
-
-                    {appliedPromo ? (
-                      <>
-                        <div className="flex items-center justify-between gap-4">
-                          <span>Kode Promo</span>
-                          <span className="font-medium text-white">
-                            {appliedPromo.code}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-4">
-                          <span>Diskon Promo</span>
-                          <span className="font-medium text-[var(--accent-soft)]">
-                            -{formatCurrency(promoDiscount, selectedVariant.currency)}
-                          </span>
-                        </div>
-                      </>
-                    ) : null}
-
-                    <div className="flex items-center justify-between gap-4">
-                      <span>Jumlah Pembelian</span>
-                      <span className="font-medium text-white">1</span>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-4">
-                      <span>Biaya</span>
-                      <span className="font-medium text-white">
-                        {formatCurrency(paymentFee, selectedVariant.currency)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-4">
-                      <span>Pembayaran</span>
-                      <span className="font-medium text-white">
-                        {selectedPaymentMethod?.name || "-"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-white/8 pt-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-[15px] font-semibold text-white">
-                        Total Pembayaran
-                      </span>
-                      <span className="text-[1.2rem] font-bold leading-none text-[var(--accent-strong)]">
-                        {formatCurrency(
-                          totalPayment,
-                          selectedVariant.currency
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-[16px] border border-dashed border-white/10 bg-[#242429] px-4 py-5 text-[13px] text-white/58">
-                  Belum ada product yang dipilih.
-                </div>
-              )}
-            </section>
-
-            <button
-              type="button"
-              onClick={handleOrderClick}
-              disabled={isCreatingOrder}
-              className="flex h-12 w-full items-center justify-center rounded-[16px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-4 text-[14px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isCreatingOrder ? "Membuat Order..." : "Pesan Sekarang"}
-            </button>
-          </div>
         </div>
 
-        <aside className="mt-6 hidden xl:block xl:mt-0" aria-hidden="true">
-          <div className="min-h-[520px] rounded-[24px] border border-transparent" />
-        </aside>
+        <div className="hidden space-y-3 md:block">
+          <section className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
+            {selectedVariant ? (
+              <div className="space-y-4 p-4 sm:p-[18px]">
+                {createdOrder ? (
+                  <div className="rounded-[14px] border border-emerald-400/20 bg-emerald-500/10 px-3.5 py-3 text-[12px] text-emerald-100">
+                    <p className="font-semibold text-white">
+                      Draft order berhasil dibuat
+                    </p>
+                    <p className="mt-1">
+                      Invoice:{" "}
+                      <span className="font-semibold text-white">
+                        {createdOrder.invoiceNumber}
+                      </span>
+                    </p>
+                  </div>
+                ) : null}
+
+                <div className="flex items-start gap-3">
+                  <div className="overflow-hidden rounded-[14px] border border-white/8 bg-[#34353b]">
+                    {selectedVariant.logo ? (
+                      <Image
+                        src={selectedVariant.logo}
+                        alt={selectedVariant.name}
+                        width={58}
+                        height={58}
+                        sizes="58px"
+                        className="h-[58px] w-[58px] object-cover object-center"
+                      />
+                    ) : (
+                      <div className="flex h-[58px] w-[58px] items-center justify-center bg-[#34353b] text-xl text-white/78">
+                        ◆
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 text-[14px] font-semibold leading-5 text-white">
+                      {game.name}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-white/75">
+                      {selectedVariant.name}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-[13px] text-white/84">
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Harga</span>
+                    <span className="font-medium text-white">
+                      {formatCurrency(baseSubtotal, selectedVariant.currency)}
+                    </span>
+                  </div>
+
+                  {appliedPromo ? (
+                    <>
+                      <div className="flex items-center justify-between gap-4">
+                        <span>Kode Promo</span>
+                        <span className="font-medium text-white">
+                          {appliedPromo.code}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4">
+                        <span>Diskon Promo</span>
+                        <span className="font-medium text-[var(--accent-soft)]">
+                          -{formatCurrency(
+                            promoDiscount,
+                            selectedVariant.currency
+                          )}
+                        </span>
+                      </div>
+                    </>
+                  ) : null}
+
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Jumlah Pembelian</span>
+                    <span className="font-medium text-white">1</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Biaya</span>
+                    <span className="font-medium text-white">
+                      {formatCurrency(paymentFee, selectedVariant.currency)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Pembayaran</span>
+                    <span className="font-medium text-white">
+                      {selectedPaymentMethod?.name || "-"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t border-white/8 pt-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-[15px] font-semibold text-white">
+                      Total Pembayaran
+                    </span>
+                    <span className="text-[1.2rem] font-bold leading-none text-[var(--accent-strong)]">
+                      {formatCurrency(totalPayment, selectedVariant.currency)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-[16px] border border-dashed border-white/10 bg-[#242429] px-4 py-5 text-[13px] text-white/58">
+                Belum ada product yang dipilih.
+              </div>
+            )}
+          </section>
+
+          <button
+            type="button"
+            onClick={handleOrderClick}
+            disabled={isCreatingOrder}
+            className="flex h-12 w-full items-center justify-center rounded-[16px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-4 text-[14px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isCreatingOrder ? "Membuat Order..." : "Pesan Sekarang"}
+          </button>
+        </div>
+
+        {categoryDescription ? (
+          <div className="xl:col-span-2">
+            <DetailInfoPanel title={`Deskripsi ${game.name}`}>
+              <div className="whitespace-pre-line">{categoryDescription}</div>
+            </DetailInfoPanel>
+          </div>
+        ) : null}
       </div>
 
       {mobileCheckoutMounted
