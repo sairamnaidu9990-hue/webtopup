@@ -289,8 +289,8 @@ export default function PromoCodeSection({
   return (
     <>
       <div className="space-y-4">
-        <div className="rounded-[18px] border border-white/8 bg-[#313237] p-3 shadow-[0_12px_24px_rgba(0,0,0,0.12)] sm:bg-transparent sm:p-0 sm:shadow-none">
-          <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="rounded-[18px] border border-white/8 bg-[#313237] p-3 shadow-[0_12px_24px_rgba(0,0,0,0.12)]">
+          <div className="flex items-center gap-3">
             <input
               value={promoInput}
               onChange={(event) => {
@@ -299,14 +299,14 @@ export default function PromoCodeSection({
               }}
               placeholder="Ketik Kode Promo Kamu"
               disabled={disabled}
-              className="h-11 flex-1 rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-[15px] uppercase tracking-[0.08em] text-white outline-none transition placeholder:normal-case placeholder:tracking-normal placeholder:text-white/28 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-[42px] sm:text-[13px]"
+              className="h-11 min-w-0 flex-1 rounded-[14px] border border-white/8 bg-[#676b73] px-3.5 text-[14px] uppercase tracking-[0.08em] text-white outline-none transition placeholder:normal-case placeholder:tracking-normal placeholder:text-white/38 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-[42px] sm:text-[13px]"
             />
 
             <button
               type="button"
               onClick={() => void applyPromoCode(promoInput)}
               disabled={disabled || !promoInput.trim() || Boolean(applyingCode)}
-              className="inline-flex h-11 w-full items-center justify-center rounded-[14px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-5 text-[13px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 sm:h-[42px] sm:w-auto sm:min-w-[116px]"
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-[14px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-4 text-[13px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 sm:h-[42px] sm:min-w-[116px] sm:px-5"
             >
               {applyingCode ? "Memeriksa..." : "Gunakan"}
             </button>
@@ -316,7 +316,7 @@ export default function PromoCodeSection({
         <button
           type="button"
           onClick={() => void handleOpenDialog()}
-          className="inline-flex h-11 w-full items-center justify-center rounded-[14px] border border-[rgba(211,59,59,0.28)] bg-[rgba(211,59,59,0.16)] px-4 text-[13px] font-semibold text-white transition hover:border-[rgba(211,59,59,0.45)] hover:bg-[rgba(211,59,59,0.22)] sm:h-[42px] sm:w-auto"
+          className="inline-flex h-11 items-center justify-center rounded-[14px] border border-[rgba(211,59,59,0.28)] bg-[rgba(211,59,59,0.16)] px-4 text-[13px] font-semibold text-white transition hover:border-[rgba(211,59,59,0.45)] hover:bg-[rgba(211,59,59,0.22)] sm:h-[42px] sm:w-auto"
         >
           {dialogLoading ? "Memuat Promo..." : "Pakai Promo Yang Tersedia"}
         </button>
