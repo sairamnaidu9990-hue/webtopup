@@ -22,6 +22,11 @@ export type SiteCategoryDescription = {
   description: string;
 };
 
+export type SiteGameFaq = {
+  question: string;
+  answer: string;
+};
+
 export type PublicSiteSetting = {
   siteName: string;
   siteLogoUrl: string;
@@ -32,6 +37,7 @@ export type PublicSiteSetting = {
   siteDescription: string;
   gameCategories: string[];
   categoryDescriptions: SiteCategoryDescription[];
+  gameFaqs: SiteGameFaq[];
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   homepagePopupEnabled: boolean;
@@ -291,6 +297,7 @@ const defaultSiteSetting: PublicSiteSetting = {
     { category: "Voucher", description: "" },
     { category: "Live Streaming", description: "" },
   ],
+  gameFaqs: [],
   bannerCount: 3,
   bannerAutoSlideSeconds: 5,
   homepagePopupEnabled: false,
@@ -597,6 +604,15 @@ function syncCategoryDescriptions(
   }));
 }
 
+function normalizeGameFaqs(gameFaqs?: SiteGameFaq[] | null): SiteGameFaq[] {
+  return Array.isArray(gameFaqs)
+    ? gameFaqs.map((item) => ({
+        question: String(item?.question || "").trim(),
+        answer: String(item?.answer || "").trim(),
+      }))
+    : defaultSiteSetting.gameFaqs;
+}
+
 function normalizeSiteSetting(
   siteSetting?: Partial<PublicSiteSetting> | null
 ): PublicSiteSetting {
@@ -617,6 +633,7 @@ function normalizeSiteSetting(
       siteSetting?.categoryDescriptions,
       gameCategories
     ),
+    gameFaqs: normalizeGameFaqs(siteSetting?.gameFaqs),
     bannerCount,
     bannerAutoSlideSeconds: Math.min(
       Math.max(

@@ -12,6 +12,7 @@ const DEFAULT_GAME_CATEGORIES = [
   "Live Streaming",
 ];
 const MAX_GAME_CATEGORIES = 12;
+const MAX_GAME_FAQS = 20;
 const MAX_FOOTER_SOCIAL_LINKS = 12;
 const MAX_FOOTER_COLUMNS = 6;
 const MAX_FOOTER_COLUMN_LINKS = 10;
@@ -30,6 +31,7 @@ const defaultSiteSetting = {
     category,
     description: "",
   })),
+  gameFaqs: [],
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_BANNER_SLIDE_SECONDS,
   homepagePopupEnabled: false,
@@ -241,6 +243,22 @@ function normalizeCategoryDescriptions(items, categories, fallback = []) {
   }));
 }
 
+function normalizeGameFaqItem(item) {
+  return {
+    question: String(item?.question || "").trim(),
+    answer: String(item?.answer || "").trim(),
+  };
+}
+
+function normalizeGameFaqs(items, fallback = []) {
+  const source = Array.isArray(items) ? items : fallback;
+
+  return source
+    .map(normalizeGameFaqItem)
+    .filter((item) => item.question || item.answer)
+    .slice(0, MAX_GAME_FAQS);
+}
+
 function normalizeFooterLink(item) {
   return {
     label: String(item?.label || "").trim(),
@@ -342,6 +360,7 @@ function serializeSiteSetting(siteSetting) {
       gameCategories,
       defaultSiteSetting.categoryDescriptions
     ),
+    gameFaqs: normalizeGameFaqs(siteSetting.gameFaqs, defaultSiteSetting.gameFaqs),
     bannerCount,
     bannerAutoSlideSeconds: normalizeBannerAutoSlideSeconds(
       siteSetting.bannerAutoSlideSeconds ??
@@ -484,6 +503,13 @@ exports.updateSiteSetting = async (req, res) => {
         siteSetting.categoryDescriptions,
         nextGameCategories,
         siteSetting.categoryDescriptions
+      );
+    }
+
+    if (Array.isArray(req.body.gameFaqs)) {
+      siteSetting.gameFaqs = normalizeGameFaqs(
+        req.body.gameFaqs,
+        siteSetting.gameFaqs
       );
     }
 

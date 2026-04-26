@@ -20,6 +20,10 @@ type GameTopupPanelProps = {
   variants: StorefrontVariant[];
   paymentMethods: StorefrontPaymentMethod[];
   categoryDescription?: string;
+  gameFaqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
 };
 
 function getBangjeffInputs(game: GameDetail) {
@@ -366,6 +370,7 @@ export default function GameTopupPanel({
   variants,
   paymentMethods,
   categoryDescription = "",
+  gameFaqs = [],
 }: GameTopupPanelProps) {
   const router = useRouter();
   const resolvedInputs = getBangjeffInputs(game);
@@ -397,6 +402,7 @@ export default function GameTopupPanel({
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isMobileSummaryExpanded, setIsMobileSummaryExpanded] = useState(false);
   const [mobileCheckoutMounted, setMobileCheckoutMounted] = useState(false);
+  const [openFaqItems, setOpenFaqItems] = useState<Record<number, boolean>>({});
   const [openPaymentGroups, setOpenPaymentGroups] = useState<
     Record<string, boolean>
   >({});
@@ -1241,6 +1247,55 @@ export default function GameTopupPanel({
             <DetailInfoPanel title={`Deskripsi ${game.name}`}>
               <div className="whitespace-pre-line">{categoryDescription}</div>
             </DetailInfoPanel>
+          </div>
+        ) : null}
+
+        {gameFaqs.length > 0 ? (
+          <div className="xl:col-span-2">
+            <section className="space-y-4">
+              <div>
+                <h2 className="text-[1rem] font-semibold text-white sm:text-[1.06rem]">
+                  Kamu Punya Pertanyaan?
+                </h2>
+              </div>
+
+              <div className="space-y-3">
+                {gameFaqs.map((item, index) => {
+                  const isOpen = openFaqItems[index] ?? false;
+
+                  return (
+                    <section
+                      key={`game-faq-${index}`}
+                      className="overflow-hidden rounded-[16px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]"
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenFaqItems((current) => ({
+                            ...current,
+                            [index]: !isOpen,
+                          }))
+                        }
+                        className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left sm:px-5"
+                      >
+                        <span className="text-[13px] font-semibold leading-6 text-white sm:text-[14px]">
+                          {item.question}
+                        </span>
+                        <span className="shrink-0 text-[15px] text-white/72">
+                          {isOpen ? "▴" : "▾"}
+                        </span>
+                      </button>
+
+                      {isOpen ? (
+                        <div className="border-t border-white/8 px-4 py-4 text-[13px] leading-7 text-white/76 sm:px-5 sm:text-[14px]">
+                          <div className="whitespace-pre-line">{item.answer}</div>
+                        </div>
+                      ) : null}
+                    </section>
+                  );
+                })}
+              </div>
+            </section>
           </div>
         ) : null}
       </div>

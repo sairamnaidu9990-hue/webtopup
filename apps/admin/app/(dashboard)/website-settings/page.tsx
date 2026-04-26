@@ -8,6 +8,7 @@ import type {
   SiteCategoryDescription,
   SiteFooterColumn,
   SiteFooterLink,
+  SiteGameFaq,
   SiteSetting,
 } from "@/app/types/SiteSetting";
 
@@ -53,6 +54,7 @@ const DEFAULT_CATEGORY_DESCRIPTIONS: SiteCategoryDescription[] =
     category,
     description: "",
   }));
+const DEFAULT_GAME_FAQS: SiteGameFaq[] = [];
 
 const defaultForm: SiteSetting = {
   siteName: "WebTopup",
@@ -65,6 +67,7 @@ const defaultForm: SiteSetting = {
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
   gameCategories: DEFAULT_GAME_CATEGORIES,
   categoryDescriptions: DEFAULT_CATEGORY_DESCRIPTIONS,
+  gameFaqs: DEFAULT_GAME_FAQS,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_AUTO_SLIDE_SECONDS,
   homepagePopupEnabled: false,
@@ -138,6 +141,17 @@ function syncCategoryDescriptions(
   }));
 }
 
+function normalizeGameFaqs(
+  gameFaqs?: SiteSetting["gameFaqs"] | null
+): SiteSetting["gameFaqs"] {
+  return Array.isArray(gameFaqs)
+    ? gameFaqs.map((item) => ({
+        question: item?.question || "",
+        answer: item?.answer || "",
+      }))
+    : defaultForm.gameFaqs;
+}
+
 function normalizeFooterSocialLinks(
   links: SiteSetting["footerSocialLinks"]
 ): SiteSetting["footerSocialLinks"] {
@@ -184,6 +198,7 @@ function normalizeSiteSetting(
       value?.categoryDescriptions ?? defaultForm.categoryDescriptions,
       gameCategories
     ),
+    gameFaqs: normalizeGameFaqs(value?.gameFaqs),
     bannerCount,
     bannerAutoSlideSeconds: clampNumber(
       Number(
@@ -302,6 +317,7 @@ export default function WebsiteSettingsPage() {
           siteDescription: form.siteDescription,
           gameCategories: form.gameCategories,
           categoryDescriptions: form.categoryDescriptions,
+          gameFaqs: form.gameFaqs,
           bannerCount: form.bannerCount,
           bannerAutoSlideSeconds: form.bannerAutoSlideSeconds,
           homepagePopupEnabled: form.homepagePopupEnabled,
@@ -993,6 +1009,138 @@ export default function WebsiteSettingsPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-4 border-t border-gray-200 pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      FAQ Halaman Game
+                    </label>
+                    <p className="mt-1 text-xs leading-6 text-gray-500">
+                      FAQ ini tampil di semua halaman game, tepat di bawah
+                      deskripsi. Kamu bisa pakai token{" "}
+                      <span className="font-mono text-[11px] text-gray-700">
+                        {"{gameName}"}
+                      </span>
+                      ,{" "}
+                      <span className="font-mono text-[11px] text-gray-700">
+                        {"{provider}"}
+                      </span>
+                      ,{" "}
+                      <span className="font-mono text-[11px] text-gray-700">
+                        {"{category}"}
+                      </span>
+                      , dan{" "}
+                      <span className="font-mono text-[11px] text-gray-700">
+                        {"{siteName}"}
+                      </span>
+                      .
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        gameFaqs: [
+                          ...current.gameFaqs,
+                          { question: "", answer: "" },
+                        ],
+                      }))
+                    }
+                    className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-white"
+                  >
+                    Tambah FAQ
+                  </button>
+                </div>
+
+                {form.gameFaqs.length > 0 ? (
+                  <div className="space-y-4">
+                    {form.gameFaqs.map((item, index) => (
+                      <div
+                        key={`game-faq-${index}`}
+                        className="rounded-2xl border border-gray-200 bg-white/80 p-4"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-gray-800">
+                            FAQ {index + 1}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForm((current) => ({
+                                ...current,
+                                gameFaqs: current.gameFaqs.filter(
+                                  (_, itemIndex) => itemIndex !== index
+                                ),
+                              }))
+                            }
+                            className="text-sm font-semibold text-red-600 transition hover:text-red-700"
+                          >
+                            Hapus
+                          </button>
+                        </div>
+
+                        <div className="mt-4 space-y-4">
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Pertanyaan
+                            </label>
+                            <input
+                              value={item.question}
+                              onChange={(event) =>
+                                setForm((current) => ({
+                                  ...current,
+                                  gameFaqs: current.gameFaqs.map(
+                                    (currentItem, itemIndex) =>
+                                      itemIndex === index
+                                        ? {
+                                            ...currentItem,
+                                            question: event.target.value,
+                                          }
+                                        : currentItem
+                                  ),
+                                }))
+                              }
+                              placeholder="Contoh: Bagaimana cara top up {gameName} di {siteName}?"
+                              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Jawaban
+                            </label>
+                            <textarea
+                              value={item.answer}
+                              onChange={(event) =>
+                                setForm((current) => ({
+                                  ...current,
+                                  gameFaqs: current.gameFaqs.map(
+                                    (currentItem, itemIndex) =>
+                                      itemIndex === index
+                                        ? {
+                                            ...currentItem,
+                                            answer: event.target.value,
+                                          }
+                                        : currentItem
+                                  ),
+                                }))
+                              }
+                              placeholder="Tulis jawaban FAQ yang akan tampil di semua halaman game."
+                              className="min-h-[120px] w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-white/70 px-4 py-4 text-sm text-gray-500">
+                    Belum ada FAQ global untuk halaman game.
+                  </div>
+                )}
               </div>
             </div>
           </SettingsSubsection>

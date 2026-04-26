@@ -71,6 +71,39 @@ function renderCategoryDescriptionTemplate({
     .trim();
 }
 
+function renderGameFaqs({
+  items,
+  gameName,
+  provider,
+  category,
+  siteName,
+}: {
+  items: Array<{ question: string; answer: string }>;
+  gameName: string;
+  provider?: string;
+  category?: string;
+  siteName: string;
+}) {
+  return items
+    .map((item) => ({
+      question: renderCategoryDescriptionTemplate({
+        template: item.question,
+        gameName,
+        provider,
+        category,
+        siteName,
+      }),
+      answer: renderCategoryDescriptionTemplate({
+        template: item.answer,
+        gameName,
+        provider,
+        category,
+        siteName,
+      }),
+    }))
+    .filter((item) => item.question && item.answer);
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -181,6 +214,13 @@ export default async function GameVariantsPage({
     category: game.category,
     siteName: siteSetting.siteName,
   });
+  const gameFaqs = renderGameFaqs({
+    items: siteSetting.gameFaqs,
+    gameName: game.name,
+    provider: game.provider,
+    category: game.category,
+    siteName: siteSetting.siteName,
+  });
 
   return (
     <main className="pb-10 sm:pb-12">
@@ -262,6 +302,7 @@ export default async function GameVariantsPage({
         variants={variants}
         paymentMethods={paymentMethods}
         categoryDescription={categoryDescription}
+        gameFaqs={gameFaqs}
       />
       <GameEntryPopup game={game} />
     </main>

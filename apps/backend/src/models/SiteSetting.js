@@ -44,6 +44,22 @@ const siteCategoryDescriptionSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const siteGameFaqSchema = new mongoose.Schema(
+  {
+    question: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    answer: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
 const siteSettingSchema = new mongoose.Schema(
   {
     siteName: {
@@ -89,6 +105,7 @@ const siteSettingSchema = new mongoose.Schema(
       },
     ],
     categoryDescriptions: [siteCategoryDescriptionSchema],
+    gameFaqs: [siteGameFaqSchema],
     bannerCount: {
       type: Number,
       default: 3,

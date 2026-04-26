@@ -18,6 +18,11 @@ export type SiteCategoryDescription = {
   description: string;
 };
 
+export type SiteGameFaq = {
+  question: string;
+  answer: string;
+};
+
 export type SiteSetting = {
   siteName: string;
   siteLogoUrl: string;
@@ -28,6 +33,7 @@ export type SiteSetting = {
   siteDescription: string;
   gameCategories: string[];
   categoryDescriptions: SiteCategoryDescription[];
+  gameFaqs: SiteGameFaq[];
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   homepagePopupEnabled: boolean;
