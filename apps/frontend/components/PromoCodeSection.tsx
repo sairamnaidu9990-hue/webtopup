@@ -243,7 +243,9 @@ export default function PromoCodeSection({
         );
       }
 
-      setAvailablePromos(Array.isArray(payload?.items) ? payload.items : []);
+      const items = Array.isArray(payload?.items) ? payload.items : [];
+      setAvailablePromos(items);
+      return items;
     } catch (error) {
       setAvailablePromos([]);
       setFeedback({
@@ -253,56 +255,70 @@ export default function PromoCodeSection({
             ? error.message
             : "Gagal memuat promo yang tersedia",
       });
+      return [];
     } finally {
       setDialogLoading(false);
     }
   };
 
-  const handleOpenDialog = () => {
+  const handleOpenDialog = async () => {
     if (disabled || subtotal <= 0) {
       setFeedback({
-        tone: "error",
-        message: "Pilih nominal terlebih dahulu untuk melihat promo yang tersedia.",
+        tone: "info",
+        message:
+          "Promo belum tersedia. Pilih nominal terlebih dahulu lalu coba lagi.",
+      });
+      return;
+    }
+
+    setFeedback(null);
+    const items = await loadAvailablePromos();
+
+    if (items.length === 0) {
+      setDialogOpen(false);
+      setFeedback({
+        tone: "info",
+        message: "Promo belum tersedia saat ini.",
       });
       return;
     }
 
     setDialogOpen(true);
-    void loadAvailablePromos();
   };
 
   return (
     <>
       <div className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <input
-            value={promoInput}
-            onChange={(event) => {
-              setPromoInput(event.target.value.toUpperCase());
-              setFeedback(null);
-            }}
-            placeholder="Ketik Kode Promo Kamu"
-            disabled={disabled}
-            className="h-11 flex-1 rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-base uppercase tracking-[0.08em] text-white outline-none transition placeholder:normal-case placeholder:tracking-normal placeholder:text-white/28 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-[42px] sm:text-[13px]"
-          />
+        <div className="rounded-[18px] border border-white/8 bg-[#313237] p-3 shadow-[0_12px_24px_rgba(0,0,0,0.12)] sm:bg-transparent sm:p-0 sm:shadow-none">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              value={promoInput}
+              onChange={(event) => {
+                setPromoInput(event.target.value.toUpperCase());
+                setFeedback(null);
+              }}
+              placeholder="Ketik Kode Promo Kamu"
+              disabled={disabled}
+              className="h-11 flex-1 rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-[15px] uppercase tracking-[0.08em] text-white outline-none transition placeholder:normal-case placeholder:tracking-normal placeholder:text-white/28 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-[42px] sm:text-[13px]"
+            />
 
-          <button
-            type="button"
-            onClick={() => void applyPromoCode(promoInput)}
-            disabled={disabled || !promoInput.trim() || Boolean(applyingCode)}
-            className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-5 text-[13px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 sm:h-[42px]"
-          >
-            {applyingCode ? "Memeriksa..." : "Gunakan"}
-          </button>
+            <button
+              type="button"
+              onClick={() => void applyPromoCode(promoInput)}
+              disabled={disabled || !promoInput.trim() || Boolean(applyingCode)}
+              className="inline-flex h-11 w-full items-center justify-center rounded-[14px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-5 text-[13px] font-semibold text-white shadow-[0_14px_28px_var(--accent-glow)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 sm:h-[42px] sm:w-auto sm:min-w-[116px]"
+            >
+              {applyingCode ? "Memeriksa..." : "Gunakan"}
+            </button>
+          </div>
         </div>
 
         <button
           type="button"
-          onClick={handleOpenDialog}
-          disabled={disabled}
-          className="inline-flex h-11 items-center justify-center rounded-[14px] border border-[rgba(211,59,59,0.28)] bg-[rgba(211,59,59,0.16)] px-4 text-[13px] font-semibold text-white transition hover:border-[rgba(211,59,59,0.45)] hover:bg-[rgba(211,59,59,0.22)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-[42px]"
+          onClick={() => void handleOpenDialog()}
+          className="inline-flex h-11 w-full items-center justify-center rounded-[14px] border border-[rgba(211,59,59,0.28)] bg-[rgba(211,59,59,0.16)] px-4 text-[13px] font-semibold text-white transition hover:border-[rgba(211,59,59,0.45)] hover:bg-[rgba(211,59,59,0.22)] sm:h-[42px] sm:w-auto"
         >
-          Pakai Promo Yang Tersedia
+          {dialogLoading ? "Memuat Promo..." : "Pakai Promo Yang Tersedia"}
         </button>
 
         {appliedPromo ? (
