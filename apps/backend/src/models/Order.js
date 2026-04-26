@@ -52,6 +52,14 @@ const priceSnapshotSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    promoDiscount: {
+      type: Number,
+      default: 0,
+    },
+    subtotalAfterDiscount: {
+      type: Number,
+      default: 0,
+    },
     totalAmount: {
       type: Number,
       default: 0,
@@ -129,6 +137,53 @@ const contactDetailSchema = new mongoose.Schema(
     phoneNumber: {
       type: String,
       default: "",
+    },
+  },
+  { _id: false }
+);
+
+const promoSnapshotSchema = new mongoose.Schema(
+  {
+    promoId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PromoCode",
+      default: null,
+    },
+    title: {
+      type: String,
+      default: "",
+    },
+    code: {
+      type: String,
+      default: "",
+    },
+    description: {
+      type: String,
+      default: "",
+    },
+    discountType: {
+      type: String,
+      default: "fixed",
+    },
+    discountValue: {
+      type: Number,
+      default: 0,
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
+    },
+    minimumOrderAmount: {
+      type: Number,
+      default: 0,
+    },
+    maxDailyUses: {
+      type: Number,
+      default: 0,
+    },
+    applicableCategories: {
+      type: [String],
+      default: [],
     },
   },
   { _id: false }
@@ -353,6 +408,10 @@ const orderSchema = new mongoose.Schema(
     },
     contactDetail: {
       type: contactDetailSchema,
+      default: () => ({}),
+    },
+    promoSnapshot: {
+      type: promoSnapshotSchema,
       default: () => ({}),
     },
     paymentMethodSnapshot: {

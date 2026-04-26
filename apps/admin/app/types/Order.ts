@@ -89,10 +89,24 @@ export type Order = {
     buyPrice?: number;
     sellPrice?: number;
     profit?: number;
+    promoDiscount?: number;
+    subtotalAfterDiscount?: number;
     paymentFee?: number;
     paymentFeeFixed?: number;
     paymentFeePercent?: number;
     totalAmount?: number;
+  };
+  promoSnapshot?: {
+    promoId?: string | null;
+    title?: string;
+    code?: string;
+    description?: string;
+    discountType?: string;
+    discountValue?: number;
+    discountAmount?: number;
+    minimumOrderAmount?: number;
+    maxDailyUses?: number;
+    applicableCategories?: string[];
   };
   paymentMethodCode?: string;
   paymentMethodName?: string;

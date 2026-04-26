@@ -556,6 +556,21 @@ export default async function InvoicePage({
                   label="Harga"
                   value={formatCurrency(order.price.sellPrice, paymentCurrency)}
                 />
+                {order.promoSnapshot?.code ? (
+                  <>
+                    <DetailRow
+                      label="Kode Promo"
+                      value={order.promoSnapshot.code}
+                    />
+                    <DetailRow
+                      label="Diskon Promo"
+                      value={`-${formatCurrency(
+                        order.price.promoDiscount,
+                        paymentCurrency
+                      )}`}
+                    />
+                  </>
+                ) : null}
                 <DetailRow
                   label="Biaya Pembayaran"
                   value={formatCurrency(order.price.paymentFee, paymentCurrency)}

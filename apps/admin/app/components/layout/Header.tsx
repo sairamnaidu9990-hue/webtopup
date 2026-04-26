@@ -68,6 +68,10 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
       return "Monitoring";
     }
 
+    if (pathname.startsWith("/promo-codes")) {
+      return "Promo Codes";
+    }
+
     if (pathname.startsWith("/payment-methods")) {
       return "Payment Methods";
     }

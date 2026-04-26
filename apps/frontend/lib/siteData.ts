@@ -133,6 +133,27 @@ export type StorefrontPaymentMethod = {
   order: number;
 };
 
+export type StorefrontPromoCode = {
+  _id: string;
+  title: string;
+  code: string;
+  description: string;
+  discountType: "fixed" | "percent";
+  discountValue: number;
+  minimumOrderAmount: number;
+  maxDailyUses: number;
+  applicableCategories: string[];
+  isActive: boolean;
+  order: number;
+  dailyUsageCount: number;
+  remainingDailyUses: number | null;
+  discountAmount: number;
+  isAvailable: boolean;
+  availabilityReason: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
 export type StorefrontOrder = {
   _id: string;
   invoiceNumber: string;
@@ -195,13 +216,27 @@ export type StorefrontOrder = {
   price: {
     currency: string;
     buyPrice: number;
-      sellPrice: number;
-      profit: number;
-      paymentFee: number;
-      paymentFeeFixed: number;
-      paymentFeePercent: number;
-      totalAmount: number;
-    };
+    sellPrice: number;
+    profit: number;
+    promoDiscount: number;
+    subtotalAfterDiscount: number;
+    paymentFee: number;
+    paymentFeeFixed: number;
+    paymentFeePercent: number;
+    totalAmount: number;
+  };
+  promoSnapshot: {
+    promoId?: string | null;
+    title: string;
+    code: string;
+    description: string;
+    discountType: string;
+    discountValue: number;
+    discountAmount: number;
+    minimumOrderAmount: number;
+    maxDailyUses: number;
+    applicableCategories: string[];
+  };
   region: string;
   gameSnapshot: {
     name: string;
@@ -461,10 +496,30 @@ function normalizeStorefrontOrder(
       buyPrice: Number(order?.price?.buyPrice || 0),
       sellPrice: Number(order?.price?.sellPrice || 0),
       profit: Number(order?.price?.profit || 0),
+      promoDiscount: Number(order?.price?.promoDiscount || 0),
+      subtotalAfterDiscount: Number(
+        order?.price?.subtotalAfterDiscount ?? order?.price?.sellPrice ?? 0
+      ),
       paymentFee: Number(order?.price?.paymentFee || 0),
       paymentFeeFixed: Number(order?.price?.paymentFeeFixed || 0),
       paymentFeePercent: Number(order?.price?.paymentFeePercent || 0),
       totalAmount: Number(order?.price?.totalAmount || 0),
+    },
+    promoSnapshot: {
+      promoId: String(order?.promoSnapshot?.promoId || "").trim() || null,
+      title: String(order?.promoSnapshot?.title || "").trim(),
+      code: String(order?.promoSnapshot?.code || "").trim().toUpperCase(),
+      description: String(order?.promoSnapshot?.description || "").trim(),
+      discountType: String(order?.promoSnapshot?.discountType || "").trim(),
+      discountValue: Number(order?.promoSnapshot?.discountValue || 0),
+      discountAmount: Number(order?.promoSnapshot?.discountAmount || 0),
+      minimumOrderAmount: Number(order?.promoSnapshot?.minimumOrderAmount || 0),
+      maxDailyUses: Number(order?.promoSnapshot?.maxDailyUses || 0),
+      applicableCategories: Array.isArray(order?.promoSnapshot?.applicableCategories)
+        ? order.promoSnapshot.applicableCategories.map((item) =>
+            String(item || "").trim()
+          )
+        : [],
     },
     region: String(order?.region || "ID").trim().toUpperCase(),
     gameSnapshot: {

@@ -26,6 +26,7 @@ const {
   buildWebhookUrls,
   getProductionReadinessWarnings,
 } = require("../utils/deploymentConfig");
+const { validatePromoForOrder } = require("../utils/promoCode");
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -110,7 +111,9 @@ function buildTokopayItems(order, invoiceUrl) {
       name:
         toStringValue(order.variantSnapshot?.name) ||
         toStringValue(order.gameSnapshot?.name),
-      price: Number(order.price?.sellPrice || 0),
+      price: Number(
+        order.price?.subtotalAfterDiscount ?? order.price?.sellPrice ?? 0
+      ),
       product_url: invoiceUrl,
       image_url:
         toStringValue(order.variantSnapshot?.logo) ||
@@ -193,6 +196,40 @@ function buildPaymentMethodSnapshot(paymentMethod) {
     description: toStringValue(paymentMethod?.description),
     accountHolderName: toStringValue(paymentMethod?.accountHolderName),
     accountNumber: toStringValue(paymentMethod?.accountNumber),
+  };
+}
+
+function buildPromoSnapshot(promoCode, discountAmount) {
+  if (!promoCode) {
+    return {
+      promoId: null,
+      title: "",
+      code: "",
+      description: "",
+      discountType: "fixed",
+      discountValue: 0,
+      discountAmount: 0,
+      minimumOrderAmount: 0,
+      maxDailyUses: 0,
+      applicableCategories: [],
+    };
+  }
+
+  return {
+    promoId: promoCode._id || null,
+    title: toStringValue(promoCode.title),
+    code: normalizeCode(promoCode.code),
+    description: toStringValue(promoCode.description),
+    discountType: toStringValue(promoCode.discountType || "fixed"),
+    discountValue: Number(promoCode.discountValue || 0),
+    discountAmount: Number(discountAmount || 0),
+    minimumOrderAmount: Number(promoCode.minimumOrderAmount || 0),
+    maxDailyUses: Number(promoCode.maxDailyUses || 0),
+    applicableCategories: Array.isArray(promoCode.applicableCategories)
+      ? promoCode.applicableCategories
+          .map((item) => toStringValue(item))
+          .filter(Boolean)
+      : [],
   };
 }
 
@@ -644,6 +681,7 @@ function serializePublicOrder(order) {
     paymentMethodSnapshot: order.paymentMethodSnapshot,
     paymentGateway: order.paymentGateway,
     price: order.price,
+    promoSnapshot: order.promoSnapshot,
     region: order.region,
     gameSnapshot: order.gameSnapshot,
     variantSnapshot: order.variantSnapshot,
@@ -923,7 +961,11 @@ async function buildDashboardSummary() {
           _id: null,
           totalOrders: { $sum: 1 },
           totalBasePrice: { $sum: { $ifNull: ["$price.buyPrice", 0] } },
-          totalSellPrice: { $sum: { $ifNull: ["$price.sellPrice", 0] } },
+          totalSellPrice: {
+            $sum: {
+              $ifNull: ["$price.subtotalAfterDiscount", "$price.sellPrice"],
+            },
+          },
           totalProfit: { $sum: { $ifNull: ["$price.profit", 0] } },
         },
       },
@@ -1047,6 +1089,7 @@ async function createOrderDraft(req, res) {
       gameCode,
       variantId,
       paymentMethodCode,
+      promoCode,
       customerInputs = [],
       contactDetail = {},
     } = req.body || {};
@@ -1054,6 +1097,7 @@ async function createOrderDraft(req, res) {
     const normalizedGameCode = normalizeCode(gameCode);
     const normalizedVariantId = toStringValue(variantId);
     const normalizedPaymentMethodCode = normalizeCode(paymentMethodCode);
+    const normalizedPromoCode = normalizeCode(promoCode);
     const normalizedPhoneNumber = toStringValue(contactDetail.phoneNumber).replace(
       /[^0-9]/g,
       ""
@@ -1158,18 +1202,42 @@ async function createOrderDraft(req, res) {
     const invoiceNumber = await generateInvoiceNumber();
     const sellPrice = Number(variant.price || 0);
     const buyPrice = Number(variant.basePrice || 0);
+    let promoValidationResult = null;
+
+    if (normalizedPromoCode) {
+      promoValidationResult = await validatePromoForOrder({
+        code: normalizedPromoCode,
+        category: toStringValue(game.category),
+        subtotal: sellPrice,
+      });
+
+      if (!promoValidationResult.ok) {
+        return res.status(promoValidationResult.status || 400).json({
+          message:
+            promoValidationResult.message ||
+            "Kode promo tidak bisa digunakan untuk pesanan ini",
+        });
+      }
+    }
+
+    const promoDiscount = Number(promoValidationResult?.discountAmount || 0);
+    const subtotalAfterDiscount = Math.max(sellPrice - promoDiscount, 0);
     const paymentFeeBreakdown = calculatePaymentFeeBreakdown(
-      sellPrice,
+      subtotalAfterDiscount,
       paymentMethod
     );
     const paymentFee = paymentFeeBreakdown.totalFee;
-    const totalAmount = sellPrice + paymentFee;
-    const profit = sellPrice - buyPrice;
+    const totalAmount = subtotalAfterDiscount + paymentFee;
+    const profit = subtotalAfterDiscount - buyPrice;
     const siteSetting = await SiteSetting.findOne(
       {},
       { siteName: 1, siteDomain: 1 }
     ).lean();
     const paymentMethodSnapshot = buildPaymentMethodSnapshot(paymentMethod);
+    const promoSnapshot = buildPromoSnapshot(
+      promoValidationResult?.promoCode || null,
+      promoDiscount
+    );
 
     const order = await Order.create({
       invoiceNumber,
@@ -1205,11 +1273,14 @@ async function createOrderDraft(req, res) {
         buyPrice,
         sellPrice,
         profit,
+        promoDiscount,
+        subtotalAfterDiscount,
         paymentFee,
         paymentFeeFixed: paymentFeeBreakdown.fixedFee,
         paymentFeePercent: paymentFeeBreakdown.percentFee,
         totalAmount,
       },
+      promoSnapshot,
       paymentMethodCode: paymentMethod.code,
       paymentMethodName: paymentMethod.name,
       paymentStatus: "UNPAID",
@@ -1247,6 +1318,7 @@ async function createOrderDraft(req, res) {
         gameCode: req.body?.gameCode,
         variantId: req.body?.variantId,
         paymentMethodCode: req.body?.paymentMethodCode,
+        promoCode: req.body?.promoCode,
       },
       error,
     });

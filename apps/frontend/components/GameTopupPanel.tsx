@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import PromoCodeSection, {
+  type AppliedPromoCode,
+} from "@/components/PromoCodeSection";
 import type {
   StorefrontGameDetail,
   StorefrontPaymentMethod,
@@ -362,6 +365,7 @@ export default function GameTopupPanel({
     totalAmount: number;
     currency: string;
   } | null>(null);
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromoCode | null>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isMobileSummaryExpanded, setIsMobileSummaryExpanded] = useState(false);
   const [openPaymentGroups, setOpenPaymentGroups] = useState<
@@ -383,14 +387,21 @@ export default function GameTopupPanel({
   const variantStepNumber = showAccountStep ? 2 : 1;
   const paymentStepNumber = variantStepNumber + 1;
   const contactStepNumber = paymentStepNumber + 1;
+  const promoStepNumber = contactStepNumber + 1;
   const selectedPaymentMethod =
     paymentMethods.find((method) => method.code === paymentMethodCode) ||
     null;
+  const baseSubtotal = selectedVariant?.price || 0;
+  const promoDiscount = Math.min(
+    Number(appliedPromo?.discountAmount || 0),
+    baseSubtotal
+  );
+  const subtotalAfterDiscount = Math.max(baseSubtotal - promoDiscount, 0);
   const paymentFee = selectedVariant
-    ? getPaymentTotal(selectedVariant.price, selectedPaymentMethod) -
-      selectedVariant.price
+    ? getPaymentTotal(subtotalAfterDiscount, selectedPaymentMethod) -
+      subtotalAfterDiscount
     : 0;
-  const totalPayment = (selectedVariant?.price || 0) + paymentFee;
+  const totalPayment = subtotalAfterDiscount + paymentFee;
   const isAccountDataReady =
     !showAccountStep ||
     (resolvedInputs.length > 0 &&
@@ -418,6 +429,13 @@ export default function GameTopupPanel({
     setCreatedOrder(null);
     setSuccessToast(null);
   };
+
+  const handlePromoChange = useCallback((promoCode: AppliedPromoCode | null) => {
+    setCreatedOrder(null);
+    setSuccessToast(null);
+    setSelectionAlert(null);
+    setAppliedPromo(promoCode);
+  }, []);
 
   useEffect(() => {
     if (!selectionAlert) {
@@ -596,6 +614,7 @@ export default function GameTopupPanel({
           gameCode: game.code,
           variantId: selectedVariant._id,
           paymentMethodCode,
+          promoCode: appliedPromo?.code || "",
           customerInputs: resolvedInputs.map((input) => {
             const key = input.name || input.title;
 
@@ -1048,6 +1067,18 @@ export default function GameTopupPanel({
             </StepPanel>
           </div>
 
+          <div>
+            <StepPanel number={promoStepNumber} title="Kode Promo">
+              <PromoCodeSection
+                category={game.category || ""}
+                subtotal={baseSubtotal}
+                currency={selectedVariant?.currency || "IDR"}
+                disabled={!selectedVariant}
+                onPromoChange={handlePromoChange}
+              />
+            </StepPanel>
+          </div>
+
           <div className="hidden space-y-3 md:block">
             <section className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
               {selectedVariant ? (
@@ -1099,11 +1130,29 @@ export default function GameTopupPanel({
                       <span>Harga</span>
                       <span className="font-medium text-white">
                         {formatCurrency(
-                          selectedVariant.price,
+                          baseSubtotal,
                           selectedVariant.currency
                         )}
                       </span>
                     </div>
+
+                    {appliedPromo ? (
+                      <>
+                        <div className="flex items-center justify-between gap-4">
+                          <span>Kode Promo</span>
+                          <span className="font-medium text-white">
+                            {appliedPromo.code}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-4">
+                          <span>Diskon Promo</span>
+                          <span className="font-medium text-[var(--accent-soft)]">
+                            -{formatCurrency(promoDiscount, selectedVariant.currency)}
+                          </span>
+                        </div>
+                      </>
+                    ) : null}
 
                     <div className="flex items-center justify-between gap-4">
                       <span>Jumlah Pembelian</span>
@@ -1233,11 +1282,32 @@ export default function GameTopupPanel({
                           <span>Harga</span>
                           <span className="font-medium text-white">
                             {formatCurrency(
-                              selectedVariant.price,
+                              baseSubtotal,
                               selectedVariant.currency
                             )}
                           </span>
                         </div>
+
+                        {appliedPromo ? (
+                          <>
+                            <div className="flex items-center justify-between gap-3">
+                              <span>Kode Promo</span>
+                              <span className="font-medium text-white">
+                                {appliedPromo.code}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-3">
+                              <span>Diskon Promo</span>
+                              <span className="font-medium text-[var(--accent-soft)]">
+                                -{formatCurrency(
+                                  promoDiscount,
+                                  selectedVariant.currency
+                                )}
+                              </span>
+                            </div>
+                          </>
+                        ) : null}
 
                         <div className="flex items-center justify-between gap-3">
                           <span>Biaya</span>
