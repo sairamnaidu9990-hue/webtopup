@@ -50,6 +50,11 @@ const siteSettingSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    googleSiteVerification: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     siteTitle: {
       type: String,
       default: "WebTopup - Top Up Game Realtime",

@@ -53,6 +53,7 @@ const defaultForm: SiteSetting = {
   siteLogoUrl: "",
   siteFaviconUrl: "",
   siteDomain: "",
+  googleSiteVerification: "",
   siteTitle: "WebTopup - Top Up Game Realtime",
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
@@ -160,6 +161,7 @@ function normalizeSiteSetting(
       defaultForm.bannerAutoSlideSeconds
     ),
     homepagePopupEnabled: Boolean(value?.homepagePopupEnabled),
+    googleSiteVerification: String(value?.googleSiteVerification || "").trim(),
     homepagePopupTitle: String(value?.homepagePopupTitle || "").trim(),
     homepagePopupMessage: String(value?.homepagePopupMessage || "").trim(),
     homepagePopupImageUrl: String(value?.homepagePopupImageUrl || "").trim(),
@@ -262,6 +264,7 @@ export default function WebsiteSettingsPage() {
           siteLogoUrl: form.siteLogoUrl,
           siteFaviconUrl: form.siteFaviconUrl,
           siteDomain: form.siteDomain,
+          googleSiteVerification: form.googleSiteVerification,
           siteTitle: form.siteTitle,
           siteDescription: form.siteDescription,
           gameCategories: form.gameCategories,
@@ -394,6 +397,28 @@ export default function WebsiteSettingsPage() {
                 placeholder="contoh: topupkamu.com atau https://topupkamu.com"
                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
               />
+            </div>
+
+            <div className="space-y-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Google Search Console Verification
+              </label>
+              <input
+                value={form.googleSiteVerification}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    googleSiteVerification: event.target.value,
+                  }))
+                }
+                placeholder="Paste token content dari meta google-site-verification"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Isi dengan token dari Google Search Console. Contoh: jika meta
+                tag dari Google berisi <span className="font-mono">content="abc123"</span>,
+                cukup masukkan <span className="font-mono">abc123</span>.
+              </p>
             </div>
 
             <div className="space-y-2 lg:col-span-2">

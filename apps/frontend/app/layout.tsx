@@ -61,6 +61,11 @@ export async function generateMetadata(): Promise<Metadata> {
           apple: siteSetting.siteFaviconUrl,
         }
       : undefined,
+    verification: siteSetting.googleSiteVerification
+      ? {
+          google: siteSetting.googleSiteVerification,
+        }
+      : undefined,
     openGraph: {
       title,
       description,

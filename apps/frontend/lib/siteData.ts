@@ -22,6 +22,7 @@ export type PublicSiteSetting = {
   siteLogoUrl: string;
   siteFaviconUrl: string;
   siteDomain: string;
+  googleSiteVerification: string;
   siteTitle: string;
   siteDescription: string;
   gameCategories: string[];
@@ -238,6 +239,7 @@ const defaultSiteSetting: PublicSiteSetting = {
   siteLogoUrl: "",
   siteFaviconUrl: "",
   siteDomain: "",
+  googleSiteVerification: "",
   siteTitle: "WebTopup - Top Up Game Realtime",
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
@@ -508,6 +510,9 @@ function normalizeSiteSetting(
   return {
     ...defaultSiteSetting,
     ...siteSetting,
+    googleSiteVerification: String(
+      siteSetting?.googleSiteVerification || ""
+    ).trim(),
     gameCategories: (() => {
       const nextCategories =
         Array.isArray(siteSetting?.gameCategories)

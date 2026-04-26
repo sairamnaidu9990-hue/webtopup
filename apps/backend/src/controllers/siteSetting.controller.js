@@ -21,6 +21,7 @@ const defaultSiteSetting = {
   siteLogoUrl: "",
   siteFaviconUrl: "",
   siteDomain: "",
+  googleSiteVerification: "",
   siteTitle: "WebTopup - Top Up Game Realtime",
   siteDescription:
     "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
@@ -267,6 +268,10 @@ function normalizeDomain(value) {
   }
 }
 
+function normalizeGoogleSiteVerification(value) {
+  return String(value || "").trim();
+}
+
 async function getOrCreateSiteSetting() {
   let siteSetting = await SiteSetting.findOne();
 
@@ -288,6 +293,9 @@ function serializeSiteSetting(siteSetting) {
     siteLogoUrl: siteSetting.siteLogoUrl || "",
     siteFaviconUrl: siteSetting.siteFaviconUrl || "",
     siteDomain: siteSetting.siteDomain || "",
+    googleSiteVerification: normalizeGoogleSiteVerification(
+      siteSetting.googleSiteVerification
+    ),
     siteTitle: siteSetting.siteTitle || defaultSiteSetting.siteTitle,
     siteDescription:
       siteSetting.siteDescription || defaultSiteSetting.siteDescription,
@@ -402,6 +410,12 @@ exports.updateSiteSetting = async (req, res) => {
 
     if (req.body.siteDomain != null) {
       siteSetting.siteDomain = normalizeDomain(req.body.siteDomain);
+    }
+
+    if (req.body.googleSiteVerification != null) {
+      siteSetting.googleSiteVerification = normalizeGoogleSiteVerification(
+        req.body.googleSiteVerification
+      );
     }
 
     if (req.body.siteTitle != null) {

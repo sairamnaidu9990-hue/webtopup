@@ -18,6 +18,7 @@ export type SiteSetting = {
   siteLogoUrl: string;
   siteFaviconUrl: string;
   siteDomain: string;
+  googleSiteVerification: string;
   siteTitle: string;
   siteDescription: string;
   gameCategories: string[];
