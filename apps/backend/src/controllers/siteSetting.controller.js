@@ -32,6 +32,7 @@ const defaultSiteSetting = {
     description: "",
   })),
   gameFaqs: [],
+  reviewCommentsVisible: true,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_BANNER_SLIDE_SECONDS,
   homepagePopupEnabled: false,
@@ -361,6 +362,10 @@ function serializeSiteSetting(siteSetting) {
       defaultSiteSetting.categoryDescriptions
     ),
     gameFaqs: normalizeGameFaqs(siteSetting.gameFaqs, defaultSiteSetting.gameFaqs),
+    reviewCommentsVisible: normalizeBoolean(
+      siteSetting.reviewCommentsVisible,
+      defaultSiteSetting.reviewCommentsVisible
+    ),
     bannerCount,
     bannerAutoSlideSeconds: normalizeBannerAutoSlideSeconds(
       siteSetting.bannerAutoSlideSeconds ??
@@ -510,6 +515,13 @@ exports.updateSiteSetting = async (req, res) => {
       siteSetting.gameFaqs = normalizeGameFaqs(
         req.body.gameFaqs,
         siteSetting.gameFaqs
+      );
+    }
+
+    if (req.body.reviewCommentsVisible != null) {
+      siteSetting.reviewCommentsVisible = normalizeBoolean(
+        req.body.reviewCommentsVisible,
+        defaultSiteSetting.reviewCommentsVisible
       );
     }
 

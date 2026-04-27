@@ -6,6 +6,7 @@ import GameEntryPopup from "@/components/GameEntryPopup";
 import {
   getPublicPaymentMethods,
   getPublicSiteSetting,
+  getStorefrontGameReviewSummary,
   getStorefrontGameDetail,
 } from "@/lib/siteData";
 
@@ -188,10 +189,11 @@ export default async function GameVariantsPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const [detail, paymentMethods, siteSetting] = await Promise.all([
+  const [detail, paymentMethods, siteSetting, reviewSummary] = await Promise.all([
     getStorefrontGameDetail(code),
     getPublicPaymentMethods(),
     getPublicSiteSetting(),
+    getStorefrontGameReviewSummary(code),
   ]);
 
   if (!detail) {
@@ -303,6 +305,7 @@ export default async function GameVariantsPage({
         paymentMethods={paymentMethods}
         categoryDescription={categoryDescription}
         gameFaqs={gameFaqs}
+        reviewSummary={reviewSummary}
       />
       <GameEntryPopup game={game} />
     </main>

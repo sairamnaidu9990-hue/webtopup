@@ -34,6 +34,7 @@ export type SiteSetting = {
   gameCategories: string[];
   categoryDescriptions: SiteCategoryDescription[];
   gameFaqs: SiteGameFaq[];
+  reviewCommentsVisible: boolean;
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   homepagePopupEnabled: boolean;

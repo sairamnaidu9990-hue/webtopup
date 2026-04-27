@@ -6,6 +6,7 @@ import InvoiceAutoRefresh from "@/components/invoice/InvoiceAutoRefresh";
 import InvoicePaymentTimer from "@/components/invoice/InvoicePaymentTimer";
 import CopyInvoiceButton from "@/components/invoice/CopyInvoiceButton";
 import CopyValueIconButton from "@/components/invoice/CopyValueIconButton";
+import InvoiceReviewCard from "@/components/invoice/InvoiceReviewCard";
 import {
   getPublicOrderByInvoice,
   getPublicSiteSetting,
@@ -806,6 +807,14 @@ export default async function InvoicePage({
             </div>
           </div>
         </section>
+
+        {order.review?.canSubmit || order.review?.hasSubmitted ? (
+          <InvoiceReviewCard
+            invoiceNumber={order.invoiceNumber}
+            gameName={order.gameSnapshot.name}
+            initialReviewState={order.review}
+          />
+        ) : null}
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <Link

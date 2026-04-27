@@ -68,6 +68,7 @@ const defaultForm: SiteSetting = {
   gameCategories: DEFAULT_GAME_CATEGORIES,
   categoryDescriptions: DEFAULT_CATEGORY_DESCRIPTIONS,
   gameFaqs: DEFAULT_GAME_FAQS,
+  reviewCommentsVisible: true,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_AUTO_SLIDE_SECONDS,
   homepagePopupEnabled: false,
@@ -199,6 +200,7 @@ function normalizeSiteSetting(
       gameCategories
     ),
     gameFaqs: normalizeGameFaqs(value?.gameFaqs),
+    reviewCommentsVisible: Boolean(value?.reviewCommentsVisible ?? true),
     bannerCount,
     bannerAutoSlideSeconds: clampNumber(
       Number(
@@ -318,6 +320,7 @@ export default function WebsiteSettingsPage() {
           gameCategories: form.gameCategories,
           categoryDescriptions: form.categoryDescriptions,
           gameFaqs: form.gameFaqs,
+          reviewCommentsVisible: form.reviewCommentsVisible,
           bannerCount: form.bannerCount,
           bannerAutoSlideSeconds: form.bannerAutoSlideSeconds,
           homepagePopupEnabled: form.homepagePopupEnabled,
@@ -1141,6 +1144,29 @@ export default function WebsiteSettingsPage() {
                     Belum ada FAQ global untuk halaman game.
                   </div>
                 )}
+              </div>
+
+              <div className="space-y-2 border-t border-gray-200 pt-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Tampilkan Komentar Review
+                </label>
+                <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={form.reviewCommentsVisible}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        reviewCommentsVisible: event.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Saat dimatikan, storefront hanya menampilkan rating dan
+                    jumlah ulasan tanpa isi komentar pelanggan.
+                  </span>
+                </label>
               </div>
             </div>
           </SettingsSubsection>

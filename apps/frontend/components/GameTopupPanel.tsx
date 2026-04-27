@@ -4,12 +4,14 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import GameReviewSection from "@/components/GameReviewSection";
 import PromoCodeSection, {
   type AppliedPromoCode,
 } from "@/components/PromoCodeSection";
 import type {
   StorefrontGameDetail,
   StorefrontPaymentMethod,
+  StorefrontGameReviewSummary,
   StorefrontVariant,
 } from "@/lib/siteData";
 
@@ -24,6 +26,7 @@ type GameTopupPanelProps = {
     question: string;
     answer: string;
   }>;
+  reviewSummary: StorefrontGameReviewSummary;
 };
 
 function getBangjeffInputs(game: GameDetail) {
@@ -371,6 +374,7 @@ export default function GameTopupPanel({
   paymentMethods,
   categoryDescription = "",
   gameFaqs = [],
+  reviewSummary,
 }: GameTopupPanelProps) {
   const router = useRouter();
   const resolvedInputs = getBangjeffInputs(game);
@@ -1120,6 +1124,12 @@ export default function GameTopupPanel({
         </div>
 
         <div className="hidden space-y-3 md:block">
+          <GameReviewSection
+            gameName={game.name}
+            summary={reviewSummary}
+            compact
+          />
+
           <section className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
             {selectedVariant ? (
               <div className="space-y-4 p-4 sm:p-[18px]">
@@ -1243,15 +1253,34 @@ export default function GameTopupPanel({
         </div>
 
         {categoryDescription ? (
-          <div className="xl:col-span-2">
+          <div className="md:col-span-2">
             <DetailInfoPanel title={`Deskripsi ${game.name}`}>
               <div className="whitespace-pre-line">{categoryDescription}</div>
             </DetailInfoPanel>
           </div>
         ) : null}
 
+        <div className="md:col-span-2 md:hidden">
+          <GameReviewSection
+            gameName={game.name}
+            summary={reviewSummary}
+            showComments
+          />
+        </div>
+
+        {reviewSummary.commentsVisible && reviewSummary.recentComments.length > 0 ? (
+          <div className="hidden md:col-span-2 md:block">
+            <GameReviewSection
+              gameName={game.name}
+              summary={reviewSummary}
+              showSummary={false}
+              showComments
+            />
+          </div>
+        ) : null}
+
         {gameFaqs.length > 0 ? (
-          <div className="xl:col-span-2">
+          <div className="md:col-span-2">
             <section className="space-y-4">
               <div>
                 <h2 className="text-[1rem] font-semibold text-white sm:text-[1.06rem]">

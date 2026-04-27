@@ -1,6 +1,7 @@
 const Game = require("../models/Game");
 const Order = require("../models/Order");
 const PaymentMethod = require("../models/PaymentMethod");
+const Review = require("../models/Review");
 const SiteSetting = require("../models/SiteSetting");
 const Variant = require("../models/Variant");
 const {
@@ -27,6 +28,7 @@ const {
   getProductionReadinessWarnings,
 } = require("../utils/deploymentConfig");
 const { validatePromoForOrder } = require("../utils/promoCode");
+const { serializeOrderReviewState } = require("./review.controller");
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -662,7 +664,7 @@ async function syncTokopayPaymentStatus(order) {
   return order;
 }
 
-function serializePublicOrder(order) {
+function serializePublicOrder(order, review = null) {
   return {
     _id: order._id,
     invoiceNumber: order.invoiceNumber,
@@ -685,6 +687,7 @@ function serializePublicOrder(order) {
     region: order.region,
     gameSnapshot: order.gameSnapshot,
     variantSnapshot: order.variantSnapshot,
+    review: serializeOrderReviewState(order, review),
     providerMessage: order.providerMessage,
     notes: order.notes,
     createdAt: order.createdAt,
@@ -1020,9 +1023,10 @@ async function getPublicOrderByInvoice(req, res) {
 
     await syncTokopayPaymentStatus(order);
     await syncBangjeffOrderStatus(order);
+    const review = await Review.findOne({ order: order._id }).lean();
 
     return res.status(200).json({
-      order: serializePublicOrder(order),
+      order: serializePublicOrder(order, review),
     });
   } catch (error) {
     res.locals.skipRequestLog = true;

@@ -106,6 +106,10 @@ const siteSettingSchema = new mongoose.Schema(
     ],
     categoryDescriptions: [siteCategoryDescriptionSchema],
     gameFaqs: [siteGameFaqSchema],
+    reviewCommentsVisible: {
+      type: Boolean,
+      default: true,
+    },
     bannerCount: {
       type: Number,
       default: 3,

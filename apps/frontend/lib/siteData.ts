@@ -27,6 +27,32 @@ export type SiteGameFaq = {
   answer: string;
 };
 
+export type StorefrontReviewEntry = {
+  _id: string;
+  customerDisplay: string;
+  rating: number;
+  comment: string;
+  createdAt?: string | null;
+};
+
+export type StorefrontGameReviewSummary = {
+  averageRating: number;
+  totalReviews: number;
+  totalComments: number;
+  commentsVisible: boolean;
+  recentComments: StorefrontReviewEntry[];
+};
+
+export type StorefrontOrderReviewState = {
+  canSubmit: boolean;
+  hasSubmitted: boolean;
+  review: {
+    rating: number;
+    comment: string;
+    createdAt?: string | null;
+  } | null;
+};
+
 export type PublicSiteSetting = {
   siteName: string;
   siteLogoUrl: string;
@@ -38,6 +64,7 @@ export type PublicSiteSetting = {
   gameCategories: string[];
   categoryDescriptions: SiteCategoryDescription[];
   gameFaqs: SiteGameFaq[];
+  reviewCommentsVisible: boolean;
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   homepagePopupEnabled: boolean;
@@ -265,6 +292,7 @@ export type StorefrontOrder = {
     basePrice: number;
     sellPrice: number;
   };
+  review: StorefrontOrderReviewState;
   providerMessage: string;
   notes: string;
   createdAt: string;
@@ -298,6 +326,7 @@ const defaultSiteSetting: PublicSiteSetting = {
     { category: "Live Streaming", description: "" },
   ],
   gameFaqs: [],
+  reviewCommentsVisible: true,
   bannerCount: 3,
   bannerAutoSlideSeconds: 5,
   homepagePopupEnabled: false,
@@ -434,6 +463,35 @@ function normalizeStorefrontPaymentMethod(
   };
 }
 
+function normalizeStorefrontReviewEntry(
+  review?: Partial<StorefrontReviewEntry> | null
+): StorefrontReviewEntry {
+  return {
+    _id: String(review?._id || "").trim(),
+    customerDisplay:
+      String(review?.customerDisplay || "").trim() || "Pelanggan Terverifikasi",
+    rating: Number(review?.rating || 0),
+    comment: String(review?.comment || "").trim(),
+    createdAt: review?.createdAt || null,
+  };
+}
+
+function normalizeStorefrontGameReviewSummary(
+  summary?: Partial<StorefrontGameReviewSummary> | null
+): StorefrontGameReviewSummary {
+  return {
+    averageRating: Number(summary?.averageRating || 0),
+    totalReviews: Number(summary?.totalReviews || 0),
+    totalComments: Number(summary?.totalComments || 0),
+    commentsVisible: Boolean(summary?.commentsVisible ?? true),
+    recentComments: Array.isArray(summary?.recentComments)
+      ? summary.recentComments.map((review) =>
+          normalizeStorefrontReviewEntry(review)
+        )
+      : [],
+  };
+}
+
 function normalizeStorefrontOrder(
   order?: Partial<StorefrontOrder> | null
 ): StorefrontOrder {
@@ -556,6 +614,17 @@ function normalizeStorefrontOrder(
       basePrice: Number(order?.variantSnapshot?.basePrice || 0),
       sellPrice: Number(order?.variantSnapshot?.sellPrice || 0),
     },
+    review: {
+      canSubmit: Boolean(order?.review?.canSubmit),
+      hasSubmitted: Boolean(order?.review?.hasSubmitted),
+      review: order?.review?.review
+        ? {
+            rating: Number(order?.review?.review?.rating || 0),
+            comment: String(order?.review?.review?.comment || "").trim(),
+            createdAt: order?.review?.review?.createdAt || null,
+          }
+        : null,
+    },
     providerMessage: String(order?.providerMessage || "").trim(),
     notes: String(order?.notes || "").trim(),
     createdAt: String(order?.createdAt || ""),
@@ -634,6 +703,7 @@ function normalizeSiteSetting(
       gameCategories
     ),
     gameFaqs: normalizeGameFaqs(siteSetting?.gameFaqs),
+    reviewCommentsVisible: Boolean(siteSetting?.reviewCommentsVisible ?? true),
     bannerCount,
     bannerAutoSlideSeconds: Math.min(
       Math.max(
@@ -860,6 +930,38 @@ export const getPublicOrderByInvoice = cache(
       return normalizeStorefrontOrder(payload.order);
     } catch {
       return null;
+    }
+  }
+);
+
+export const getStorefrontGameReviewSummary = cache(
+  async (gameCode: string): Promise<StorefrontGameReviewSummary> => {
+    const normalizedGameCode = String(gameCode || "").trim().toUpperCase();
+
+    if (!normalizedGameCode) {
+      return normalizeStorefrontGameReviewSummary();
+    }
+
+    try {
+      const response = await fetch(
+        await buildFrontendApiUrl(
+          `/api/reviews/game/${encodeURIComponent(normalizedGameCode)}`
+        ),
+        {
+          next: {
+            revalidate: 30,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch game review summary");
+      }
+
+      const payload = await response.json();
+      return normalizeStorefrontGameReviewSummary(payload?.summary);
+    } catch {
+      return normalizeStorefrontGameReviewSummary();
     }
   }
 );
