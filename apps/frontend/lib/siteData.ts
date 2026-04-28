@@ -32,6 +32,14 @@ export type StorefrontReviewEntry = {
   customerDisplay: string;
   rating: number;
   comment: string;
+  invoiceNumber?: string;
+  gameSnapshot?: {
+    name: string;
+    code: string;
+    provider: string;
+    category: string;
+    logo: string;
+  } | null;
   createdAt?: string | null;
 };
 
@@ -39,6 +47,10 @@ export type StorefrontGameReviewSummary = {
   averageRating: number;
   totalReviews: number;
   totalComments: number;
+  ratingBreakdown: Array<{
+    rating: number;
+    count: number;
+  }>;
   commentsVisible: boolean;
   recentComments: StorefrontReviewEntry[];
 };
@@ -51,6 +63,17 @@ export type StorefrontOrderReviewState = {
     comment: string;
     createdAt?: string | null;
   } | null;
+};
+
+export type PublicReviewsPage = {
+  items: StorefrontReviewEntry[];
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+  summary: StorefrontGameReviewSummary;
 };
 
 export type PublicSiteSetting = {
@@ -472,6 +495,16 @@ function normalizeStorefrontReviewEntry(
       String(review?.customerDisplay || "").trim() || "Pelanggan Terverifikasi",
     rating: Number(review?.rating || 0),
     comment: String(review?.comment || "").trim(),
+    invoiceNumber: String(review?.invoiceNumber || "").trim(),
+    gameSnapshot: review?.gameSnapshot
+      ? {
+          name: String(review.gameSnapshot.name || "").trim(),
+          code: String(review.gameSnapshot.code || "").trim(),
+          provider: String(review.gameSnapshot.provider || "").trim(),
+          category: String(review.gameSnapshot.category || "").trim(),
+          logo: String(review.gameSnapshot.logo || "").trim(),
+        }
+      : null,
     createdAt: review?.createdAt || null,
   };
 }
@@ -483,6 +516,15 @@ function normalizeStorefrontGameReviewSummary(
     averageRating: Number(summary?.averageRating || 0),
     totalReviews: Number(summary?.totalReviews || 0),
     totalComments: Number(summary?.totalComments || 0),
+    ratingBreakdown: Array.isArray(summary?.ratingBreakdown)
+      ? summary.ratingBreakdown.map((item) => ({
+          rating: Number(item?.rating || 0),
+          count: Number(item?.count || 0),
+        }))
+      : [5, 4, 3, 2, 1].map((rating) => ({
+          rating,
+          count: 0,
+        })),
     commentsVisible: Boolean(summary?.commentsVisible ?? true),
     recentComments: Array.isArray(summary?.recentComments)
       ? summary.recentComments.map((review) =>
@@ -962,6 +1004,67 @@ export const getStorefrontGameReviewSummary = cache(
       return normalizeStorefrontGameReviewSummary(payload?.summary);
     } catch {
       return normalizeStorefrontGameReviewSummary();
+    }
+  }
+);
+
+export const getPublicReviews = cache(
+  async (
+    gameCode = "",
+    page = 1,
+    limit = 12
+  ): Promise<PublicReviewsPage> => {
+    try {
+      const params = new URLSearchParams({
+        page: String(Math.max(1, Number(page) || 1)),
+        limit: String(Math.min(Math.max(Number(limit) || 12, 1), 30)),
+      });
+      const normalizedGameCode = String(gameCode || "").trim().toUpperCase();
+
+      if (normalizedGameCode) {
+        params.set("gameCode", normalizedGameCode);
+      }
+
+      const response = await fetch(
+        await buildFrontendApiUrl(`/api/reviews/public?${params.toString()}`),
+        {
+          next: {
+            revalidate: 30,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch public reviews");
+      }
+
+      const payload = await response.json();
+
+      return {
+        items: Array.isArray(payload?.items)
+          ? payload.items.map((item: StorefrontReviewEntry) =>
+              normalizeStorefrontReviewEntry(item)
+            )
+          : [],
+        page: Number(payload?.page || 1),
+        limit: Number(payload?.limit || 12),
+        totalItems: Number(payload?.totalItems || 0),
+        totalPages: Number(payload?.totalPages || 1),
+        hasPreviousPage: Boolean(payload?.hasPreviousPage),
+        hasNextPage: Boolean(payload?.hasNextPage),
+        summary: normalizeStorefrontGameReviewSummary(payload?.summary),
+      };
+    } catch {
+      return {
+        items: [],
+        page: 1,
+        limit: 12,
+        totalItems: 0,
+        totalPages: 1,
+        hasPreviousPage: false,
+        hasNextPage: false,
+        summary: normalizeStorefrontGameReviewSummary(),
+      };
     }
   }
 );

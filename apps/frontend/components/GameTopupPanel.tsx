@@ -406,6 +406,9 @@ export default function GameTopupPanel({
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isMobileSummaryExpanded, setIsMobileSummaryExpanded] = useState(false);
   const [mobileCheckoutMounted, setMobileCheckoutMounted] = useState(false);
+  const [mobileContentTab, setMobileContentTab] = useState<
+    "transaction" | "detail"
+  >("transaction");
   const [openFaqItems, setOpenFaqItems] = useState<Record<number, boolean>>({});
   const [openPaymentGroups, setOpenPaymentGroups] = useState<
     Record<string, boolean>
@@ -441,6 +444,9 @@ export default function GameTopupPanel({
       subtotalAfterDiscount
     : 0;
   const totalPayment = subtotalAfterDiscount + paymentFee;
+  const reviewPageHref = `/reviews?game=${encodeURIComponent(
+    String(game.code || "").trim().toUpperCase()
+  )}&name=${encodeURIComponent(game.name)}`;
   const isAccountDataReady =
     !showAccountStep ||
     (resolvedInputs.length > 0 &&
@@ -450,11 +456,14 @@ export default function GameTopupPanel({
           accountValues[gameInput.name || gameInput.title] || ""
         )
       ));
-  const mobileBottomSpacing = selectedVariant
-    ? isMobileSummaryExpanded
-      ? "pb-[148px] md:pb-0"
-      : "pb-[104px] md:pb-0"
-    : "pb-[72px] md:pb-0";
+  const mobileBottomSpacing =
+    mobileContentTab !== "transaction"
+      ? "pb-0 md:pb-0"
+      : selectedVariant
+        ? isMobileSummaryExpanded
+          ? "pb-[148px] md:pb-0"
+          : "pb-[104px] md:pb-0"
+        : "pb-[72px] md:pb-0";
 
   const showAlert = (message: string) => {
     setSuccessToast(null);
@@ -543,6 +552,8 @@ export default function GameTopupPanel({
     step: "account" | "variant" | "payment" | "contact",
     ref: React.RefObject<HTMLDivElement | null>
   ) => {
+    setMobileContentTab("transaction");
+
     const element = ref.current;
 
     if (!element) {
@@ -748,7 +759,41 @@ export default function GameTopupPanel({
   return (
     <div className="site-shell pt-8 sm:pt-10">
       <div className="xl:grid xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)] xl:items-start xl:gap-8">
-        <div className={`space-y-6 ${mobileBottomSpacing}`}>
+        <div className="md:hidden">
+          <div className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] p-2 shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMobileContentTab("transaction")}
+                className={`flex h-11 items-center justify-center rounded-[14px] px-4 text-[13px] font-semibold transition ${
+                  mobileContentTab === "transaction"
+                    ? "bg-[var(--accent-soft)] text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)]"
+                    : "bg-[#32343b] text-white/72"
+                }`}
+              >
+                Transaksi
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMobileContentTab("detail")}
+                className={`flex h-11 items-center justify-center rounded-[14px] px-4 text-[13px] font-semibold transition ${
+                  mobileContentTab === "detail"
+                    ? "bg-[var(--accent-soft)] text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)]"
+                    : "bg-[#32343b] text-white/72"
+                }`}
+              >
+                Keterangan
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className={`space-y-6 ${mobileBottomSpacing} ${
+            mobileContentTab === "transaction" ? "block" : "hidden md:block"
+          }`}
+        >
           {selectionAlert ? (
             <div className="pointer-events-none fixed left-1/2 top-3 z-50 flex w-full -translate-x-1/2 justify-center px-4 md:top-4">
               <div className="pointer-events-auto inline-flex max-w-full items-center gap-3 rounded-[14px] border border-red-100 bg-white px-4 py-3 text-[13px] font-medium text-[#454545] shadow-[0_12px_24px_rgba(0,0,0,0.18)]">
@@ -1253,18 +1298,27 @@ export default function GameTopupPanel({
         </div>
 
         {categoryDescription ? (
-          <div className="md:col-span-2">
+          <div
+            className={`md:col-span-2 ${
+              mobileContentTab === "detail" ? "block" : "hidden md:block"
+            }`}
+          >
             <DetailInfoPanel title={`Deskripsi ${game.name}`}>
               <div className="whitespace-pre-line">{categoryDescription}</div>
             </DetailInfoPanel>
           </div>
         ) : null}
 
-        <div className="md:col-span-2 md:hidden">
+        <div
+          className={`md:col-span-2 md:hidden ${
+            mobileContentTab === "detail" ? "block" : "hidden"
+          }`}
+        >
           <GameReviewSection
             gameName={game.name}
             summary={reviewSummary}
             showComments
+            reviewPageHref={reviewPageHref}
           />
         </div>
 
@@ -1275,12 +1329,17 @@ export default function GameTopupPanel({
               summary={reviewSummary}
               showSummary={false}
               showComments
+              reviewPageHref={reviewPageHref}
             />
           </div>
         ) : null}
 
         {gameFaqs.length > 0 ? (
-          <div className="md:col-span-2">
+          <div
+            className={`md:col-span-2 ${
+              mobileContentTab === "detail" ? "block" : "hidden md:block"
+            }`}
+          >
             <section className="space-y-4">
               <div>
                 <h2 className="text-[1rem] font-semibold text-white sm:text-[1.06rem]">
@@ -1329,7 +1388,7 @@ export default function GameTopupPanel({
         ) : null}
       </div>
 
-      {mobileCheckoutMounted
+      {mobileCheckoutMounted && mobileContentTab === "transaction"
         ? createPortal(
             <div
               className="fixed inset-x-0 bottom-0 z-40 border-t border-white/8 bg-[rgba(20,22,27,0.96)] md:hidden"

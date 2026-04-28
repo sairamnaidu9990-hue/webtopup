@@ -60,6 +60,14 @@ function serializeAdminReview(review) {
 function serializePublicReviewEntry(review) {
   return {
     _id: review._id,
+    invoiceNumber: toStringValue(review.invoiceNumber),
+    gameSnapshot: {
+      name: toStringValue(review.gameSnapshot?.name),
+      code: normalizeCode(review.gameSnapshot?.code),
+      provider: toStringValue(review.gameSnapshot?.provider),
+      category: toStringValue(review.gameSnapshot?.category),
+      logo: toStringValue(review.gameSnapshot?.logo),
+    },
     customerDisplay: toStringValue(review.customerDisplay) || "Pelanggan Terverifikasi",
     rating: Number(review.rating || 0),
     comment: toStringValue(review.comment),
@@ -81,6 +89,36 @@ function serializeOrderReviewState(order, review) {
           createdAt: review.createdAt || null,
         }
       : null,
+  };
+}
+
+function buildRatingBreakdown(items = []) {
+  const countMap = new Map(
+    (Array.isArray(items) ? items : []).map((item) => [
+      Number(item?._id || 0),
+      Number(item?.count || 0),
+    ])
+  );
+
+  return [5, 4, 3, 2, 1].map((rating) => ({
+    rating,
+    count: countMap.get(rating) || 0,
+  }));
+}
+
+function buildPublicReviewFilter(query = {}) {
+  const gameCode = normalizeCode(query.gameCode);
+  const filter = {
+    isCommentHidden: false,
+  };
+
+  if (gameCode) {
+    filter["gameSnapshot.code"] = gameCode;
+  }
+
+  return {
+    gameCode,
+    filter,
   };
 }
 
@@ -178,7 +216,8 @@ async function getPublicGameReviewSummary(req, res) {
       });
     }
 
-    const [aggregateResult, commentItems, siteSetting] = await Promise.all([
+    const [aggregateResult, ratingBreakdownResult, commentItems, siteSetting] =
+      await Promise.all([
       Review.aggregate([
         {
           $match: {
@@ -198,13 +237,26 @@ async function getPublicGameReviewSummary(req, res) {
           },
         },
       ]),
+      Review.aggregate([
+        {
+          $match: {
+            "gameSnapshot.code": gameCode,
+          },
+        },
+        {
+          $group: {
+            _id: "$rating",
+            count: { $sum: 1 },
+          },
+        },
+      ]),
       Review.find({
         "gameSnapshot.code": gameCode,
         isCommentHidden: false,
         comment: { $ne: "" },
       })
         .sort({ createdAt: -1 })
-        .limit(6)
+        .limit(5)
         .lean(),
       SiteSetting.findOne({}, { reviewCommentsVisible: 1 }).lean(),
     ]);
@@ -217,6 +269,7 @@ async function getPublicGameReviewSummary(req, res) {
         averageRating: Number(metrics.averageRating || 0),
         totalReviews: Number(metrics.totalReviews || 0),
         totalComments: Number(metrics.totalComments || 0),
+        ratingBreakdown: buildRatingBreakdown(ratingBreakdownResult),
         commentsVisible,
         recentComments: commentsVisible
           ? commentItems.map(serializePublicReviewEntry)
@@ -241,6 +294,105 @@ async function getPublicGameReviewSummary(req, res) {
 
     return res.status(500).json({
       message: "Error ambil summary review",
+      error: error.message,
+    });
+  }
+}
+
+async function getPublicReviews(req, res) {
+  try {
+    const page = toPositiveInteger(req.query.page, 1);
+    const requestedLimit = toPositiveInteger(req.query.limit, DEFAULT_LIMIT);
+    const limit = Math.min(requestedLimit, MAX_LIMIT);
+    const { gameCode, filter } = buildPublicReviewFilter(req.query || {});
+
+    const [items, totalItems, aggregateResult, ratingBreakdownResult, siteSetting] =
+      await Promise.all([
+        Review.find({
+          ...filter,
+          comment: { $ne: "" },
+        })
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean(),
+        Review.countDocuments({
+          ...filter,
+          comment: { $ne: "" },
+        }),
+        Review.aggregate([
+          {
+            $match: gameCode
+              ? { "gameSnapshot.code": gameCode }
+              : {},
+          },
+          {
+            $group: {
+              _id: null,
+              averageRating: { $avg: "$rating" },
+              totalReviews: { $sum: 1 },
+              totalComments: {
+                $sum: {
+                  $cond: [{ $gt: [{ $strLenCP: "$comment" }, 0] }, 1, 0],
+                },
+              },
+            },
+          },
+        ]),
+        Review.aggregate([
+          {
+            $match: gameCode
+              ? { "gameSnapshot.code": gameCode }
+              : {},
+          },
+          {
+            $group: {
+              _id: "$rating",
+              count: { $sum: 1 },
+            },
+          },
+        ]),
+        SiteSetting.findOne({}, { reviewCommentsVisible: 1 }).lean(),
+      ]);
+
+    const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+    const metrics = aggregateResult[0] || {};
+    const commentsVisible = Boolean(siteSetting?.reviewCommentsVisible ?? true);
+
+    return res.status(200).json({
+      items: commentsVisible ? items.map(serializePublicReviewEntry) : [],
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+      summary: {
+        averageRating: Number(metrics.averageRating || 0),
+        totalReviews: Number(metrics.totalReviews || 0),
+        totalComments: Number(metrics.totalComments || 0),
+        ratingBreakdown: buildRatingBreakdown(ratingBreakdownResult),
+        commentsVisible,
+      },
+    });
+  } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "review",
+      message: "Error ambil daftar review publik",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        gameCode: req.query?.gameCode,
+      },
+      error,
+    });
+
+    return res.status(500).json({
+      message: "Error ambil daftar review publik",
       error: error.message,
     });
   }
@@ -391,6 +543,7 @@ async function updateReviewByAdmin(req, res) {
 module.exports = {
   createPublicReview,
   getAdminReviews,
+  getPublicReviews,
   getPublicGameReviewSummary,
   serializeOrderReviewState,
   serializePublicReviewEntry,

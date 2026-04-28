@@ -3,6 +3,7 @@ const express = require("express");
 const {
   createPublicReview,
   getAdminReviews,
+  getPublicReviews,
   getPublicGameReviewSummary,
   updateReviewByAdmin,
 } = require("../controllers/review.controller");
@@ -24,6 +25,7 @@ const publicReviewLookupRateLimit = createRateLimit({
 });
 
 router.get("/game/:gameCode", publicReviewLookupRateLimit, getPublicGameReviewSummary);
+router.get("/public", publicReviewLookupRateLimit, getPublicReviews);
 router.post("/", createReviewRateLimit, createPublicReview);
 router.get("/", protectAdmin, getAdminReviews);
 router.patch("/:id", protectAdmin, updateReviewByAdmin);

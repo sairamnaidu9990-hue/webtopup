@@ -524,6 +524,13 @@ export default function SiteHeader({
                 Home
               </Link>
               <Link
+                href="/reviews"
+                onClick={() => setMenuOpen(false)}
+                className="block rounded-2xl px-4 py-3 text-sm font-medium text-white/88 transition hover:bg-white/5 hover:text-white"
+              >
+                Ulasan
+              </Link>
+              <Link
                 href="/cek-transaksi"
                 onClick={() => setMenuOpen(false)}
                 className="block w-full rounded-2xl bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 py-3 text-left text-sm font-semibold text-white shadow-[0_14px_28px_rgba(211,59,59,0.2)] transition hover:brightness-110"
