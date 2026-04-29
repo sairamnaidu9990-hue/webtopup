@@ -353,7 +353,7 @@ function DetailInfoPanel({
   return (
     <section className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
       <div className="flex min-h-[39px] items-stretch border-b border-white/8 bg-[#474747] sm:min-h-[40px]">
-        <div className="w-8 shrink-0 bg-[var(--accent-soft)] sm:w-9" />
+        <div className="w-8 shrink-0 bg-[var(--accent)] sm:w-9" />
         <div className="flex min-w-0 items-center px-3 sm:px-3.5">
           <h2 className="truncate text-[11px] font-semibold text-white sm:text-[12px]">
             {title}
@@ -758,7 +758,7 @@ export default function GameTopupPanel({
 
   return (
     <div className="site-shell pt-8 sm:pt-10">
-      <div className="xl:grid xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)] xl:items-start xl:gap-8">
+      <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)] xl:items-start xl:gap-8 xl:space-y-0">
         <div className="md:hidden">
           <div className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] p-2 shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
             <div className="grid grid-cols-2 gap-2">
@@ -767,7 +767,7 @@ export default function GameTopupPanel({
                 onClick={() => setMobileContentTab("transaction")}
                 className={`flex h-11 items-center justify-center rounded-[14px] px-4 text-[13px] font-semibold transition ${
                   mobileContentTab === "transaction"
-                    ? "bg-[var(--accent-soft)] text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)]"
+                    ? "border border-[rgba(211,59,59,0.38)] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] text-white shadow-[0_12px_24px_var(--accent-glow)]"
                     : "bg-[#32343b] text-white/72"
                 }`}
               >
@@ -779,7 +779,7 @@ export default function GameTopupPanel({
                 onClick={() => setMobileContentTab("detail")}
                 className={`flex h-11 items-center justify-center rounded-[14px] px-4 text-[13px] font-semibold transition ${
                   mobileContentTab === "detail"
-                    ? "bg-[var(--accent-soft)] text-white shadow-[0_12px_24px_rgba(0,0,0,0.18)]"
+                    ? "border border-[rgba(211,59,59,0.38)] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] text-white shadow-[0_12px_24px_var(--accent-glow)]"
                     : "bg-[#32343b] text-white/72"
                 }`}
               >

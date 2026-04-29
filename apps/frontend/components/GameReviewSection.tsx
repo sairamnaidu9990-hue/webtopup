@@ -103,7 +103,7 @@ export default function GameReviewSection({
       {showSummary ? (
         <div className="overflow-hidden rounded-[18px] border border-white/8 bg-[#2a2a2f] shadow-[0_12px_24px_rgba(0,0,0,0.14)]">
           <div className="flex min-h-[39px] items-stretch border-b border-white/8 bg-[#474747] sm:min-h-[40px]">
-            <div className="flex w-8 shrink-0 items-center justify-center bg-[var(--accent-soft)] text-[12px] font-bold text-white sm:w-9 sm:text-[13px]">
+            <div className="flex w-8 shrink-0 items-center justify-center bg-[var(--accent)] text-[12px] font-bold text-white sm:w-9 sm:text-[13px]">
               ★
             </div>
             <div className="flex min-w-0 items-center px-3 sm:px-3.5">
