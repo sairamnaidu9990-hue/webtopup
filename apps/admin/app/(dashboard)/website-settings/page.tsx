@@ -82,6 +82,9 @@ const defaultForm: SiteSetting = {
   maintenanceTitle: "Website Sedang Maintenance",
   maintenanceMessage:
     "Kami sedang melakukan peningkatan sistem agar layanan lebih stabil. Silakan kembali lagi dalam beberapa saat.",
+  legalityContent: "",
+  privacyPolicyContent: "",
+  termsConditionsContent: "",
   banners: Array.from({ length: DEFAULT_BANNER_COUNT }, () => ({
     title: "",
     imageUrl: "",
@@ -333,6 +336,9 @@ export default function WebsiteSettingsPage() {
           maintenanceModeEnabled: form.maintenanceModeEnabled,
           maintenanceTitle: form.maintenanceTitle,
           maintenanceMessage: form.maintenanceMessage,
+          legalityContent: form.legalityContent,
+          privacyPolicyContent: form.privacyPolicyContent,
+          termsConditionsContent: form.termsConditionsContent,
           banners: form.banners,
           footerDescription: form.footerDescription,
           footerBottomText: form.footerBottomText,
@@ -1168,6 +1174,66 @@ export default function WebsiteSettingsPage() {
                   </span>
                 </label>
               </div>
+            </div>
+          </SettingsSubsection>
+
+          <SettingsSubsection
+            title="Halaman Informasi"
+            description="Isi konten untuk halaman Legalitas, Kebijakan Pribadi, dan Syarat & Ketentuan yang akan tampil di storefront user."
+          >
+            <div className="space-y-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Legalitas
+              </label>
+              <textarea
+                value={form.legalityContent}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    legalityContent: event.target.value,
+                  }))
+                }
+                placeholder="Tulis isi halaman legalitas di sini..."
+                className="min-h-[180px] w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Bisa diisi profil badan usaha, alamat, kontak resmi, izin, atau
+                informasi legal lain. Enter baru akan tampil sebagai paragraf/baris baru.
+              </p>
+            </div>
+
+            <div className="space-y-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Kebijakan Pribadi
+              </label>
+              <textarea
+                value={form.privacyPolicyContent}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    privacyPolicyContent: event.target.value,
+                  }))
+                }
+                placeholder="Tulis isi halaman kebijakan pribadi di sini..."
+                className="min-h-[200px] w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+            </div>
+
+            <div className="space-y-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Syarat & Ketentuan
+              </label>
+              <textarea
+                value={form.termsConditionsContent}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    termsConditionsContent: event.target.value,
+                  }))
+                }
+                placeholder="Tulis isi halaman syarat & ketentuan di sini..."
+                className="min-h-[220px] w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
             </div>
           </SettingsSubsection>
 

@@ -46,6 +46,9 @@ const defaultSiteSetting = {
   maintenanceTitle: "Website Sedang Maintenance",
   maintenanceMessage:
     "Kami sedang melakukan peningkatan sistem agar layanan lebih stabil. Silakan kembali lagi dalam beberapa saat.",
+  legalityContent: "",
+  privacyPolicyContent: "",
+  termsConditionsContent: "",
   banners: [
     {
       title: "",
@@ -190,6 +193,10 @@ function normalizeMaintenanceTitle(value) {
 function normalizeMaintenanceMessage(value) {
   const message = String(value || "").trim();
   return message || defaultSiteSetting.maintenanceMessage;
+}
+
+function normalizeStaticInfoContent(value) {
+  return String(value || "").trim();
 }
 
 function normalizeGameCategories(items, fallback = DEFAULT_GAME_CATEGORIES) {
@@ -404,6 +411,13 @@ function serializeSiteSetting(siteSetting) {
     maintenanceMessage: normalizeMaintenanceMessage(
       siteSetting.maintenanceMessage
     ),
+    legalityContent: normalizeStaticInfoContent(siteSetting.legalityContent),
+    privacyPolicyContent: normalizeStaticInfoContent(
+      siteSetting.privacyPolicyContent
+    ),
+    termsConditionsContent: normalizeStaticInfoContent(
+      siteSetting.termsConditionsContent
+    ),
     banners,
     footerDescription:
       siteSetting.footerDescription ?? defaultSiteSetting.footerDescription,
@@ -595,6 +609,24 @@ exports.updateSiteSetting = async (req, res) => {
     if (req.body.maintenanceMessage != null) {
       siteSetting.maintenanceMessage = normalizeMaintenanceMessage(
         req.body.maintenanceMessage
+      );
+    }
+
+    if (req.body.legalityContent != null) {
+      siteSetting.legalityContent = normalizeStaticInfoContent(
+        req.body.legalityContent
+      );
+    }
+
+    if (req.body.privacyPolicyContent != null) {
+      siteSetting.privacyPolicyContent = normalizeStaticInfoContent(
+        req.body.privacyPolicyContent
+      );
+    }
+
+    if (req.body.termsConditionsContent != null) {
+      siteSetting.termsConditionsContent = normalizeStaticInfoContent(
+        req.body.termsConditionsContent
       );
     }
 

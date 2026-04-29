@@ -170,6 +170,21 @@ const siteSettingSchema = new mongoose.Schema(
         "Kami sedang melakukan peningkatan sistem agar layanan lebih stabil. Silakan kembali lagi dalam beberapa saat.",
       trim: true,
     },
+    legalityContent: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    privacyPolicyContent: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    termsConditionsContent: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     banners: [
       new mongoose.Schema(
         {

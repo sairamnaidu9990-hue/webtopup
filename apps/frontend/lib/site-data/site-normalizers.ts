@@ -105,6 +105,13 @@ export function normalizeSiteSetting(
     maintenanceMessage:
       String(siteSetting?.maintenanceMessage || "").trim() ||
       defaultSiteSetting.maintenanceMessage,
+    legalityContent: String(siteSetting?.legalityContent || "").trim(),
+    privacyPolicyContent: String(
+      siteSetting?.privacyPolicyContent || ""
+    ).trim(),
+    termsConditionsContent: String(
+      siteSetting?.termsConditionsContent || ""
+    ).trim(),
     banners: syncBannerLength(
       Array.isArray(siteSetting?.banners) ? siteSetting.banners : [],
       bannerCount

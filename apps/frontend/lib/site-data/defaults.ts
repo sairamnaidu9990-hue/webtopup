@@ -31,6 +31,9 @@ export const defaultSiteSetting: PublicSiteSetting = {
   maintenanceTitle: "Website Sedang Maintenance",
   maintenanceMessage:
     "Kami sedang melakukan peningkatan sistem agar layanan lebih stabil. Silakan kembali lagi dalam beberapa saat.",
+  legalityContent: "",
+  privacyPolicyContent: "",
+  termsConditionsContent: "",
   banners: [],
   footerDescription:
     "Top up game dan voucher digital dengan katalog yang dikelola langsung dari panel admin.",

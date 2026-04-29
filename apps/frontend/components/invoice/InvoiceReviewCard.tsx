@@ -242,7 +242,7 @@ export default function InvoiceReviewCard({
                 rows={5}
                 maxLength={1200}
                 disabled={submitting}
-                className="mt-3 min-h-[140px] w-full rounded-[16px] border border-white/8 bg-[#2c2f37] px-4 py-3 text-[14px] text-white outline-none transition placeholder:text-white/28 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] disabled:cursor-not-allowed disabled:opacity-70"
+                className="mt-3 min-h-[140px] w-full rounded-[16px] border border-white/8 bg-[#2c2f37] px-4 py-3 text-base text-white outline-none transition placeholder:text-white/28 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] disabled:cursor-not-allowed disabled:opacity-70 sm:text-[14px]"
               />
               <p className="mt-2 text-[12px] text-white/46">
                 Komentar bersifat opsional, tapi sangat membantu pelanggan lain.

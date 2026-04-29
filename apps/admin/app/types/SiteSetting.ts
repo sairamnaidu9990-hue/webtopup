@@ -47,6 +47,9 @@ export type SiteSetting = {
   maintenanceModeEnabled: boolean;
   maintenanceTitle: string;
   maintenanceMessage: string;
+  legalityContent: string;
+  privacyPolicyContent: string;
+  termsConditionsContent: string;
   banners: SiteBanner[];
   footerDescription: string;
   footerBottomText: string;

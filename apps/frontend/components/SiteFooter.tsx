@@ -1,5 +1,7 @@
+import Link from "next/link";
 import Image from "next/image";
 import type { PublicSiteSetting } from "@/lib/siteData";
+import { SITE_INFO_PAGES } from "@/lib/site-info-pages";
 
 function getInitials(value: string) {
   return value
@@ -100,6 +102,23 @@ export default function SiteFooter({
                 ))}
               </div>
             ) : null}
+
+            <div className="space-y-3">
+              <p className="text-base font-semibold text-[var(--accent-soft)]">
+                Informasi
+              </p>
+              <div className="space-y-2.5">
+                {SITE_INFO_PAGES.map((item) => (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    className="block text-sm text-white/82 transition hover:text-white"
+                  >
+                    {item.title}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
 
           {footerColumns.length > 0 ? (
