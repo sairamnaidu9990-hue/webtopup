@@ -1168,7 +1168,7 @@ export default function GameTopupPanel({
           </div>
         </div>
 
-        <div className="hidden space-y-3 md:block">
+        <div className="hidden space-y-3 md:block xl:sticky xl:top-[104px] xl:self-start">
           <GameReviewSection
             gameName={game.name}
             summary={reviewSummary}
@@ -1321,18 +1321,6 @@ export default function GameTopupPanel({
             reviewPageHref={reviewPageHref}
           />
         </div>
-
-        {reviewSummary.commentsVisible && reviewSummary.recentComments.length > 0 ? (
-          <div className="hidden md:col-span-2 md:block">
-            <GameReviewSection
-              gameName={game.name}
-              summary={reviewSummary}
-              showSummary={false}
-              showComments
-              reviewPageHref={reviewPageHref}
-            />
-          </div>
-        ) : null}
 
         {gameFaqs.length > 0 ? (
           <div
