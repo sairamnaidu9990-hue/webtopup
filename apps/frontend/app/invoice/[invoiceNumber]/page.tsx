@@ -82,7 +82,7 @@ export default async function InvoicePage({
   }
 
   const paymentCurrency = order.price.currency || order.variantSnapshot.currency || "IDR";
-  const productImage = order.variantSnapshot.logo || order.gameSnapshot.logo;
+  const productImage = order.gameSnapshot.logo || "";
   const transactionProgress = getTransactionProgress(order);
   const shouldAutoRefresh = shouldAutoRefreshOrder(order);
   const displayGameProvider = shouldHideInternalProvider(order.gameSnapshot.provider)
@@ -127,6 +127,10 @@ export default async function InvoicePage({
       order.paymentGateway.virtualAccountNumber ||
       paymentActionUrl
   );
+  const mobileStatusAlert =
+    normalizedOrderStatus === "SUCCESS"
+      ? "Status berhasil diproses"
+      : null;
 
   return (
     <>
@@ -166,11 +170,18 @@ export default async function InvoicePage({
             <InvoiceProgressSection steps={transactionProgress} />
 
             <div className="space-y-4 px-5 py-5 sm:px-6">
-              <InvoicePaymentTimer
-                createdAt={order.createdAt}
-                expiresAt={order.paymentGateway.expiresAt}
-                paymentStatus={order.paymentStatus}
-              />
+              <div className="flex flex-wrap items-center gap-2.5">
+                <InvoicePaymentTimer
+                  createdAt={order.createdAt}
+                  expiresAt={order.paymentGateway.expiresAt}
+                  paymentStatus={order.paymentStatus}
+                />
+                {mobileStatusAlert ? (
+                  <div className="inline-flex min-h-[44px] items-center rounded-[14px] border border-emerald-400/25 bg-emerald-500/10 px-4 py-2 text-[12px] font-semibold text-emerald-200 shadow-[0_10px_24px_rgba(34,197,94,0.12)] md:hidden">
+                    {mobileStatusAlert}
+                  </div>
+                ) : null}
+              </div>
 
               <div className="grid gap-5 md:grid-cols-[minmax(0,1.55fr)_minmax(290px,0.95fr)]">
                 <InvoicePaymentSummarySection

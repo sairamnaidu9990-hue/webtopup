@@ -59,7 +59,7 @@ export default function InvoicePaymentSummarySection({
           {productImage ? (
             <Image
               src={productImage}
-              alt={order.variantSnapshot.name || order.gameSnapshot.name}
+              alt={order.gameSnapshot.name || order.variantSnapshot.name}
               width={88}
               height={88}
               sizes="88px"

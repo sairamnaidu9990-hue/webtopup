@@ -129,7 +129,7 @@ export default function RecentTransactionsSection({
             <tr>
               <th className="px-4 py-3 font-medium sm:px-5">Tanggal</th>
               <th className="px-4 py-3 font-medium sm:px-5">Nomor Invoice</th>
-              <th className="px-4 py-3 font-medium sm:px-5">Variant</th>
+              <th className="px-4 py-3 font-medium sm:px-5">Game / Variant</th>
               <th className="px-4 py-3 font-medium sm:px-5">No. Handphone</th>
               <th className="px-4 py-3 font-medium sm:px-5">Harga</th>
               <th className="px-4 py-3 font-medium sm:px-5">Status</th>
@@ -158,9 +158,14 @@ export default function RecentTransactionsSection({
                     {order.invoiceNumber}
                   </td>
                   <td className="px-4 py-4 text-white/78 sm:px-5">
-                    <span className="line-clamp-2 min-w-[160px]">
-                      {order.variantName || "-"}
-                    </span>
+                    <div className="min-w-[180px]">
+                      <p className="line-clamp-1 font-medium text-white/92">
+                        {order.gameName || "-"}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-[11px] text-white/54">
+                        {order.variantName || "-"}
+                      </p>
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-white/78 sm:px-5">
                     {order.phoneNumber || "-"}

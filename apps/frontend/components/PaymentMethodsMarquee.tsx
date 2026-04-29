@@ -36,8 +36,8 @@ export default function PaymentMethodsMarquee({
   const marqueeItems = [...visiblePaymentMethods, ...visiblePaymentMethods];
 
   return (
-    <section className="pt-8 sm:pt-10 lg:pt-12">
-      <div className="overflow-hidden rounded-[28px] border border-white/8 bg-[#171922] px-5 py-7 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:py-9 lg:px-10 lg:py-10">
+    <section className="mt-8 border-y border-white/8 bg-[linear-gradient(180deg,#661515_0%,#4c1212_34%,#3b0d0d_100%)] py-8 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:mt-10 sm:py-10 lg:mt-12 lg:py-12">
+      <div className="site-shell">
         <div className="mx-auto max-w-4xl text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--accent-soft)]">
             Payment Channel
@@ -53,8 +53,8 @@ export default function PaymentMethodsMarquee({
         </div>
 
         <div className="relative mt-7 overflow-hidden sm:mt-9">
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-[linear-gradient(90deg,#171922_0%,rgba(23,25,34,0)_100%)] sm:w-16" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-[linear-gradient(270deg,#171922_0%,rgba(23,25,34,0)_100%)] sm:w-16" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-[linear-gradient(90deg,#661515_0%,rgba(102,21,21,0)_100%)] sm:w-16" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-[linear-gradient(270deg,#3b0d0d_0%,rgba(59,13,13,0)_100%)] sm:w-16" />
 
           <div
             className="payment-methods-marquee"
@@ -73,7 +73,7 @@ export default function PaymentMethodsMarquee({
                   key={`${paymentMethod.code}-${index}`}
                   className="payment-methods-marquee__item"
                 >
-                  <div className="flex h-[66px] w-[132px] items-center justify-center rounded-[18px] border border-white/8 bg-white/[0.045] px-4 py-3 shadow-[0_14px_32px_rgba(0,0,0,0.18)] backdrop-blur-sm sm:h-[78px] sm:w-[156px] sm:px-5">
+                  <div className="flex h-[66px] w-[132px] items-center justify-center rounded-[18px] border border-white/10 bg-white/[0.08] px-4 py-3 shadow-[0_14px_32px_rgba(0,0,0,0.22)] backdrop-blur-sm sm:h-[78px] sm:w-[156px] sm:px-5">
                     <Image
                       src={paymentMethod.logo || ""}
                       alt={paymentMethod.name}

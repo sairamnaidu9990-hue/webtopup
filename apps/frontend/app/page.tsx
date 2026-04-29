@@ -121,8 +121,9 @@ export default async function HomePage() {
           )}
         </section>
 
-        <PaymentMethodsMarquee paymentMethods={paymentMethods} />
       </div>
+
+      <PaymentMethodsMarquee paymentMethods={paymentMethods} />
     </main>
   );
 }
