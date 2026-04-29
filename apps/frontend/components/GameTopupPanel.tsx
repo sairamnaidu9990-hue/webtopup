@@ -44,7 +44,7 @@ export default function GameTopupPanel({
 
   return (
     <div className="site-shell pt-8 sm:pt-10">
-      <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)] xl:items-start xl:gap-8 xl:space-y-0">
+      <div className="space-y-6">
         <MobileContentTabs
           activeTab={flow.mobileContentTab}
           onChange={flow.setMobileContentTab}
@@ -72,56 +72,58 @@ export default function GameTopupPanel({
           </div>
         ) : null}
 
-        <TransactionContent
-          mobileBottomSpacing={flow.mobileBottomSpacing}
-          mobileContentTab={flow.mobileContentTab}
-          showAccountStep={flow.showAccountStep}
-          resolvedInputs={flow.resolvedInputs}
-          accountValues={flow.accountValues}
-          onAccountChange={flow.handleAccountValueChange}
-          selectedVariant={flow.selectedVariant}
-          variantGroups={flow.variantGroups}
-          onVariantSelect={flow.handleVariantSelect}
-          variantStepNumber={flow.variantStepNumber}
-          paymentMethods={paymentMethods}
-          paymentMethodGroups={flow.paymentMethodGroups}
-          openPaymentGroups={flow.openPaymentGroups}
-          setOpenPaymentGroups={flow.setOpenPaymentGroups}
-          paymentMethodCode={flow.paymentMethodCode}
-          onPaymentMethodSelect={flow.handlePaymentMethodSelect}
-          paymentStepNumber={flow.paymentStepNumber}
-          contactEmail={flow.contactEmail}
-          onContactEmailChange={flow.handleContactEmailChange}
-          contactPhoneCode={flow.contactPhoneCode}
-          contactPhoneNumber={flow.contactPhoneNumber}
-          onContactPhoneChange={flow.handleContactPhoneChange}
-          contactStepNumber={flow.contactStepNumber}
-          promoStepNumber={flow.promoStepNumber}
-          gameCategory={game.category || ""}
-          baseSubtotal={flow.baseSubtotal}
-          selectedCurrency={flow.selectedVariant?.currency || "IDR"}
-          onPromoChange={flow.handlePromoChange}
-          accountStepRef={flow.accountStepRef}
-          variantStepRef={flow.variantStepRef}
-          paymentStepRef={flow.paymentStepRef}
-          contactStepRef={flow.contactStepRef}
-          highlightedStep={flow.highlightedStep}
-        />
+        <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)] xl:items-start xl:gap-8 xl:space-y-0">
+          <TransactionContent
+            mobileBottomSpacing={flow.mobileBottomSpacing}
+            mobileContentTab={flow.mobileContentTab}
+            showAccountStep={flow.showAccountStep}
+            resolvedInputs={flow.resolvedInputs}
+            accountValues={flow.accountValues}
+            onAccountChange={flow.handleAccountValueChange}
+            selectedVariant={flow.selectedVariant}
+            variantGroups={flow.variantGroups}
+            onVariantSelect={flow.handleVariantSelect}
+            variantStepNumber={flow.variantStepNumber}
+            paymentMethods={paymentMethods}
+            paymentMethodGroups={flow.paymentMethodGroups}
+            openPaymentGroups={flow.openPaymentGroups}
+            setOpenPaymentGroups={flow.setOpenPaymentGroups}
+            paymentMethodCode={flow.paymentMethodCode}
+            onPaymentMethodSelect={flow.handlePaymentMethodSelect}
+            paymentStepNumber={flow.paymentStepNumber}
+            contactEmail={flow.contactEmail}
+            onContactEmailChange={flow.handleContactEmailChange}
+            contactPhoneCode={flow.contactPhoneCode}
+            contactPhoneNumber={flow.contactPhoneNumber}
+            onContactPhoneChange={flow.handleContactPhoneChange}
+            contactStepNumber={flow.contactStepNumber}
+            promoStepNumber={flow.promoStepNumber}
+            gameCategory={game.category || ""}
+            baseSubtotal={flow.baseSubtotal}
+            selectedCurrency={flow.selectedVariant?.currency || "IDR"}
+            onPromoChange={flow.handlePromoChange}
+            accountStepRef={flow.accountStepRef}
+            variantStepRef={flow.variantStepRef}
+            paymentStepRef={flow.paymentStepRef}
+            contactStepRef={flow.contactStepRef}
+            highlightedStep={flow.highlightedStep}
+          />
 
-        <DesktopCheckoutSidebar
-          game={game}
-          reviewSummary={reviewSummary}
-          selectedVariant={flow.selectedVariant}
-          createdOrder={flow.createdOrder}
-          baseSubtotal={flow.baseSubtotal}
-          appliedPromo={flow.appliedPromo}
-          promoDiscount={flow.promoDiscount}
-          paymentFee={flow.paymentFee}
-          selectedPaymentMethod={flow.selectedPaymentMethod}
-          totalPayment={flow.totalPayment}
-          isCreatingOrder={flow.isCreatingOrder}
-          onOrderClick={flow.handleOrderClick}
-        />
+          <DesktopCheckoutSidebar
+            game={game}
+            reviewSummary={reviewSummary}
+            selectedVariant={flow.selectedVariant}
+            createdOrder={flow.createdOrder}
+            baseSubtotal={flow.baseSubtotal}
+            appliedPromo={flow.appliedPromo}
+            promoDiscount={flow.promoDiscount}
+            paymentFee={flow.paymentFee}
+            selectedPaymentMethod={flow.selectedPaymentMethod}
+            totalPayment={flow.totalPayment}
+            isCreatingOrder={flow.isCreatingOrder}
+            onOrderClick={flow.handleOrderClick}
+          />
+        </div>
 
         <DetailContent
           mobileContentTab={flow.mobileContentTab}
