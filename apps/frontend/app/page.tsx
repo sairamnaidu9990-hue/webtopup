@@ -1,6 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getPublicSiteSetting, getStorefrontGames, type StorefrontGame } from "@/lib/siteData";
+import PaymentMethodsMarquee from "@/components/PaymentMethodsMarquee";
+import {
+  getPublicPaymentMethods,
+  getPublicSiteSetting,
+  getStorefrontGames,
+  type StorefrontGame,
+} from "@/lib/siteData";
 import SiteBannerCarousel from "@/components/SiteBannerCarousel";
 import AllGamesSection from "@/components/AllGamesSection";
 
@@ -48,9 +54,10 @@ function TrendingGameCard({ game }: { game: StorefrontGame }) {
 }
 
 export default async function HomePage() {
-  const [siteSetting, storefront] = await Promise.all([
+  const [siteSetting, storefront, paymentMethods] = await Promise.all([
     getPublicSiteSetting(),
     getStorefrontGames(),
+    getPublicPaymentMethods(),
   ]);
   const hasBanner = siteSetting.banners.some((banner) => banner.imageUrl);
 
@@ -113,6 +120,8 @@ export default async function HomePage() {
             />
           )}
         </section>
+
+        <PaymentMethodsMarquee paymentMethods={paymentMethods} />
       </div>
     </main>
   );

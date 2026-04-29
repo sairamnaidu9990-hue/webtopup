@@ -729,6 +729,10 @@ function serializeRecentPublicOrder(order) {
   return {
     _id: String(order._id || ""),
     invoiceNumber: maskInvoiceNumber(order.invoiceNumber),
+    variantName:
+      toStringValue(order.variantSnapshot?.name) ||
+      toStringValue(order.gameSnapshot?.name) ||
+      "-",
     phoneNumber: maskPhoneNumber(
       order.contactDetail?.phoneCountryCode,
       order.contactDetail?.phoneNumber

@@ -129,6 +129,7 @@ export default function RecentTransactionsSection({
             <tr>
               <th className="px-4 py-3 font-medium sm:px-5">Tanggal</th>
               <th className="px-4 py-3 font-medium sm:px-5">Nomor Invoice</th>
+              <th className="px-4 py-3 font-medium sm:px-5">Variant</th>
               <th className="px-4 py-3 font-medium sm:px-5">No. Handphone</th>
               <th className="px-4 py-3 font-medium sm:px-5">Harga</th>
               <th className="px-4 py-3 font-medium sm:px-5">Status</th>
@@ -138,7 +139,7 @@ export default function RecentTransactionsSection({
             {orders.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="px-4 py-6 text-center text-sm text-white/45 sm:px-5"
                 >
                   Belum ada transaksi terbaru untuk ditampilkan.
@@ -155,6 +156,11 @@ export default function RecentTransactionsSection({
                   </td>
                   <td className="px-4 py-4 font-medium text-white sm:px-5">
                     {order.invoiceNumber}
+                  </td>
+                  <td className="px-4 py-4 text-white/78 sm:px-5">
+                    <span className="line-clamp-2 min-w-[160px]">
+                      {order.variantName || "-"}
+                    </span>
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-white/78 sm:px-5">
                     {order.phoneNumber || "-"}

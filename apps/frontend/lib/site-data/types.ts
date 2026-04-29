@@ -321,6 +321,7 @@ export type StorefrontOrder = {
 export type RecentPublicOrder = {
   _id: string;
   invoiceNumber: string;
+  variantName: string;
   phoneNumber: string;
   currency: string;
   totalAmount: number;

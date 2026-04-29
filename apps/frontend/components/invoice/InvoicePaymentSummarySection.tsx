@@ -9,6 +9,13 @@ import {
 } from "@/components/invoice/invoicePageUtils";
 import type { StorefrontOrder } from "@/lib/siteData";
 
+function formatCustomerInputLabel(title: string, fallbackName: string) {
+  return String(title || fallbackName || "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export default function InvoicePaymentSummarySection({
   order,
   productImage,
@@ -38,6 +45,13 @@ export default function InvoicePaymentSummarySection({
   paymentActionUrl: string;
   hasPaymentGatewayData: boolean;
 }) {
+  const visibleCustomerInputs = Array.isArray(order.customerInputs)
+    ? order.customerInputs.filter((item) => String(item?.value || "").trim())
+    : [];
+  const paymentProcessLabel = isManualPayment
+    ? "Verifikasi manual"
+    : "Proses otomatis";
+
   return (
     <section className="space-y-4 rounded-[20px] border border-white/8 bg-[#24262d] p-4 sm:p-5">
       <div className="flex items-start gap-4">
@@ -69,6 +83,23 @@ export default function InvoicePaymentSummarySection({
             {order.gameSnapshot.name}
             {displayGameProvider ? ` • ${displayGameProvider}` : ""}
           </p>
+          {visibleCustomerInputs.length > 0 ? (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {visibleCustomerInputs.map((input, index) => {
+                const label = formatCustomerInputLabel(input.title, input.name);
+
+                return (
+                  <span
+                    key={`${input.name}-${input.value}-${index}`}
+                    className="inline-flex items-center gap-1 rounded-full border border-white/8 bg-white/[0.05] px-2.5 py-1 text-[11px] text-white/72"
+                  >
+                    <span className="text-white/44">{label || "Data"}</span>
+                    <span className="font-medium text-white">{input.value}</span>
+                  </span>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -231,6 +262,9 @@ export default function InvoicePaymentSummarySection({
               </p>
               <p className="mt-1 text-[13px] font-medium text-white/88">
                 {paymentMethodName}
+              </p>
+              <p className="mt-1 text-[11px] text-white/46">
+                {paymentProcessLabel}
               </p>
             </div>
             <div className="rounded-[16px] border border-white/8 bg-[#24262d] px-4 py-3.5">

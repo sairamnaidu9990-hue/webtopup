@@ -63,6 +63,7 @@ export const getRecentPublicOrders = cache(
         ? payload.items.map((item: Partial<RecentPublicOrder>) => ({
             _id: String(item?._id || "").trim(),
             invoiceNumber: String(item?.invoiceNumber || "").trim(),
+            variantName: String(item?.variantName || "-").trim() || "-",
             phoneNumber: String(item?.phoneNumber || "-").trim() || "-",
             currency: String(item?.currency || "IDR").trim().toUpperCase(),
             totalAmount: Number(item?.totalAmount || 0),
