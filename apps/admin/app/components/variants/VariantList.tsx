@@ -2,6 +2,7 @@
 
 import { Variant } from "@/app/types/Variant";
 import PaginationControls from "@/app/components/ui/PaginationControls";
+import RemoteThumbnail from "@/app/components/ui/RemoteThumbnail";
 
 type Props = {
   games: Array<{
@@ -171,13 +172,11 @@ export default function VariantList({
                 {(page - 1) * 20 + index + 1}.
               </p>
 
-              {variant.logo ? (
-                <img
-                  src={variant.logo}
-                  alt={variant.name}
-                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
-                />
-              ) : null}
+              <RemoteThumbnail
+                src={variant.logo}
+                alt={variant.name}
+                fallbackText={variant.name.slice(0, 1).toUpperCase()}
+              />
 
               <div className="min-w-0">
                 <p className="break-words font-medium">{variant.name}</p>

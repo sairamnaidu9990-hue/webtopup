@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import VariantMarkupSyncPanel from "@/app/components/variants/VariantMarkupSyncPanel";
 import {
   CATALOG_CACHE_TTL_MS,
@@ -31,7 +31,7 @@ export default function BangjeffMarkupPage() {
   const gamesCacheKey = `${GAMES_CACHE_KEY}:bangjeff`;
   const variantsCacheKey = `${VARIANTS_CACHE_KEY}:bangjeff`;
 
-  const fetchData = async ({
+  const fetchData = useCallback(async ({
     refreshGames = true,
     refreshVariants = true,
   }: {
@@ -76,7 +76,7 @@ export default function BangjeffMarkupPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [gamesCacheKey, variantsCacheKey]);
 
   useEffect(() => {
     const cachedGames = readSessionCache<Game[]>(gamesCacheKey);
@@ -107,12 +107,12 @@ export default function BangjeffMarkupPage() {
       !isSessionCacheFresh(cachedVariants.savedAt, CATALOG_CACHE_TTL_MS);
 
     if (shouldRefreshGames || shouldRefreshVariants) {
-      fetchData({
+      void fetchData({
         refreshGames: shouldRefreshGames,
         refreshVariants: shouldRefreshVariants,
       });
     }
-  }, [gamesCacheKey, variantsCacheKey]);
+  }, [fetchData, gamesCacheKey, variantsCacheKey]);
 
   const stats = useMemo(() => {
     const activeVariants = variants.filter(

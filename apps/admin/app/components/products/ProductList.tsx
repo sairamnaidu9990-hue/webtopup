@@ -1,5 +1,6 @@
 "use client";
 
+import RemoteThumbnail from "@/app/components/ui/RemoteThumbnail";
 import { Product } from "@/app/types/Product";
 
 type Props = {
@@ -28,13 +29,11 @@ export default function ProductList({ products, onDelete, onEdit }: Props) {
             <div className="flex min-w-0 items-start gap-3">
               <p className="w-6 shrink-0 pt-1 text-sm text-gray-500">{i + 1}.</p>
 
-              {p.logo && (
-                <img
-                  src={p.logo}
-                  alt={p.name}
-                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
-                />
-              )}
+              <RemoteThumbnail
+                src={p.logo}
+                alt={p.name}
+                fallbackText={p.name.slice(0, 1).toUpperCase()}
+              />
 
               <div className="min-w-0">
                 <p className="break-words font-medium">{p.name}</p>

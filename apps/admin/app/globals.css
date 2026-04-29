@@ -18,8 +18,38 @@ body {
   min-height: 100%;
   background-color: var(--bg-main);
   color: var(--text-main);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   overflow-x: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.75), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+textarea {
+  resize: vertical;
+}
+
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }

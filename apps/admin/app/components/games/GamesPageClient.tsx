@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import GameForm from "./GameForm";
 import GameList from "./GameList";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
@@ -117,7 +117,7 @@ export default function GamesPageClient({
     setVariantCategories([]);
   };
 
-  const fetchGames = async () => {
+  const fetchGames = useCallback(async () => {
     const requestId = ++fetchRequestIdRef.current;
 
     try {
@@ -178,9 +178,9 @@ export default function GamesPageClient({
         setLoading(false);
       }
     }
-  };
+  }, [page, syncSource, deferredSearch, statusFilter, categoryFilter]);
 
-  const fetchCategoryOptions = async () => {
+  const fetchCategoryOptions = useCallback(async () => {
     try {
       const response = await fetch("/api/site-settings", {
         cache: "no-store",
@@ -203,16 +203,16 @@ export default function GamesPageClient({
     } catch (error) {
       console.error("Category fetch error:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     setLoading(true);
-    fetchGames();
-  }, [page, syncSource, deferredSearch, statusFilter, categoryFilter]);
+    void fetchGames();
+  }, [fetchGames]);
 
   useEffect(() => {
-    fetchCategoryOptions();
-  }, []);
+    void fetchCategoryOptions();
+  }, [fetchCategoryOptions]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Yakin ingin menghapus game ini?")) return;
@@ -225,7 +225,7 @@ export default function GamesPageClient({
       if (games.length === 1 && page > 1) {
         setPage((current) => current - 1);
       } else {
-        fetchGames();
+        void fetchGames();
       }
     } catch (err) {
       console.error("Delete error:", err);
@@ -330,7 +330,7 @@ export default function GamesPageClient({
       );
 
       resetForm();
-      fetchGames();
+      void fetchGames();
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       console.error("Submit error:", err);

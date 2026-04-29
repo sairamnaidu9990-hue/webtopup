@@ -11,7 +11,8 @@ type CardProps = {
 };
 
 const variantClasses: Record<CardVariant, string> = {
-  default: "border border-gray-200/70 bg-white text-gray-900",
+  default:
+    "border border-gray-200/80 bg-white/95 text-gray-900 shadow-[0_18px_45px_rgba(15,23,42,0.06)] backdrop-blur-sm",
   warning:
     "border border-amber-500/20 bg-gradient-to-r from-amber-600 to-[#1b2430] text-white",
   info:
@@ -31,7 +32,7 @@ export default function Card({
 }: CardProps) {
   return (
     <div
-      className={`rounded-2xl p-4 shadow-sm transition-all duration-200 hover:-translate-y-[2px] hover:shadow-md sm:p-5 ${variantClasses[variant]} ${className}`}
+      className={`rounded-[22px] p-4 transition-all duration-200 hover:-translate-y-[2px] hover:shadow-lg sm:p-5 ${variantClasses[variant]} ${className}`}
     >
       {title && (
         <h3

@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import Card from "@/app/components/ui/Card";
 import PaginationControls from "@/app/components/ui/PaginationControls";
 import SectionTitle from "@/app/components/ui/SectionTitle";
@@ -189,19 +189,16 @@ export default function OrdersPageClient() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState("");
   const [updatingOrderId, setUpdatingOrderId] = useState("");
-  const [isPolling, setIsPolling] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const deferredSearch = useDeferredValue(search);
 
-  const fetchOrders = async (options?: { silent?: boolean }) => {
+  const fetchOrders = useCallback(async (options?: { silent?: boolean }) => {
     try {
       const silent = Boolean(options?.silent);
 
       if (!silent) {
         setLoading(true);
-      } else {
-        setIsPolling(true);
       }
 
       setError("");
@@ -258,18 +255,16 @@ export default function OrdersPageClient() {
         );
       }
     } finally {
-      if (options?.silent) {
-        setIsPolling(false);
-      } else {
+      if (!options?.silent) {
         setLoading(false);
         setHasLoadedOnce(true);
       }
     }
-  };
+  }, [page, deferredSearch, statusFilter, paymentStatusFilter]);
 
   useEffect(() => {
-    fetchOrders();
-  }, [page, deferredSearch, statusFilter, paymentStatusFilter]);
+    void fetchOrders();
+  }, [fetchOrders]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -279,7 +274,7 @@ export default function OrdersPageClient() {
     }, POLLING_INTERVAL_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [page, deferredSearch, statusFilter, paymentStatusFilter, updatingOrderId]);
+  }, [fetchOrders, updatingOrderId]);
 
   useEffect(() => {
     if (!selectedOrder) {

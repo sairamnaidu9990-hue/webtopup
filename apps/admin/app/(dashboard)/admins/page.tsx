@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import SectionTitle from "../../components/ui/SectionTitle";
 import Card from "../../components/ui/Card";
 import type { AdminAccount } from "@/app/types/Admin";
@@ -46,7 +46,7 @@ export default function AdminsPage() {
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
 
-  const fetchPageData = async () => {
+  const fetchPageData = useCallback(async () => {
     try {
       const [meRes, adminsRes] = await Promise.all([
         fetch("/api/auth/me", { cache: "no-store" }),
@@ -74,11 +74,11 @@ export default function AdminsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchPageData();
-  }, []);
+    void fetchPageData();
+  }, [fetchPageData]);
 
   const activeAdmins = useMemo(
     () => admins.filter((admin) => admin.isActive).length,
@@ -293,6 +293,20 @@ export default function AdminsPage() {
           {error}
         </div>
       ) : null}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card title="Total Admin" variant="info">
+          <p className="text-4xl font-bold tracking-tight">{admins.length}</p>
+        </Card>
+
+        <Card title="Admin Aktif" variant="success">
+          <p className="text-4xl font-bold tracking-tight">{activeAdmins}</p>
+        </Card>
+
+        <Card title="Super Admin" variant="warning">
+          <p className="text-4xl font-bold tracking-tight">{superAdmins}</p>
+        </Card>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card title={editId ? "Edit Admin" : "Tambah Admin"}>

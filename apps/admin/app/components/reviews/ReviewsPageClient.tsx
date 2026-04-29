@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import Card from "@/app/components/ui/Card";
 import PaginationControls from "@/app/components/ui/PaginationControls";
 import SectionTitle from "@/app/components/ui/SectionTitle";
@@ -77,7 +77,7 @@ export default function ReviewsPageClient() {
 
   const deferredSearch = useDeferredValue(search);
 
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -144,11 +144,11 @@ export default function ReviewsPageClient() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, deferredSearch, hiddenFilter, ratingFilter]);
 
   useEffect(() => {
     void fetchReviews();
-  }, [page, deferredSearch, hiddenFilter, ratingFilter]);
+  }, [fetchReviews]);
 
   const handleReviewUpdate = async (
     review: Review,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import VariantForm from "./VariantForm";
 import VariantList from "./VariantList";
 import { Variant } from "@/app/types/Variant";
@@ -59,7 +59,7 @@ export default function VariantsPageClient({
   const providerQuery = syncSource ? `syncSource=${syncSource}` : "";
   const deferredSearch = useDeferredValue(search);
 
-  const fetchGames = async () => {
+  const fetchGames = useCallback(async () => {
     try {
       const response = await fetch(
         `/api/games${providerQuery ? `?${providerQuery}` : ""}`,
@@ -72,13 +72,13 @@ export default function VariantsPageClient({
     } catch (error) {
       console.error(error);
     }
-  };
-
-  useEffect(() => {
-    fetchGames();
   }, [providerQuery]);
 
-  const fetchVariants = async () => {
+  useEffect(() => {
+    void fetchGames();
+  }, [fetchGames]);
+
+  const fetchVariants = useCallback(async () => {
     const requestId = ++fetchRequestIdRef.current;
 
     try {
@@ -143,12 +143,12 @@ export default function VariantsPageClient({
         setLoading(false);
       }
     }
-  };
+  }, [page, syncSource, deferredSearch, gameFilter, categoryFilter, statusFilter]);
 
   useEffect(() => {
     setLoading(true);
-    fetchVariants();
-  }, [page, syncSource, deferredSearch, gameFilter, categoryFilter, statusFilter]);
+    void fetchVariants();
+  }, [fetchVariants]);
 
   const resetForm = () => {
     setEditingId(null);

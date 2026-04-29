@@ -1,6 +1,7 @@
 "use client";
 
 import PaginationControls from "@/app/components/ui/PaginationControls";
+import RemoteThumbnail from "@/app/components/ui/RemoteThumbnail";
 import type {
   PaymentMethod,
   PaymentMethodCategory,
@@ -192,17 +193,11 @@ export default function PaymentMethodList({
                 {(page - 1) * 20 + index + 1}.
               </p>
 
-              {paymentMethod.logo ? (
-                <img
-                  src={paymentMethod.logo}
-                  alt={paymentMethod.name}
-                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-semibold text-gray-500">
-                  {paymentMethod.name.slice(0, 1).toUpperCase()}
-                </div>
-              )}
+              <RemoteThumbnail
+                src={paymentMethod.logo}
+                alt={paymentMethod.name}
+                fallbackText={paymentMethod.name.slice(0, 1).toUpperCase()}
+              />
 
               <div className="min-w-0">
                 <p className="break-words font-medium">{paymentMethod.name}</p>

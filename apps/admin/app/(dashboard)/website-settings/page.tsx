@@ -1,279 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import SectionTitle from "../../components/ui/SectionTitle";
-import Card from "../../components/ui/Card";
+import { useCallback, useEffect, useState } from "react";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
-import type {
-  SiteCategoryDescription,
-  SiteFooterColumn,
-  SiteFooterLink,
-  SiteGameFaq,
-  SiteSetting,
-} from "@/app/types/SiteSetting";
-
-const DEFAULT_BANNER_COUNT = 3;
-const MAX_BANNER_COUNT = 10;
-const DEFAULT_AUTO_SLIDE_SECONDS = 5;
-const DEFAULT_GAME_CATEGORIES = [
-  "Topup Game",
-  "Topup Pulsa",
-  "Voucher",
-  "Live Streaming",
-];
-const DEFAULT_FOOTER_SOCIAL_LINKS: SiteFooterLink[] = [
-  { label: "Instagram", url: "" },
-  { label: "Telegram", url: "" },
-  { label: "Facebook", url: "" },
-];
-const DEFAULT_FOOTER_COLUMNS: SiteFooterColumn[] = [
-  {
-    title: "Partnership",
-    links: [
-      { label: "Reseller", url: "" },
-      { label: "Affiliate", url: "" },
-    ],
-  },
-  {
-    title: "Site Map",
-    links: [
-      { label: "Contact Us", url: "" },
-      { label: "Terms & Conditions", url: "" },
-    ],
-  },
-  {
-    title: "Support",
-    links: [
-      { label: "Telegram", url: "" },
-      { label: "Line", url: "" },
-    ],
-  },
-];
-const DEFAULT_CATEGORY_DESCRIPTIONS: SiteCategoryDescription[] =
-  DEFAULT_GAME_CATEGORIES.map((category) => ({
-    category,
-    description: "",
-  }));
-const DEFAULT_GAME_FAQS: SiteGameFaq[] = [];
-
-const defaultForm: SiteSetting = {
-  siteName: "WebTopup",
-  siteLogoUrl: "",
-  siteFaviconUrl: "",
-  siteDomain: "",
-  googleSiteVerification: "",
-  siteTitle: "WebTopup - Top Up Game Realtime",
-  siteDescription:
-    "Website top up game realtime dengan katalog yang dikelola langsung dari panel admin.",
-  gameCategories: DEFAULT_GAME_CATEGORIES,
-  categoryDescriptions: DEFAULT_CATEGORY_DESCRIPTIONS,
-  gameFaqs: DEFAULT_GAME_FAQS,
-  reviewCommentsVisible: true,
-  bannerCount: DEFAULT_BANNER_COUNT,
-  bannerAutoSlideSeconds: DEFAULT_AUTO_SLIDE_SECONDS,
-  homepagePopupEnabled: false,
-  homepagePopupTitle: "",
-  homepagePopupMessage: "",
-  homepagePopupImageUrl: "",
-  floatingContactEnabled: false,
-  floatingContactLabel: "Chat CS",
-  floatingContactUrl: "",
-  maintenanceModeEnabled: false,
-  maintenanceTitle: "Website Sedang Maintenance",
-  maintenanceMessage:
-    "Kami sedang melakukan peningkatan sistem agar layanan lebih stabil. Silakan kembali lagi dalam beberapa saat.",
-  legalityContent: "",
-  privacyPolicyContent: "",
-  termsConditionsContent: "",
-  banners: Array.from({ length: DEFAULT_BANNER_COUNT }, () => ({
-    title: "",
-    imageUrl: "",
-  })),
-  footerDescription:
-    "Top up game dan voucher digital dengan katalog yang dikelola langsung dari panel admin.",
-  footerBottomText: "© 2026 WebTopup. All rights reserved.",
-  footerSocialLinks: DEFAULT_FOOTER_SOCIAL_LINKS,
-  footerLinkColumns: DEFAULT_FOOTER_COLUMNS,
-};
-
-function clampNumber(value: number, min: number, max: number, fallback: number) {
-  if (!Number.isFinite(value)) {
-    return fallback;
-  }
-
-  return Math.min(Math.max(value, min), max);
-}
-
-function syncBannerLength(
-  banners: SiteSetting["banners"],
-  bannerCount: number
-): SiteSetting["banners"] {
-  return Array.from({ length: bannerCount }, (_, index) => ({
-    title: banners[index]?.title || "",
-    imageUrl: banners[index]?.imageUrl || "",
-  }));
-}
-
-function normalizeGameCategories(categories?: string[] | null): string[] {
-  const nextCategories = Array.isArray(categories)
-    ? categories.map((item) => String(item || "").trim()).filter(Boolean)
-    : [];
-
-  return nextCategories.length > 0
-    ? nextCategories
-    : defaultForm.gameCategories;
-}
-
-function syncCategoryDescriptions(
-  categoryDescriptions: SiteSetting["categoryDescriptions"],
-  categories: string[]
-): SiteSetting["categoryDescriptions"] {
-  const descriptionMap = new Map(
-    (Array.isArray(categoryDescriptions) ? categoryDescriptions : []).map(
-      (item) => [
-        String(item?.category || "")
-          .trim()
-          .toLowerCase(),
-        String(item?.description || ""),
-      ]
-    )
-  );
-
-  return categories.map((category) => ({
-    category,
-    description: descriptionMap.get(category.toLowerCase()) || "",
-  }));
-}
-
-function normalizeGameFaqs(
-  gameFaqs?: SiteSetting["gameFaqs"] | null
-): SiteSetting["gameFaqs"] {
-  return Array.isArray(gameFaqs)
-    ? gameFaqs.map((item) => ({
-        question: item?.question || "",
-        answer: item?.answer || "",
-      }))
-    : defaultForm.gameFaqs;
-}
-
-function normalizeFooterSocialLinks(
-  links: SiteSetting["footerSocialLinks"]
-): SiteSetting["footerSocialLinks"] {
-  return Array.isArray(links)
-    ? links.map((item) => ({
-        label: item?.label || "",
-        url: item?.url || "",
-      }))
-    : [];
-}
-
-function normalizeFooterLinkColumns(
-  columns: SiteSetting["footerLinkColumns"]
-): SiteSetting["footerLinkColumns"] {
-  return Array.isArray(columns)
-    ? columns.map((column) => ({
-        title: column?.title || "",
-        links: Array.isArray(column?.links)
-          ? column.links.map((item) => ({
-              label: item?.label || "",
-              url: item?.url || "",
-            }))
-          : [],
-      }))
-    : [];
-}
-
-function normalizeSiteSetting(
-  value?: Partial<SiteSetting> | null
-): SiteSetting {
-  const gameCategories = normalizeGameCategories(value?.gameCategories);
-  const bannerCount = clampNumber(
-    Number(value?.bannerCount ?? defaultForm.bannerCount),
-    0,
-    MAX_BANNER_COUNT,
-    defaultForm.bannerCount
-  );
-
-  return {
-    ...defaultForm,
-    ...value,
-    gameCategories,
-    categoryDescriptions: syncCategoryDescriptions(
-      value?.categoryDescriptions ?? defaultForm.categoryDescriptions,
-      gameCategories
-    ),
-    gameFaqs: normalizeGameFaqs(value?.gameFaqs),
-    reviewCommentsVisible: Boolean(value?.reviewCommentsVisible ?? true),
-    bannerCount,
-    bannerAutoSlideSeconds: clampNumber(
-      Number(
-        value?.bannerAutoSlideSeconds ?? defaultForm.bannerAutoSlideSeconds
-      ),
-      1,
-      30,
-      defaultForm.bannerAutoSlideSeconds
-    ),
-    homepagePopupEnabled: Boolean(value?.homepagePopupEnabled),
-    googleSiteVerification: String(value?.googleSiteVerification || "").trim(),
-    homepagePopupTitle: String(value?.homepagePopupTitle || "").trim(),
-    homepagePopupMessage: String(value?.homepagePopupMessage || "").trim(),
-    homepagePopupImageUrl: String(value?.homepagePopupImageUrl || "").trim(),
-    banners: syncBannerLength(
-      Array.isArray(value?.banners) ? value.banners : defaultForm.banners,
-      bannerCount
-    ),
-    footerSocialLinks: normalizeFooterSocialLinks(
-      value?.footerSocialLinks ?? defaultForm.footerSocialLinks
-    ),
-    footerLinkColumns: normalizeFooterLinkColumns(
-      value?.footerLinkColumns ?? defaultForm.footerLinkColumns
-    ),
-  };
-}
-
-function formatDate(value?: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  try {
-    return new Intl.DateTimeFormat("id-ID", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(value));
-  } catch {
-    return value;
-  }
-}
-
-function SettingsSubsection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="lg:col-span-2 rounded-3xl border border-gray-200 bg-gray-50/70 p-5 sm:p-6">
-      <div className="mb-5 border-b border-gray-200 pb-4">
-        <p className="text-base font-semibold text-gray-900">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-gray-500">{description}</p>
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">{children}</div>
-    </div>
-  );
-}
+import Card from "../../components/ui/Card";
+import SectionTitle from "../../components/ui/SectionTitle";
+import type { SiteSetting } from "@/app/types/SiteSetting";
+import SettingsSubsection from "./SettingsSubsection";
+import {
+  MAX_BANNER_COUNT,
+  clampNumber,
+  defaultSiteSettingForm,
+  normalizeSiteSetting,
+  syncBannerLength,
+} from "./siteSettingsForm";
 
 export default function WebsiteSettingsPage() {
-  const [form, setForm] = useState<SiteSetting>(defaultForm);
+  const [form, setForm] = useState<SiteSetting>(defaultSiteSettingForm);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const response = await fetch("/api/site-settings", {
         cache: "no-store",
@@ -294,11 +42,11 @@ export default function WebsiteSettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    void fetchSettings();
+  }, [fetchSettings]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -383,6 +131,15 @@ export default function WebsiteSettingsPage() {
         </div>
       ) : null}
 
+      {loading ? (
+        <Card title="Pengaturan Frontend User">
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+            Memuat pengaturan website...
+          </div>
+        </Card>
+      ) : null}
+
+      {!loading ? (
       <Card title="Pengaturan Frontend User">
         <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-2">
           <SettingsSubsection
@@ -475,7 +232,8 @@ export default function WebsiteSettingsPage() {
               />
               <p className="text-xs leading-6 text-gray-500">
                 Isi dengan token dari Google Search Console. Contoh: jika meta
-                tag dari Google berisi <span className="font-mono">content="abc123"</span>,
+                tag dari Google berisi{" "}
+                <span className="font-mono">content=&quot;abc123&quot;</span>,
                 cukup masukkan <span className="font-mono">abc123</span>.
               </p>
             </div>
@@ -535,7 +293,7 @@ export default function WebsiteSettingsPage() {
                     Number(event.target.value),
                     0,
                     MAX_BANNER_COUNT,
-                    defaultForm.bannerCount
+                    defaultSiteSettingForm.bannerCount
                   );
 
                   setForm((current) => ({
@@ -567,7 +325,7 @@ export default function WebsiteSettingsPage() {
                       Number(event.target.value),
                       1,
                       30,
-                      defaultForm.bannerAutoSlideSeconds
+                      defaultSiteSettingForm.bannerAutoSlideSeconds
                     ),
                   }))
                 }
@@ -1621,6 +1379,7 @@ export default function WebsiteSettingsPage() {
           </div>
         </form>
       </Card>
+      ) : null}
     </div>
   );
 }

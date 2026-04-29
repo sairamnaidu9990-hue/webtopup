@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import SyncPanel from "@/app/components/bangjeff/SyncPanel";
 import { parseJsonSafely } from "@/app/lib/http";
 import {
@@ -115,7 +115,7 @@ export default function BangjeffDashboardPage() {
   const gamesCacheKey = `${GAMES_CACHE_KEY}:bangjeff`;
   const variantsCacheKey = `${VARIANTS_CACHE_KEY}:bangjeff`;
 
-  const fetchDashboardData = async ({
+  const fetchDashboardData = useCallback(async ({
     refreshGames = true,
     refreshVariants = true,
   }: {
@@ -162,9 +162,9 @@ export default function BangjeffDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [gamesCacheKey, variantsCacheKey]);
 
-  const fetchBalance = async ({
+  const fetchBalance = useCallback(async ({
     force = false,
   }: {
     force?: boolean;
@@ -217,7 +217,7 @@ export default function BangjeffDashboardPage() {
     } finally {
       setBalanceLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const cachedGames = readSessionCache<Game[]>(gamesCacheKey);
@@ -256,7 +256,7 @@ export default function BangjeffDashboardPage() {
       !isSessionCacheFresh(cachedVariants.savedAt, CATALOG_CACHE_TTL_MS);
 
     if (shouldRefreshGames || shouldRefreshVariants) {
-      fetchDashboardData({
+      void fetchDashboardData({
         refreshGames: shouldRefreshGames,
         refreshVariants: shouldRefreshVariants,
       });
@@ -266,11 +266,11 @@ export default function BangjeffDashboardPage() {
       !hasCachedBalance ||
       !isSessionCacheFresh(cachedBalance.savedAt, BALANCE_CACHE_TTL_MS)
     ) {
-      fetchBalance({
+      void fetchBalance({
         force: true,
       });
     }
-  }, [gamesCacheKey, variantsCacheKey]);
+  }, [fetchBalance, fetchDashboardData, gamesCacheKey, variantsCacheKey]);
 
   const stats: DashboardStats = {
     totalGames: games.length,

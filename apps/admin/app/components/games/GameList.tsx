@@ -1,6 +1,7 @@
 "use client";
 
 import PaginationControls from "@/app/components/ui/PaginationControls";
+import RemoteThumbnail from "@/app/components/ui/RemoteThumbnail";
 
 type Game = {
   _id: string;
@@ -157,13 +158,11 @@ export default function GameList({
                 {(page - 1) * 20 + index + 1}.
               </p>
 
-              {game.logo && (
-                <img
-                  src={game.logo}
-                  alt={game.name}
-                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
-                />
-              )}
+              <RemoteThumbnail
+                src={game.logo}
+                alt={game.name}
+                fallbackText={game.name.slice(0, 1).toUpperCase()}
+              />
 
               <div className="min-w-0">
                 <p className="break-words font-medium">{game.name}</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import PaymentMethodCategoryManager from "./PaymentMethodCategoryManager";
 import PaymentMethodForm from "./PaymentMethodForm";
 import PaymentMethodList from "./PaymentMethodList";
@@ -110,7 +110,7 @@ export default function PaymentMethodsPageClient() {
     setOrder("9999");
   };
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await fetch("/api/payment-method-categories", {
         cache: "no-store",
@@ -128,9 +128,9 @@ export default function PaymentMethodsPageClient() {
       console.error(fetchError);
       setCategories([]);
     }
-  };
+  }, []);
 
-  const fetchPaymentMethods = async () => {
+  const fetchPaymentMethods = useCallback(async () => {
     try {
       setError("");
       const params = new URLSearchParams({
@@ -187,16 +187,16 @@ export default function PaymentMethodsPageClient() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    setLoading(true);
-    fetchPaymentMethods();
   }, [page, deferredSearch, statusFilter, typeFilter, categoryFilter]);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    setLoading(true);
+    void fetchPaymentMethods();
+  }, [fetchPaymentMethods]);
+
+  useEffect(() => {
+    void fetchCategories();
+  }, [fetchCategories]);
 
   const handleEdit = (paymentMethod: PaymentMethod) => {
     setSuccess("");

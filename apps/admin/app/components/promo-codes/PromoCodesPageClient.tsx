@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import SectionTitle from "@/app/components/ui/SectionTitle";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import PromoCodeForm from "@/app/components/promo-codes/PromoCodeForm";
@@ -63,7 +63,7 @@ export default function PromoCodesPageClient() {
     setOrder("9999");
   };
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await fetch("/api/site-settings", {
         cache: "no-store",
@@ -83,9 +83,9 @@ export default function PromoCodesPageClient() {
       console.error(fetchError);
       setCategories([]);
     }
-  };
+  }, []);
 
-  const fetchPromoCodes = async () => {
+  const fetchPromoCodes = useCallback(async () => {
     try {
       setError("");
       const params = new URLSearchParams({
@@ -135,16 +135,16 @@ export default function PromoCodesPageClient() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    setLoading(true);
-    fetchPromoCodes();
   }, [page, deferredSearch, statusFilter, categoryFilter]);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    setLoading(true);
+    void fetchPromoCodes();
+  }, [fetchPromoCodes]);
+
+  useEffect(() => {
+    void fetchCategories();
+  }, [fetchCategories]);
 
   const handleEdit = (promoCode: PromoCode) => {
     setSuccess("");

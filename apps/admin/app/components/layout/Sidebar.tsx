@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
 type SidebarProps = {
   mobileOpen?: boolean;
@@ -229,33 +229,22 @@ export default function Sidebar({
   const pathname = usePathname();
   const isProviderRoute =
     pathname === "/provider-control" || pathname.startsWith("/provider-control/");
-  const [providerOpen, setProviderOpen] = useState(isProviderRoute);
-  const [providerGroupOpen, setProviderGroupOpen] = useState<Record<string, boolean>>(
+  const [providerManuallyOpen, setProviderManuallyOpen] = useState(false);
+  const [providerGroupOpenState, setProviderGroupOpenState] = useState<
+    Record<string, boolean>
+  >({});
+  const providerOpen = isProviderRoute || providerManuallyOpen;
+  const providerGroupOpen = useMemo(
     () =>
       providerGroups.reduce<Record<string, boolean>>((acc, group) => {
-        acc[group.id] = group.children.some((item) => pathname.startsWith(item.href));
-        return acc;
-      }, {})
-  );
-
-  useEffect(() => {
-    if (isProviderRoute) {
-      setProviderOpen(true);
-    }
-  }, [isProviderRoute]);
-
-  useEffect(() => {
-    setProviderGroupOpen((current) => ({
-      ...current,
-      ...providerGroups.reduce<Record<string, boolean>>((acc, group) => {
-        acc[group.id] =
-          group.children.some((item) => pathname.startsWith(item.href)) ||
-          current[group.id] ||
-          false;
+        const hasActiveChild = group.children.some((item) =>
+          pathname.startsWith(item.href)
+        );
+        acc[group.id] = Boolean(providerGroupOpenState[group.id] || hasActiveChild);
         return acc;
       }, {}),
-    }));
-  }, [pathname]);
+    [pathname, providerGroupOpenState]
+  );
 
   return (
     <>
@@ -275,10 +264,10 @@ export default function Sidebar({
           onNavigate={onClose}
           pathname={pathname}
           providerOpen={providerOpen}
-          setProviderOpen={setProviderOpen}
+          setProviderOpen={setProviderManuallyOpen}
           isProviderRoute={isProviderRoute}
           providerGroupOpen={providerGroupOpen}
-          setProviderGroupOpen={setProviderGroupOpen}
+          setProviderGroupOpen={setProviderGroupOpenState}
         />
       </aside>
 
@@ -289,10 +278,10 @@ export default function Sidebar({
         <SidebarNav
           pathname={pathname}
           providerOpen={providerOpen}
-          setProviderOpen={setProviderOpen}
+          setProviderOpen={setProviderManuallyOpen}
           isProviderRoute={isProviderRoute}
           providerGroupOpen={providerGroupOpen}
-          setProviderGroupOpen={setProviderGroupOpen}
+          setProviderGroupOpen={setProviderGroupOpenState}
         />
       </aside>
     </>
