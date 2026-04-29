@@ -1,8 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
-import PromoCodeDialog from "@/components/PromoCodeDialog";
 import type { StorefrontPromoCode } from "@/lib/siteData";
+
+const PromoCodeDialog = dynamic(() => import("@/components/PromoCodeDialog"), {
+  ssr: false,
+});
 
 type FeedbackTone = "success" | "error" | "info";
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 import type { PublicSiteSetting } from "@/lib/siteData";
 import StorefrontPopupDialog from "@/components/StorefrontPopupDialog";
+import useDismissiblePopupState from "@/hooks/useDismissiblePopupState";
 
 const DISMISS_STORAGE_KEY = "kitagg-homepage-popup-dismissed";
 
@@ -23,8 +24,6 @@ export default function HomepagePopup({
   siteSetting: PublicSiteSetting;
 }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const hasText =
     Boolean(siteSetting.homepagePopupTitle) ||
@@ -35,66 +34,27 @@ export default function HomepagePopup({
     () => buildPopupSignature(siteSetting),
     [siteSetting]
   );
+  const popupState = useDismissiblePopupState({
+    enabled:
+      pathname === "/" && siteSetting.homepagePopupEnabled && hasContent,
+    storageKey: DISMISS_STORAGE_KEY,
+    signature: popupSignature,
+  });
 
-  useEffect(() => {
-    if (
-      pathname !== "/" ||
-      !siteSetting.homepagePopupEnabled ||
-      !hasContent
-    ) {
-      setOpen(false);
-      return;
-    }
-
-    try {
-      const dismissedPopup = window.localStorage.getItem(DISMISS_STORAGE_KEY);
-
-      if (dismissedPopup === popupSignature) {
-        setOpen(false);
-        return;
-      }
-    } catch {
-      // Ignore storage errors and still show the popup.
-    }
-
-    const timeout = window.setTimeout(() => {
-      setOpen(true);
-    }, 180);
-
-    return () => window.clearTimeout(timeout);
-  }, [
-    hasContent,
-    pathname,
-    popupSignature,
-    siteSetting.homepagePopupEnabled,
-  ]);
-
-  if (!open) {
+  if (!popupState.open) {
     return null;
   }
 
-  const handleClose = () => {
-    if (dontShowAgain) {
-      try {
-        window.localStorage.setItem(DISMISS_STORAGE_KEY, popupSignature);
-      } catch {
-        // Ignore storage errors when closing.
-      }
-    }
-
-    setOpen(false);
-  };
-
   return (
     <StorefrontPopupDialog
-      open={open}
+      open={popupState.open}
       title={siteSetting.homepagePopupTitle}
       message={siteSetting.homepagePopupMessage}
       imageUrl={hasImage ? siteSetting.homepagePopupImageUrl : ""}
       imageAlt={siteSetting.homepagePopupTitle || siteSetting.siteName}
-      dontShowAgain={dontShowAgain}
-      onDontShowAgainChange={setDontShowAgain}
-      onClose={handleClose}
+      dontShowAgain={popupState.dontShowAgain}
+      onDontShowAgainChange={popupState.setDontShowAgain}
+      onClose={popupState.handleClose}
     />
   );
 }

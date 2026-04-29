@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import GameTopupPanel from "@/components/GameTopupPanel";
-import GameEntryPopup from "@/components/GameEntryPopup";
+import LazyGameEntryPopup from "@/components/lazy/LazyGameEntryPopup";
 import {
   getPublicPaymentMethods,
   getPublicSiteSetting,
@@ -307,7 +307,7 @@ export default async function GameVariantsPage({
         gameFaqs={gameFaqs}
         reviewSummary={reviewSummary}
       />
-      <GameEntryPopup game={game} />
+      <LazyGameEntryPopup game={game} />
     </main>
   );
 }

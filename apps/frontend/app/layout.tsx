@@ -4,9 +4,9 @@ import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
-import FloatingContactButton from "@/components/FloatingContactButton";
-import HomepagePopup from "@/components/HomepagePopup";
 import FrontendMaintenanceScreen from "@/components/FrontendMaintenanceScreen";
+import LazyFloatingContactButton from "@/components/lazy/LazyFloatingContactButton";
+import LazyHomepagePopup from "@/components/lazy/LazyHomepagePopup";
 import { getPublicSiteSetting } from "@/lib/siteData";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -146,11 +146,11 @@ async function FrontendShell({
 
   if (siteSetting.maintenanceModeEnabled) {
     return (
-      <div className="min-h-screen bg-[#111217] text-white">
-        <FrontendMaintenanceScreen siteSetting={siteSetting} />
-        <FloatingContactButton siteSetting={siteSetting} />
-      </div>
-    );
+        <div className="min-h-screen bg-[#111217] text-white">
+          <FrontendMaintenanceScreen siteSetting={siteSetting} />
+          <LazyFloatingContactButton siteSetting={siteSetting} />
+        </div>
+      );
   }
 
   return (
@@ -158,8 +158,8 @@ async function FrontendShell({
       <SiteHeader siteSetting={siteSetting} />
       <div className="pt-14 sm:pt-[76px]">{children}</div>
       <SiteFooter siteSetting={siteSetting} />
-      <HomepagePopup siteSetting={siteSetting} />
-      <FloatingContactButton siteSetting={siteSetting} />
+      <LazyHomepagePopup siteSetting={siteSetting} />
+      <LazyFloatingContactButton siteSetting={siteSetting} />
     </div>
   );
 }

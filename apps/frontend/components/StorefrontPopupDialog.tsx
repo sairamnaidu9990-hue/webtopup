@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
+import useHydrated from "@/hooks/useHydrated";
 
 function isSafePopupHref(value: string) {
   return /^(https?:\/\/|mailto:|tel:|\/)/i.test(String(value || "").trim());
@@ -65,11 +66,7 @@ export default function StorefrontPopupDialog({
   onDontShowAgainChange: (checked: boolean) => void;
   onClose: () => void;
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHydrated();
 
   if (!open || !mounted) {
     return null;

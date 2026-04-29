@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import useHydrated from "@/hooks/useHydrated";
 import { createPortal } from "react-dom";
 import type { StorefrontPromoCode } from "@/lib/siteData";
 
@@ -39,11 +39,7 @@ export default function PromoCodeDialog({
   onApply: (code: string) => void;
   onClose: () => void;
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHydrated();
 
   if (!open || !mounted) {
     return null;
