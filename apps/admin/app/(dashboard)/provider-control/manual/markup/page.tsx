@@ -178,35 +178,7 @@ export default function ManualMarkupPage() {
 
       <div className="grid gap-6">
         <Card title="Panduan Penggunaan">
-          <div className="space-y-4 text-sm text-gray-600">
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">
-                Sync semua variant manual
-              </p>
-              <p className="mt-1">
-                Gunakan saat strategi margin berlaku sama untuk seluruh katalog
-                manual yang dikelola internal.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">
-                Sync per game manual
-              </p>
-              <p className="mt-1">
-                Gunakan untuk game internal tertentu yang memerlukan margin
-                khusus, misalnya event, promo, atau bundle spesial.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">Catatan produksi</p>
-              <p className="mt-1">
-                Perubahan markup hanya memengaruhi variant dengan source
-                `manual`, sehingga katalog BangJeff tetap aman dan terpisah.
-              </p>
-            </div>
-          </div>
+          <div className="min-h-[220px]" />
         </Card>
       </div>
     </div>

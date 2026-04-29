@@ -156,39 +156,7 @@ export default function ManualProviderPage() {
 
       <div className="grid gap-6">
         <Card title="Arah Pengembangan">
-          <div className="space-y-4 text-sm text-gray-600">
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">
-                1. Provider internal
-              </p>
-              <p className="mt-1">
-                Manual diposisikan sebagai provider internal, sehingga struktur
-                navigasinya tetap sejajar dengan provider eksternal seperti
-                BangJeff.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">
-                2. Katalog khusus admin
-              </p>
-              <p className="mt-1">
-                Area ini bisa dipakai untuk produk yang dibuat langsung oleh tim
-                admin tanpa menunggu feed produk dari pihak ketiga.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">
-                3. Siap ditambah halaman
-              </p>
-              <p className="mt-1">
-                Kalau nanti diperlukan, kita bisa tambahkan child page seperti
-                Manual Games, Manual Variants, atau Manual Pricing tanpa
-                mengubah struktur sidebar lagi.
-              </p>
-            </div>
-          </div>
+          <div className="min-h-[220px]" />
         </Card>
       </div>
     </div>

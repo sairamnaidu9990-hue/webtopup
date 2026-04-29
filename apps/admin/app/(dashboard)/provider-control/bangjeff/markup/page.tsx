@@ -178,33 +178,7 @@ export default function BangjeffMarkupPage() {
 
       <div className="grid gap-6">
         <Card title="Panduan Penggunaan">
-          <div className="space-y-4 text-sm text-gray-600">
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">
-                Sync semua variant
-              </p>
-              <p className="mt-1">
-                Gunakan saat kebijakan margin berlaku sama untuk seluruh katalog
-                dan kamu ingin memperbarui harga jual secara massal.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">Sync per game</p>
-              <p className="mt-1">
-                Gunakan untuk game dengan karakter pasar khusus, misalnya butuh
-                margin lebih agresif atau lebih kompetitif dibanding game lain.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">Catatan produksi</p>
-              <p className="mt-1">
-                Perubahan markup akan menghitung ulang harga jual dari harga
-                modal yang sudah tersimpan, tanpa mengubah data sumber BangJeff.
-              </p>
-            </div>
-          </div>
+          <div className="min-h-[220px]" />
         </Card>
       </div>
     </div>
