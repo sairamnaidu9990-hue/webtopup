@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import VariantMarkupSyncPanel from "@/app/components/variants/VariantMarkupSyncPanel";
 import {
@@ -146,19 +145,11 @@ export default function ManualMarkupPage() {
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.totalVariants}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            {loading ? 0 : stats.activeVariants} variant manual aktif siap
-            menerima pembaruan markup
-          </p>
         </Card>
 
         <Card title="Manual Games" variant="success">
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.totalGames}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            {loading ? 0 : stats.activeGames} game manual aktif tersimpan di
-            katalog
           </p>
         </Card>
 
@@ -166,17 +157,10 @@ export default function ManualMarkupPage() {
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.coveredGames}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            Jumlah game manual yang saat ini sudah memiliki variant di database
-          </p>
         </Card>
 
         <Card title="Mode Operasional" variant="danger">
           <p className="text-base font-semibold">Bulk Markup</p>
-          <p className="mt-2 text-sm text-white/80">
-            Cocok untuk penyesuaian margin cepat pada katalog internal tanpa
-            menyentuh variant dari provider eksternal.
-          </p>
         </Card>
       </div>
 
@@ -192,7 +176,7 @@ export default function ManualMarkupPage() {
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-6">
         <Card title="Panduan Penggunaan">
           <div className="space-y-4 text-sm text-gray-600">
             <div className="rounded-2xl bg-gray-50 p-4">
@@ -222,42 +206,6 @@ export default function ManualMarkupPage() {
                 `manual`, sehingga katalog BangJeff tetap aman dan terpisah.
               </p>
             </div>
-          </div>
-        </Card>
-
-        <Card title="Navigasi Cepat">
-          <div className="space-y-3">
-            <Link
-              href="/provider-control"
-              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-            >
-              <p className="font-semibold text-gray-900">Provider Control</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Kembali ke overview provider untuk berpindah antar area
-                operasional.
-              </p>
-            </Link>
-
-            <Link
-              href="/provider-control/manual"
-              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-            >
-              <p className="font-semibold text-gray-900">Manual Dashboard</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Kembali ke dashboard manual untuk ringkasan katalog internal.
-              </p>
-            </Link>
-
-            <Link
-              href="/provider-control/manual/variants"
-              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-            >
-              <p className="font-semibold text-gray-900">Manual Variants</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Lanjutkan pengelolaan variant manual satu per satu setelah
-                pembaruan markup massal selesai.
-              </p>
-            </Link>
           </div>
         </Card>
       </div>

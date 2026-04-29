@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   CATALOG_CACHE_TTL_MS,
@@ -138,39 +137,24 @@ export default function ManualProviderPage() {
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.totalGames}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            {loading ? 0 : stats.activeGames} game manual aktif di katalog
-          </p>
         </Card>
 
         <Card title="Manual Variants" variant="success">
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.totalVariants}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            {loading ? 0 : stats.activeVariants} variant manual aktif siap
-            dijual
-          </p>
         </Card>
 
         <Card title="Sumber Data" variant="warning">
           <p className="text-base font-semibold">Internal Management</p>
-          <p className="mt-2 text-sm text-white/80">
-            Data manual tidak tergantung sinkronisasi provider eksternal dan
-            dikelola sepenuhnya dari panel admin.
-          </p>
         </Card>
 
         <Card title="Mode Operasional" variant="danger">
           <p className="text-base font-semibold">Kurasi Manual</p>
-          <p className="mt-2 text-sm text-white/80">
-            Cocok untuk produk custom, campaign khusus, atau katalog tambahan
-            di luar integrasi provider otomatis.
-          </p>
         </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-6">
         <Card title="Arah Pengembangan">
           <div className="space-y-4 text-sm text-gray-600">
             <div className="rounded-2xl bg-gray-50 p-4">
@@ -204,52 +188,6 @@ export default function ManualProviderPage() {
                 mengubah struktur sidebar lagi.
               </p>
             </div>
-          </div>
-        </Card>
-
-        <Card title="Navigasi Cepat">
-          <div className="space-y-3">
-            <Link
-              href="/provider-control"
-              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-            >
-              <p className="font-semibold text-gray-900">Provider Control</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Kembali ke overview provider untuk berpindah antar area
-                operasional.
-              </p>
-            </Link>
-
-            <Link
-              href="/provider-control/manual/games"
-              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-            >
-              <p className="font-semibold text-gray-900">Manual Games</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Kelola katalog game manual yang dibuat langsung oleh tim admin.
-              </p>
-            </Link>
-
-            <Link
-              href="/provider-control/manual/variants"
-              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-            >
-              <p className="font-semibold text-gray-900">Manual Variants</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Kelola variant manual untuk produk internal tanpa feed provider
-                eksternal.
-              </p>
-            </Link>
-
-            <Link
-              href="/provider-control/manual/markup"
-              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-            >
-              <p className="font-semibold text-gray-900">Manual Markup</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Atur markup massal untuk seluruh variant manual atau per game.
-              </p>
-            </Link>
           </div>
         </Card>
       </div>

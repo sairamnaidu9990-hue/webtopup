@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import SyncPanel from "@/app/components/bangjeff/SyncPanel";
 import { parseJsonSafely } from "@/app/lib/http";
@@ -286,45 +285,6 @@ export default function BangjeffDashboardPage() {
       .length,
   };
 
-  const quickLinks = [
-    {
-      title: "Provider Control",
-      href: "/provider-control",
-      description:
-        "Kembali ke landing page provider untuk melihat struktur navigasi dan provider lain yang nanti akan ditambahkan.",
-    },
-    {
-      title: "Sync Logs",
-      href: "/provider-control/bangjeff/sync-logs",
-      description:
-        "Pantau riwayat sinkronisasi BangJeff dan aktivitas bulk markup lengkap dengan status dan actor admin.",
-    },
-    {
-      title: "Markup Variant",
-      href: "/provider-control/bangjeff/markup",
-      description:
-        "Kelola penyesuaian markup massal untuk seluruh variant atau per game dari halaman operasional khusus.",
-    },
-    {
-      title: "BangJeff Games",
-      href: "/provider-control/bangjeff/games",
-      description:
-        "Kelola metadata game internal seperti provider, logo, status, dan field input yang ditampilkan ke user.",
-    },
-    {
-      title: "BangJeff Variants",
-      href: "/provider-control/bangjeff/variants",
-      description:
-        "Atur harga dasar, markup, logo variant, region, dan status jual setiap item katalog.",
-    },
-    {
-      title: "Dashboard Utama",
-      href: "/dashboard",
-      description:
-        "Kembali ke ringkasan operasional utama tanpa mencampur area sinkronisasi provider.",
-    },
-  ];
-
   const highlights = loading ? emptyStats : stats;
   const balanceValue = formatMoney(
     balance?.balance?.currency || "IDR",
@@ -393,15 +353,11 @@ export default function BangjeffDashboardPage() {
           <p className="text-4xl font-bold tracking-tight">
             {highlights.totalGames}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-          </p>
         </Card>
 
         <Card title="Total Variants" variant="success">
           <p className="text-4xl font-bold tracking-tight">
             {highlights.totalVariants}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
           </p>
         </Card>
 
@@ -409,15 +365,11 @@ export default function BangjeffDashboardPage() {
           <p className="text-4xl font-bold tracking-tight">
             {highlights.bangjeffGames}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-          </p>
         </Card>
 
         <Card title="Input Ready" variant="danger">
           <p className="text-4xl font-bold tracking-tight">
             {highlights.gamesWithInputs}
-          </p>
-          <p className="mt-2 text-sm text-white/80"> 
           </p>
         </Card>
       </div>
@@ -437,51 +389,6 @@ export default function BangjeffDashboardPage() {
         description="Jalankan pembaruan katalog dari BangJeff ke database internal. Proses ini menambahkan data baru dan memperbarui status data yang sudah ada."
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
-        <Card title="Navigasi Terkait">
-          <div className="space-y-3">
-            {quickLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-              >
-                <p className="font-semibold text-gray-900">{link.title}</p>
-                <p className="mt-1 text-sm text-gray-600">{link.description}</p>
-              </Link>
-            ))}
-          </div>
-        </Card>
-
-        <Card title="Proses Operasional">
-          <div className="space-y-4 text-sm text-gray-600">
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">1. Sinkronisasi Sumber</p>
-              <p className="mt-1">
-                Ambil katalog terbaru dari BangJeff untuk menambahkan produk
-                baru dan memperbarui status data yang sudah ada di database.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">2. Kurasi Internal</p>
-              <p className="mt-1">
-                Lengkapi data internal seperti provider, logo, markup, dan
-                status jual tanpa mengubah struktur data asli dari provider.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">3. Distribusi Katalog</p>
-              <p className="mt-1">
-                Frontend dan panel admin membaca katalog dari database internal
-                agar performa, konsistensi data, dan kontrol operasional tetap
-                terjaga.
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
     </div>
   );
 }

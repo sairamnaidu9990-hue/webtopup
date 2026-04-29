@@ -144,17 +144,11 @@ export default function ProviderControlPage() {
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.totalProviders}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            Provider yang saat ini sudah terhubung ke sistem katalog internal
-          </p>
         </Card>
 
         <Card title="Provider Otomatis" variant="success">
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.automatedProviders}
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Provider yang saat ini sudah terhubung untuk sinkronisasi katalog
           </p>
         </Card>
 
@@ -162,37 +156,23 @@ export default function ProviderControlPage() {
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.bangjeffGames}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            {loading ? 0 : stats.bangjeffGames} game dan{" "}
-            {loading ? 0 : stats.bangjeffVariants} variant berasal dari
-            sinkronisasi BangJeff
-          </p>
         </Card>
 
         <Card title="Manual Catalog" variant="danger">
           <p className="text-4xl font-bold tracking-tight">
             {loading ? 0 : stats.manualGames}
           </p>
-          <p className="mt-2 text-sm text-white/80">
-            {loading ? 0 : stats.manualGames} game dan{" "}
-            {loading ? 0 : stats.manualVariants} variant dikelola secara manual
-            dari panel admin
-          </p>
         </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid gap-6">
         <Card title="Daftar Provider">
-          <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Link
               href="/provider-control/bangjeff"
               className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
             >
               <p className="font-semibold text-gray-900">BangJeff Dashboard</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Masuk ke dashboard BangJeff untuk sinkronisasi product, detail,
-                dan variant dari provider ke database internal.
-              </p>
             </Link>
 
             <Link
@@ -200,10 +180,6 @@ export default function ProviderControlPage() {
               className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
             >
               <p className="font-semibold text-gray-900">BangJeff Markup</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Kelola penyesuaian markup massal untuk seluruh variant atau per
-                game dalam satu workflow khusus.
-              </p>
             </Link>
 
             <Link
@@ -211,39 +187,7 @@ export default function ProviderControlPage() {
               className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
             >
               <p className="font-semibold text-gray-900">Manual Dashboard</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Buka provider internal untuk katalog yang dibuat dan dikelola
-                langsung oleh tim admin.
-              </p>
             </Link>
-          </div>
-        </Card>
-
-        <Card title="Struktur Siap Dikembangkan">
-          <div className="space-y-4 text-sm text-gray-600">
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">1. Provider terpisah</p>
-              <p className="mt-1">
-                Setiap provider dapat memiliki dashboard, aksi markup, log sync,
-                dan modul operasional lain tanpa bercampur dengan provider lain.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">2. Navigasi bertingkat</p>
-              <p className="mt-1">
-                Sidebar sekarang sudah siap menerima provider tambahan di bawah
-                grup Provider Control dengan child page masing-masing.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="font-semibold text-gray-900">3. Siap ekspansi</p>
-              <p className="mt-1">
-                Saat nanti ada provider baru, kita tinggal menambahkan grup
-                provider dan route child tanpa merombak layout utama admin.
-              </p>
-            </div>
           </div>
         </Card>
       </div>

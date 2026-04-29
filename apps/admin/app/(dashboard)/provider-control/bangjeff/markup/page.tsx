@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import VariantMarkupSyncPanel from "@/app/components/variants/VariantMarkupSyncPanel";
 import {
@@ -177,7 +176,7 @@ export default function BangjeffMarkupPage() {
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-6">
         <Card title="Panduan Penggunaan">
           <div className="space-y-4 text-sm text-gray-600">
             <div className="rounded-2xl bg-gray-50 p-4">
@@ -205,43 +204,6 @@ export default function BangjeffMarkupPage() {
                 modal yang sudah tersimpan, tanpa mengubah data sumber BangJeff.
               </p>
             </div>
-          </div>
-        </Card>
-
-        <Card title="Navigasi Cepat">
-          <div className="space-y-3">
-            <Link
-              href="/provider-control"
-              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-            >
-              <p className="font-semibold text-gray-900">Provider Control</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Kembali ke landing page provider untuk berpindah antar area
-                operasional provider dengan struktur yang sama.
-              </p>
-            </Link>
-
-            <Link
-              href="/provider-control/bangjeff"
-              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-            >
-              <p className="font-semibold text-gray-900">BangJeff Dashboard</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Kembali ke dashboard provider untuk sinkronisasi katalog dan
-                ringkasan data.
-              </p>
-            </Link>
-
-            <Link
-              href="/provider-control/bangjeff/variants"
-              className="block rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 transition hover:border-gray-300 hover:bg-white"
-            >
-              <p className="font-semibold text-gray-900">BangJeff Variants</p>
-              <p className="mt-1 text-sm text-gray-600">
-                Lanjutkan edit variant satu per satu setelah penyesuaian markup
-                massal selesai.
-              </p>
-            </Link>
           </div>
         </Card>
       </div>
