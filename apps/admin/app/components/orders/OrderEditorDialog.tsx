@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
-import type { Order, OrderStatus } from "@/app/types/Order";
+import type { Order, OrderStatus, PaymentStatus } from "@/app/types/Order";
 
 const ORDER_STATUS_OPTIONS: OrderStatus[] = [
   "UNPAID",
@@ -21,6 +21,13 @@ const PROVIDER_STATUS_OPTIONS = [
   "FAILED",
   "UNKNOWN",
 ] as const;
+const PAYMENT_STATUS_OPTIONS: PaymentStatus[] = [
+  "UNPAID",
+  "PAID",
+  "FAILED",
+  "EXPIRED",
+  "REFUNDED",
+];
 
 type FeedbackTone = "success" | "error" | "info";
 
@@ -43,6 +50,7 @@ type DraftState = {
     phoneCountryCode: string;
     phoneNumber: string;
   };
+  paymentStatus: PaymentStatus;
   status: OrderStatus;
   providerStatus: (typeof PROVIDER_STATUS_OPTIONS)[number];
   providerMessage: string;
@@ -75,6 +83,7 @@ function serializeDraft(draft: DraftState) {
       phoneCountryCode: draft.contactDetail.phoneCountryCode,
       phoneNumber: draft.contactDetail.phoneNumber,
     },
+    paymentStatus: draft.paymentStatus,
     status: draft.status,
     providerStatus: draft.providerStatus,
     providerMessage: draft.providerMessage,
@@ -97,6 +106,7 @@ function buildDraft(order: Order): DraftState {
       phoneCountryCode: String(order.contactDetail?.phoneCountryCode || "+62"),
       phoneNumber: String(order.contactDetail?.phoneNumber || ""),
     },
+    paymentStatus: (order.paymentStatus || "UNPAID") as PaymentStatus,
     status: (order.status || "UNPAID") as OrderStatus,
     providerStatus: (
       order.providerStatus || "PENDING"
@@ -148,31 +158,26 @@ function getFeedbackClasses(tone: FeedbackTone) {
   }
 }
 
-function canMarkManualPaid(order: Order) {
-  const paymentProvider = String(
-    order.paymentMethodSnapshot?.provider || ""
-  ).trim().toLowerCase();
-  const orderStatus = String(order.status || "").trim().toUpperCase();
-  const paymentStatus = String(order.paymentStatus || "").trim().toUpperCase();
+function canResendProviderOrder({
+  provider,
+  paymentStatus,
+  status,
+}: {
+  provider?: string;
+  paymentStatus?: string;
+  status?: string;
+}) {
+  const normalizedProvider = String(provider || "").trim().toLowerCase();
+  const normalizedPaymentStatus = String(paymentStatus || "")
+    .trim()
+    .toUpperCase();
+  const normalizedOrderStatus = String(status || "").trim().toUpperCase();
 
   return (
-    paymentProvider === "manual" &&
-    paymentStatus !== "PAID" &&
-    orderStatus !== "SUCCESS" &&
-    orderStatus !== "PROCESSING"
-  );
-}
-
-function canResendProviderOrder(order: Order) {
-  const provider = String(order.provider || "").trim().toLowerCase();
-  const paymentStatus = String(order.paymentStatus || "").trim().toUpperCase();
-  const orderStatus = String(order.status || "").trim().toUpperCase();
-
-  return (
-    provider === "bangjeff" &&
-    paymentStatus === "PAID" &&
-    orderStatus !== "SUCCESS" &&
-    orderStatus !== "PROCESSING"
+    normalizedProvider === "bangjeff" &&
+    normalizedPaymentStatus === "PAID" &&
+    normalizedOrderStatus !== "SUCCESS" &&
+    normalizedOrderStatus !== "PROCESSING"
   );
 }
 
@@ -374,8 +379,9 @@ export default function OrderEditorDialog({
                     {order.invoiceNumber}
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                    Perbarui data tujuan, kontak pelanggan, dan status operasional order
-                    tanpa keluar dari halaman monitoring.
+                    Perbarui data tujuan, kontak pelanggan, serta status order
+                    dan pembayaran secara manual. Pengiriman ulang ke provider
+                    hanya berjalan saat kamu menekan aksi khususnya.
                   </p>
                 </div>
 
@@ -678,11 +684,38 @@ export default function OrderEditorDialog({
                 <section className="rounded-[26px] border border-slate-200 bg-slate-900 p-5 text-white">
                   <h3 className="text-base font-semibold">Kontrol Status</h3>
                   <p className="mt-1 text-sm leading-6 text-slate-300">
-                    Ubah status order dan provider dengan sadar. Status pembayaran tetap
-                    diubah lewat action khusus agar flow pembayaran aman.
+                    Ubah status pembayaran, order, dan provider secara manual.
+                    Menyimpan perubahan di sini tidak akan mengirim ulang order
+                    atau memanggil provider.
                   </p>
 
                   <div className="mt-5 space-y-4">
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-medium text-slate-200">
+                        Status Pembayaran
+                      </span>
+                      <select
+                        value={draft.paymentStatus}
+                        onChange={(event) =>
+                          setDraft((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  paymentStatus: event.target.value as PaymentStatus,
+                                }
+                              : current
+                          )
+                        }
+                        className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-white/60"
+                      >
+                        {PAYMENT_STATUS_OPTIONS.map((option) => (
+                          <option key={option} value={option} className="text-slate-900">
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
                     <label className="block">
                       <span className="mb-2 block text-sm font-medium text-slate-200">
                         Status Order
@@ -738,19 +771,25 @@ export default function OrderEditorDialog({
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                          Payment Status
+                          Provider
                         </p>
                         <p className="mt-2 text-sm font-semibold text-white">
-                          {order.paymentStatus || "UNPAID"}
+                          {(order.provider || "manual").toUpperCase()}
                         </p>
                       </div>
 
                       <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                          Provider
+                          Data Draft Siap Kirim
                         </p>
                         <p className="mt-2 text-sm font-semibold text-white">
-                          {(order.provider || "manual").toUpperCase()}
+                          {canResendProviderOrder({
+                            provider: order.provider,
+                            paymentStatus: draft.paymentStatus,
+                            status: draft.status,
+                          })
+                            ? "Siap resend ke provider"
+                            : "Belum siap resend"}
                         </p>
                       </div>
                     </div>
@@ -772,23 +811,6 @@ export default function OrderEditorDialog({
                       loading={saving}
                       disabled={Boolean(actionKey) || !hasUnsavedChanges}
                       variant="primary"
-                    />
-
-                    <ActionButton
-                      label="Tandai Pembayaran Paid"
-                      onClick={() =>
-                        runAction(
-                          "mark-paid",
-                          (orderId) =>
-                            fetch(`/api/orders/${orderId}/mark-paid`, {
-                              method: "PATCH",
-                            }),
-                          "Gagal menandai pembayaran paid"
-                        )
-                      }
-                      disabled={!canMarkManualPaid(order) || saving}
-                      loading={actionKey === "mark-paid"}
-                      variant="success"
                     />
 
                     <ActionButton
@@ -819,7 +841,13 @@ export default function OrderEditorDialog({
                           "Gagal mengirim ulang order ke provider"
                         )
                       }
-                      disabled={!canResendProviderOrder(order) || saving}
+                      disabled={
+                        !canResendProviderOrder({
+                          provider: order.provider,
+                          paymentStatus: draft.paymentStatus,
+                          status: draft.status,
+                        }) || saving
+                      }
                       loading={actionKey === "resend-provider"}
                       variant="warning"
                     />
@@ -827,16 +855,17 @@ export default function OrderEditorDialog({
 
                   <div className="mt-4 space-y-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-xs leading-5 text-slate-500">
                     <p>
-                      `Tandai Pembayaran Paid` aktif untuk order manual yang belum dibayar.
+                      `Simpan Perubahan` hanya menyimpan data dan status manual.
+                      Tidak ada submit ulang ke provider dari aksi ini.
                     </p>
                     <p>
                       `Resend Callback` akan menarik ulang status terbaru dari payment gateway
                       dan provider jika datanya tersedia.
                     </p>
                     <p>
-                      `Kirim Ulang Order` aktif jika payment sudah PAID dan order belum
-                      sukses atau processing. Cocok untuk kasus saldo provider sempat kurang
-                      atau user ID sudah diperbaiki.
+                      `Kirim Ulang Order` aktif jika payment draft sudah `PAID`
+                      dan order belum `SUCCESS/PROCESSING`. Cocok untuk kasus
+                      user ID salah, zone salah, atau saldo provider sempat kurang.
                     </p>
                   </div>
 

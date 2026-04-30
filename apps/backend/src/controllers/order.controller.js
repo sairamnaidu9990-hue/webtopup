@@ -924,6 +924,33 @@ function reconcileAdminEditedOrderTimestamps(order) {
   }
 }
 
+function reconcileAdminEditedPaymentTimestamps(order) {
+  const now = new Date();
+  const currentPaymentStatus = normalizeCode(order.paymentStatus);
+
+  if (currentPaymentStatus === "UNPAID") {
+    order.paidAt = null;
+    return;
+  }
+
+  if (currentPaymentStatus === "PAID") {
+    order.paidAt = order.paidAt || now;
+    order.expiredAt = null;
+    return;
+  }
+
+  if (currentPaymentStatus === "EXPIRED") {
+    order.expiredAt = order.expiredAt || now;
+    order.paidAt = null;
+    return;
+  }
+
+  if (currentPaymentStatus === "FAILED") {
+    order.paidAt = null;
+    return;
+  }
+}
+
 function resetBangjeffOrderForRetry(order) {
   const isPaymentPaid = normalizeCode(order.paymentStatus) === "PAID";
 
@@ -1369,6 +1396,7 @@ async function updateOrderByAdmin(req, res) {
     const {
       customerInputs,
       contactDetail,
+      paymentStatus,
       status,
       providerStatus,
       providerMessage,
@@ -1393,6 +1421,18 @@ async function updateOrderByAdmin(req, res) {
       }
 
       order.contactDetail = normalizedContactDetail;
+    }
+
+    if (paymentStatus !== undefined) {
+      const normalizedPaymentStatus = normalizeCode(paymentStatus);
+
+      if (!PAYMENT_STATUSES.includes(normalizedPaymentStatus)) {
+        return res.status(400).json({
+          message: "Status pembayaran tidak valid",
+        });
+      }
+
+      order.paymentStatus = normalizedPaymentStatus;
     }
 
     if (status !== undefined) {
@@ -1425,6 +1465,10 @@ async function updateOrderByAdmin(req, res) {
 
     if (notes !== undefined) {
       order.notes = toStringValue(notes);
+    }
+
+    if (paymentStatus !== undefined) {
+      reconcileAdminEditedPaymentTimestamps(order);
     }
 
     if (status !== undefined) {
@@ -1507,20 +1551,9 @@ async function markManualOrderAsPaid(req, res) {
     };
     await saveOrderAndBroadcast(order, "manual-paid");
 
-    if (toStringValue(order.provider).toLowerCase() === "bangjeff") {
-      const result = await processBangjeffOrder(order);
-
-      if (!result.ok) {
-        return res.status(200).json({
-          message: "Pembayaran berhasil ditandai paid, tetapi proses ke BangJeff gagal",
-          order,
-          warning: result.error,
-        });
-      }
-    }
-
     return res.status(200).json({
-      message: "Pembayaran berhasil ditandai paid dan order mulai diproses",
+      message:
+        "Pembayaran berhasil ditandai paid. Gunakan aksi kirim ulang order jika ingin submit ke provider.",
       order,
     });
   } catch (error) {
