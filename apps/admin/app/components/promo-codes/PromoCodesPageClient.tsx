@@ -5,8 +5,11 @@ import SectionTitle from "@/app/components/ui/SectionTitle";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import PromoCodeForm from "@/app/components/promo-codes/PromoCodeForm";
 import PromoCodeList from "@/app/components/promo-codes/PromoCodeList";
-import type { PromoCode, PromoCodeDiscountType } from "@/app/types/PromoCode";
-import type { SiteSetting } from "@/app/types/SiteSetting";
+import type {
+  PromoCode,
+  PromoCodeDiscountType,
+  PromoCodeGameScope,
+} from "@/app/types/PromoCode";
 
 const PAGE_LIMIT = 20;
 
@@ -19,15 +22,50 @@ function sortCategories(categories: string[]) {
   return [...categories].sort((a, b) => a.localeCompare(b));
 }
 
+function normalizeGameOptions(items: unknown): PromoCodeGameScope[] {
+  const source = Array.isArray(items) ? items : [];
+
+  return source
+    .map((item) => {
+      const value = item as Record<string, unknown>;
+      return {
+        _id: String(value?._id || "").trim(),
+        name: String(value?.name || "").trim(),
+        code: String(value?.code || "")
+          .trim()
+          .toUpperCase(),
+        category: String(value?.category || "").trim(),
+        logo: String(value?.logo || "").trim(),
+      };
+    })
+    .filter((item) => item._id && item.name)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function deriveCategoriesFromGames(
+  selectedGameIds: string[],
+  availableGames: PromoCodeGameScope[]
+) {
+  const selectedIdSet = new Set(selectedGameIds);
+  const categories = availableGames
+    .filter((game) => selectedIdSet.has(game._id))
+    .map((game) => game.category || "")
+    .filter(Boolean);
+
+  return sortCategories(Array.from(new Set(categories)));
+}
+
 export default function PromoCodesPageClient() {
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [availableGames, setAvailableGames] = useState<PromoCodeGameScope[]>([]);
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [gameFilter, setGameFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formOpen, setFormOpen] = useState(true);
@@ -44,6 +82,7 @@ export default function PromoCodesPageClient() {
   const [minimumOrderAmount, setMinimumOrderAmount] = useState("0");
   const [maxDailyUses, setMaxDailyUses] = useState("0");
   const [applicableCategories, setApplicableCategories] = useState<string[]>([]);
+  const [applicableGameIds, setApplicableGameIds] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(true);
   const [order, setOrder] = useState("9999");
 
@@ -59,28 +98,38 @@ export default function PromoCodesPageClient() {
     setMinimumOrderAmount("0");
     setMaxDailyUses("0");
     setApplicableCategories([]);
+    setApplicableGameIds([]);
     setIsActive(true);
     setOrder("9999");
   };
 
-  const fetchCategories = useCallback(async () => {
+  const fetchGameScopes = useCallback(async () => {
     try {
-      const response = await fetch("/api/site-settings", {
+      const response = await fetch("/api/games?status=ACTIVE", {
         cache: "no-store",
       });
-      const payload = await parseJsonSafely<SiteSetting>(response);
+      const payload = await parseJsonSafely<unknown>(response);
 
       if (!response.ok) {
-        throw new Error(getResponseMessage(payload, "Gagal ambil site settings"));
+        throw new Error(getResponseMessage(payload, "Gagal ambil data game"));
       }
 
-      setCategories(
-        sortCategories(
-          Array.isArray(payload?.gameCategories) ? payload.gameCategories : []
+      const normalizedGames = normalizeGameOptions(payload);
+      const normalizedCategories = sortCategories(
+        Array.from(
+          new Set(
+            normalizedGames
+              .map((game) => game.category || "")
+              .filter(Boolean)
+          )
         )
       );
+
+      setAvailableGames(normalizedGames);
+      setCategories(normalizedCategories);
     } catch (fetchError) {
       console.error(fetchError);
+      setAvailableGames([]);
       setCategories([]);
     }
   }, []);
@@ -103,6 +152,10 @@ export default function PromoCodesPageClient() {
 
       if (categoryFilter !== "ALL") {
         params.set("category", categoryFilter);
+      }
+
+      if (gameFilter !== "ALL") {
+        params.set("gameId", gameFilter);
       }
 
       const response = await fetch(`/api/promo-codes?${params.toString()}`, {
@@ -135,7 +188,7 @@ export default function PromoCodesPageClient() {
     } finally {
       setLoading(false);
     }
-  }, [page, deferredSearch, statusFilter, categoryFilter]);
+  }, [page, deferredSearch, statusFilter, categoryFilter, gameFilter]);
 
   useEffect(() => {
     setLoading(true);
@@ -143,10 +196,64 @@ export default function PromoCodesPageClient() {
   }, [fetchPromoCodes]);
 
   useEffect(() => {
-    void fetchCategories();
-  }, [fetchCategories]);
+    void fetchGameScopes();
+  }, [fetchGameScopes]);
+
+  useEffect(() => {
+    setApplicableCategories((current) => {
+      const next = current.filter((item) => categories.includes(item));
+      return next.length === current.length ? current : next;
+    });
+  }, [categories]);
+
+  useEffect(() => {
+    setApplicableGameIds((current) => {
+      if (current.length === 0) {
+        return current;
+      }
+
+      const allowedGames = availableGames.filter((game) => {
+        if (applicableCategories.length === 0) {
+          return true;
+        }
+
+        return applicableCategories.includes(game.category || "");
+      });
+      const allowedGameIds = new Set(allowedGames.map((game) => game._id));
+      const next = current.filter((item) => allowedGameIds.has(item));
+
+      return next.length === current.length ? current : next;
+    });
+  }, [availableGames, applicableCategories]);
+
+  useEffect(() => {
+    if (gameFilter === "ALL") {
+      return;
+    }
+
+    const selectedGame = availableGames.find((game) => game._id === gameFilter);
+
+    if (!selectedGame) {
+      setGameFilter("ALL");
+      return;
+    }
+
+    if (
+      categoryFilter !== "ALL" &&
+      selectedGame.category !== categoryFilter
+    ) {
+      setGameFilter("ALL");
+    }
+  }, [availableGames, categoryFilter, gameFilter]);
 
   const handleEdit = (promoCode: PromoCode) => {
+    const derivedCategories = deriveCategoriesFromGames(
+      Array.isArray(promoCode.applicableGameIds)
+        ? promoCode.applicableGameIds
+        : [],
+      Array.isArray(promoCode.applicableGames) ? promoCode.applicableGames : []
+    );
+
     setSuccess("");
     setEditingId(promoCode._id);
     setTitle(promoCode.title || "");
@@ -157,8 +264,14 @@ export default function PromoCodesPageClient() {
     setMinimumOrderAmount(String(promoCode.minimumOrderAmount || 0));
     setMaxDailyUses(String(promoCode.maxDailyUses || 0));
     setApplicableCategories(
-      Array.isArray(promoCode.applicableCategories)
+      Array.isArray(promoCode.applicableCategories) &&
+        promoCode.applicableCategories.length > 0
         ? promoCode.applicableCategories
+        : derivedCategories
+    );
+    setApplicableGameIds(
+      Array.isArray(promoCode.applicableGameIds)
+        ? promoCode.applicableGameIds
         : []
     );
     setIsActive(Boolean(promoCode.isActive));
@@ -199,6 +312,10 @@ export default function PromoCodesPageClient() {
     setSubmitting(true);
 
     try {
+      const categoryScope =
+        applicableCategories.length > 0
+          ? applicableCategories
+          : deriveCategoriesFromGames(applicableGameIds, availableGames);
       const url = editingId
         ? `/api/promo-codes/${editingId}`
         : "/api/promo-codes";
@@ -217,7 +334,8 @@ export default function PromoCodesPageClient() {
           discountValue: Number(resetNumber(discountValue, "0")),
           minimumOrderAmount: Number(resetNumber(minimumOrderAmount, "0")),
           maxDailyUses: Number(resetNumber(maxDailyUses, "0")),
-          applicableCategories,
+          applicableCategories: categoryScope,
+          applicableGameIds,
           isActive,
           order: Number(resetNumber(order, "9999")),
         }),
@@ -252,7 +370,7 @@ export default function PromoCodesPageClient() {
     <div className="space-y-6">
       <SectionTitle
         title="Promo Codes"
-        subtitle="Kelola kode promo dengan potongan tetap atau persen, batas pemakaian harian, minimal transaksi, dan kategori game yang boleh menggunakan promo."
+        subtitle="Kelola kode promo dengan potongan tetap atau persen, batas pemakaian harian, minimal transaksi, serta kategori atau game mana saja yang boleh menggunakan promo."
       />
 
       <PromoCodeForm
@@ -268,7 +386,9 @@ export default function PromoCodesPageClient() {
         minimumOrderAmount={minimumOrderAmount}
         maxDailyUses={maxDailyUses}
         applicableCategories={applicableCategories}
+        applicableGameIds={applicableGameIds}
         availableCategories={categories}
+        availableGames={availableGames}
         isActive={isActive}
         order={order}
         setTitle={setTitle}
@@ -279,6 +399,7 @@ export default function PromoCodesPageClient() {
         setMinimumOrderAmount={setMinimumOrderAmount}
         setMaxDailyUses={setMaxDailyUses}
         setApplicableCategories={setApplicableCategories}
+        setApplicableGameIds={setApplicableGameIds}
         setIsActive={setIsActive}
         setOrder={setOrder}
         onSubmit={handleSubmit}
@@ -306,9 +427,11 @@ export default function PromoCodesPageClient() {
         <PromoCodeList
           promoCodes={promoCodes}
           categories={categories}
+          availableGames={availableGames}
           search={search}
           statusFilter={statusFilter}
           categoryFilter={categoryFilter}
+          gameFilter={gameFilter}
           totalItems={totalItems}
           page={page}
           totalPages={totalPages}
@@ -322,6 +445,10 @@ export default function PromoCodesPageClient() {
           }}
           onCategoryFilterChange={(value) => {
             setCategoryFilter(value);
+            setPage(1);
+          }}
+          onGameFilterChange={(value) => {
+            setGameFilter(value);
             setPage(1);
           }}
           onPageChange={setPage}

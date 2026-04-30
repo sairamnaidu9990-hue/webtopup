@@ -1,4 +1,5 @@
 const PromoCode = require("../models/PromoCode");
+const Game = require("../models/Game");
 const {
   escapeRegex,
   getPromoDailyUsageCount,
@@ -13,9 +14,14 @@ const {
   validatePromoForOrder,
 } = require("../utils/promoCode");
 
-function buildApplicabilityFilter({ gameId, category }) {
+function buildApplicabilityFilter({
+  gameId,
+  category,
+  matchingGameIds = [],
+}) {
   const normalizedGameId = normalizeGameId(gameId);
   const normalizedCategory = String(category || "").trim();
+  const normalizedMatchingGameIds = normalizeApplicableGameIds(matchingGameIds);
   const orConditions = [
     {
       $and: [
@@ -36,6 +42,14 @@ function buildApplicabilityFilter({ gameId, category }) {
         { applicableCategories: normalizedCategory },
       ],
     });
+
+    if (normalizedMatchingGameIds.length > 0) {
+      orConditions.push({
+        applicableGameIds: {
+          $in: normalizedMatchingGameIds,
+        },
+      });
+    }
   }
 
   if (orConditions.length === 1) {
@@ -66,6 +80,7 @@ exports.getPromoCodes = async (req, res) => {
     const status = String(req.query.status || "ALL").trim().toUpperCase();
     const gameId = req.query.gameId;
     const category = String(req.query.category || "").trim();
+    let matchingGameIds = [];
     const page = toPositiveInteger(req.query.page, 1);
     const limit = Math.min(toPositiveInteger(req.query.limit, 20), 100);
     const usePagination =
@@ -89,9 +104,19 @@ exports.getPromoCodes = async (req, res) => {
       queryParts.push({ isActive: false });
     }
 
+    if (category && !gameId) {
+      const matchingGames = await Game.find({
+        category,
+      })
+        .select("_id")
+        .lean();
+      matchingGameIds = matchingGames.map((item) => item?._id);
+    }
+
     const applicabilityFilter = buildApplicabilityFilter({
       gameId,
       category,
+      matchingGameIds,
     });
 
     if (applicabilityFilter) {
@@ -274,6 +299,9 @@ exports.createPromoCode = async (req, res) => {
     const normalizedApplicableGameIds = normalizeApplicableGameIds(
       applicableGameIds
     );
+    const normalizedApplicableCategories = normalizeApplicableCategories(
+      applicableCategories
+    );
 
     const item = await PromoCode.create({
       title: String(title || "").trim(),
@@ -284,10 +312,7 @@ exports.createPromoCode = async (req, res) => {
       minimumOrderAmount: toNonNegativeNumber(minimumOrderAmount, 0),
       maxDailyUses: toPositiveInteger(maxDailyUses, 0),
       applicableGameIds: normalizedApplicableGameIds,
-      applicableCategories:
-        normalizedApplicableGameIds.length > 0
-          ? []
-          : normalizeApplicableCategories(applicableCategories),
+      applicableCategories: normalizedApplicableCategories,
       isActive: Boolean(isActive),
       order: toNonNegativeNumber(order, 9999),
     });
@@ -379,12 +404,12 @@ exports.updatePromoCode = async (req, res) => {
       const normalizedApplicableGameIds = normalizeApplicableGameIds(
         req.body.applicableGameIds
       );
+      const normalizedApplicableCategories = normalizeApplicableCategories(
+        req.body.applicableCategories
+      );
 
       updatePayload.applicableGameIds = normalizedApplicableGameIds;
-      updatePayload.applicableCategories =
-        normalizedApplicableGameIds.length > 0
-          ? []
-          : normalizeApplicableCategories(req.body.applicableCategories);
+      updatePayload.applicableCategories = normalizedApplicableCategories;
     } else if (
       Object.prototype.hasOwnProperty.call(req.body, "applicableCategories")
     ) {

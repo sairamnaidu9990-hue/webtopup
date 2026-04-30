@@ -1,6 +1,10 @@
 "use client";
 
-import type { PromoCodeDiscountType } from "@/app/types/PromoCode";
+import { useMemo, useState } from "react";
+import type {
+  PromoCodeDiscountType,
+  PromoCodeGameScope,
+} from "@/app/types/PromoCode";
 
 type PromoCodeFormProps = {
   isOpen: boolean;
@@ -15,7 +19,9 @@ type PromoCodeFormProps = {
   minimumOrderAmount: string;
   maxDailyUses: string;
   applicableCategories: string[];
+  applicableGameIds: string[];
   availableCategories: string[];
+  availableGames: PromoCodeGameScope[];
   isActive: boolean;
   order: string;
   setTitle: (value: string) => void;
@@ -26,6 +32,7 @@ type PromoCodeFormProps = {
   setMinimumOrderAmount: (value: string) => void;
   setMaxDailyUses: (value: string) => void;
   setApplicableCategories: (value: string[]) => void;
+  setApplicableGameIds: (value: string[]) => void;
   setIsActive: (value: boolean) => void;
   setOrder: (value: string) => void;
   onSubmit: (event: React.FormEvent) => void;
@@ -48,6 +55,21 @@ function toggleCategory(
   onChange([...currentCategories, category]);
 }
 
+function toggleGame(
+  currentGameIds: string[],
+  gameId: string,
+  onChange: (value: string[]) => void
+) {
+  const exists = currentGameIds.includes(gameId);
+
+  if (exists) {
+    onChange(currentGameIds.filter((item) => item !== gameId));
+    return;
+  }
+
+  onChange([...currentGameIds, gameId]);
+}
+
 export default function PromoCodeForm({
   isOpen,
   editingId,
@@ -61,7 +83,9 @@ export default function PromoCodeForm({
   minimumOrderAmount,
   maxDailyUses,
   applicableCategories,
+  applicableGameIds,
   availableCategories,
+  availableGames,
   isActive,
   order,
   setTitle,
@@ -72,12 +96,38 @@ export default function PromoCodeForm({
   setMinimumOrderAmount,
   setMaxDailyUses,
   setApplicableCategories,
+  setApplicableGameIds,
   setIsActive,
   setOrder,
   onSubmit,
   onOpen,
   onClose,
 }: PromoCodeFormProps) {
+  const [gameSearch, setGameSearch] = useState("");
+
+  const filteredGames = useMemo(() => {
+    const keyword = gameSearch.trim().toLowerCase();
+
+    return availableGames.filter((game) => {
+      const matchesCategory =
+        applicableCategories.length === 0 ||
+        applicableCategories.includes(game.category || "");
+      const matchesKeyword =
+        keyword.length === 0 ||
+        game.name.toLowerCase().includes(keyword) ||
+        game.code.toLowerCase().includes(keyword) ||
+        (game.category || "").toLowerCase().includes(keyword);
+
+      return matchesCategory && matchesKeyword;
+    });
+  }, [applicableCategories, availableGames, gameSearch]);
+
+  const selectedGames = useMemo(() => {
+    const selectedIdSet = new Set(applicableGameIds);
+
+    return availableGames.filter((game) => selectedIdSet.has(game._id));
+  }, [applicableGameIds, availableGames]);
+
   return (
     <section className="rounded-[28px] border border-[#f1d6d6] bg-white shadow-[0_20px_44px_rgba(125,19,19,0.08)]">
       <div className="flex flex-col gap-4 border-b border-[#f3e0e0] bg-[linear-gradient(135deg,#fff7f7_0%,#ffffff_100%)] px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
@@ -90,7 +140,7 @@ export default function PromoCodeForm({
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#7a6363]">
             Atur diskon tetap atau persen, minimal transaksi, kuota harian, dan
-            kategori mana saja yang boleh memakai kode promo.
+            kategori atau game mana saja yang boleh memakai kode promo.
           </p>
         </div>
 
@@ -245,20 +295,23 @@ export default function PromoCodeForm({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-[#231919]">
-                    Kategori yang Bisa Pakai Promo
+                    Kategori & Game yang Bisa Pakai Promo
                   </h3>
                   <p className="mt-1 text-sm leading-6 text-[#7a6363]">
-                    Kosongkan pilihan jika promo boleh dipakai untuk semua
-                    kategori game.
+                    Pilih kategori game yang boleh memakai promo ini, lalu
+                    batasi lagi ke game tertentu jika diperlukan.
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setApplicableCategories([])}
+                  onClick={() => {
+                    setApplicableCategories([]);
+                    setApplicableGameIds([]);
+                  }}
                   className="inline-flex h-10 items-center justify-center rounded-2xl border border-[#ead1d1] px-4 text-xs font-semibold text-[#8e3a3a] transition hover:border-[#d33b3b] hover:text-[#d33b3b]"
                 >
-                  Berlaku untuk Semua
+                  Berlaku untuk Semua Game
                 </button>
               </div>
 
@@ -291,9 +344,109 @@ export default function PromoCodeForm({
                 </div>
               ) : (
                 <div className="mt-4 rounded-2xl border border-dashed border-[#ead1d1] bg-white px-4 py-4 text-sm text-[#7a6363]">
-                  Daftar kategori game belum tersedia dari Website Settings.
+                  Belum ada kategori dari data game aktif.
                 </div>
               )}
+
+              <div className="mt-5 rounded-[22px] border border-[#f0dede] bg-white p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <h4 className="text-sm font-semibold text-[#231919]">
+                      Filter & Pilih Game Spesifik
+                    </h4>
+                    <p className="mt-1 text-sm leading-6 text-[#7a6363]">
+                      Jika ada game yang dipilih, promo hanya berlaku untuk game
+                      tersebut. Kosongkan jika promo cukup dibatasi per kategori.
+                    </p>
+                  </div>
+
+                  <div className="w-full lg:max-w-xs">
+                    <input
+                      value={gameSearch}
+                      onChange={(event) => setGameSearch(event.target.value)}
+                      placeholder="Cari nama game atau kode"
+                      className="w-full rounded-2xl border border-[#ecd7d7] px-4 py-3 text-sm text-[#231919] outline-none transition focus:border-[#d33b3b]"
+                    />
+                  </div>
+                </div>
+
+                {selectedGames.length > 0 ? (
+                  <div className="mt-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c25a5a]">
+                      Game Terpilih
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedGames.map((game) => (
+                        <button
+                          key={game._id}
+                          type="button"
+                          onClick={() =>
+                            toggleGame(
+                              applicableGameIds,
+                              game._id,
+                              setApplicableGameIds
+                            )
+                          }
+                          className="inline-flex items-center gap-2 rounded-full border border-[#d33b3b] bg-[#fff3f3] px-3 py-2 text-xs font-semibold text-[#b52b2b]"
+                        >
+                          <span>{game.name}</span>
+                          <span className="text-[#d33b3b]">×</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {availableGames.length > 0 ? (
+                  <div className="mt-4 max-h-72 overflow-y-auto rounded-2xl border border-[#f0dede] bg-[#fffafa] p-3">
+                    {filteredGames.length > 0 ? (
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {filteredGames.map((game) => {
+                          const isSelected = applicableGameIds.includes(
+                            game._id
+                          );
+
+                          return (
+                            <button
+                              key={game._id}
+                              type="button"
+                              onClick={() =>
+                                toggleGame(
+                                  applicableGameIds,
+                                  game._id,
+                                  setApplicableGameIds
+                                )
+                              }
+                              className={`flex flex-col items-start rounded-2xl border px-4 py-3 text-left transition ${
+                                isSelected
+                                  ? "border-[#d33b3b] bg-[#fff1f1] shadow-[0_12px_24px_rgba(211,59,59,0.12)]"
+                                  : "border-[#ecd7d7] bg-white hover:border-[#d33b3b]"
+                              }`}
+                            >
+                              <span className="text-sm font-semibold text-[#231919]">
+                                {game.name}
+                              </span>
+                              <span className="mt-1 text-xs text-[#8b6b6b]">
+                                {game.category || "Tanpa kategori"} ·{" "}
+                                {game.code}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-[#ead1d1] bg-white px-4 py-4 text-sm text-[#7a6363]">
+                        Tidak ada game yang cocok dengan filter kategori atau
+                        pencarian saat ini.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-2xl border border-dashed border-[#ead1d1] bg-white px-4 py-4 text-sm text-[#7a6363]">
+                    Belum ada game aktif yang bisa dipilih untuk promo ini.
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-col gap-4 rounded-[24px] border border-[#f0dede] bg-[#fff9f9] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">

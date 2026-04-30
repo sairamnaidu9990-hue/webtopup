@@ -1,6 +1,6 @@
 "use client";
 
-import type { PromoCode } from "@/app/types/PromoCode";
+import type { PromoCode, PromoCodeGameScope } from "@/app/types/PromoCode";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -21,15 +21,18 @@ function formatDiscount(promoCode: PromoCode) {
 type PromoCodeListProps = {
   promoCodes: PromoCode[];
   categories: string[];
+  availableGames: PromoCodeGameScope[];
   search: string;
   statusFilter: string;
   categoryFilter: string;
+  gameFilter: string;
   totalItems: number;
   page: number;
   totalPages: number;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: string) => void;
   onCategoryFilterChange: (value: string) => void;
+  onGameFilterChange: (value: string) => void;
   onPageChange: (value: number) => void;
   onEdit: (promoCode: PromoCode) => void;
   onDelete: (id: string) => void;
@@ -38,19 +41,27 @@ type PromoCodeListProps = {
 export default function PromoCodeList({
   promoCodes,
   categories,
+  availableGames,
   search,
   statusFilter,
   categoryFilter,
+  gameFilter,
   totalItems,
   page,
   totalPages,
   onSearchChange,
   onStatusFilterChange,
   onCategoryFilterChange,
+  onGameFilterChange,
   onPageChange,
   onEdit,
   onDelete,
 }: PromoCodeListProps) {
+  const gameOptions =
+    categoryFilter === "ALL"
+      ? availableGames
+      : availableGames.filter((game) => game.category === categoryFilter);
+
   return (
     <section className="rounded-[28px] border border-[#f1d6d6] bg-white shadow-[0_20px_44px_rgba(125,19,19,0.08)]">
       <div className="border-b border-[#f3e0e0] px-5 py-5 sm:px-6">
@@ -60,12 +71,12 @@ export default function PromoCodeList({
               Daftar Promo
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#7a6363]">
-              Pantau promo aktif, batas pemakaian harian, dan kategori mana saja
-              yang sedang mendapat potongan harga.
+              Pantau promo aktif, batas pemakaian harian, serta cakupan
+              kategori atau game mana saja yang sedang mendapat potongan harga.
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[720px]">
+          <div className="grid gap-3 lg:grid-cols-2 xl:min-w-[880px] xl:grid-cols-4">
             <input
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
@@ -92,6 +103,19 @@ export default function PromoCodeList({
               {categories.map((category) => (
                 <option key={category} value={category}>
                   {category}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={gameFilter}
+              onChange={(event) => onGameFilterChange(event.target.value)}
+              className="w-full rounded-2xl border border-[#ecd7d7] px-4 py-3 text-sm text-[#231919] outline-none transition focus:border-[#d33b3b]"
+            >
+              <option value="ALL">Semua Game</option>
+              {gameOptions.map((game) => (
+                <option key={game._id} value={game._id}>
+                  {game.name}
                 </option>
               ))}
             </select>
@@ -205,23 +229,33 @@ export default function PromoCodeList({
 
                   <div className="mt-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c25a5a]">
-                      Kategori Berlaku
+                      Berlaku Untuk
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {promoCode.applicableCategories.length > 0 ? (
-                        promoCode.applicableCategories.map((category) => (
-                          <span
-                            key={category}
-                            className="rounded-full border border-[#edd4d4] bg-white px-3 py-1.5 text-xs font-medium text-[#7a6363]"
-                          >
-                            {category}
-                          </span>
-                        ))
-                      ) : (
+                      {promoCode.applicableCategories.length === 0 &&
+                      promoCode.applicableGames.length === 0 ? (
                         <span className="rounded-full border border-[#edd4d4] bg-white px-3 py-1.5 text-xs font-medium text-[#7a6363]">
-                          Semua kategori
+                          Semua kategori & game
                         </span>
-                      )}
+                      ) : null}
+
+                      {promoCode.applicableCategories.map((category) => (
+                        <span
+                          key={category}
+                          className="rounded-full border border-[#edd4d4] bg-white px-3 py-1.5 text-xs font-medium text-[#7a6363]"
+                        >
+                          Kategori: {category}
+                        </span>
+                      ))}
+
+                      {promoCode.applicableGames.map((game) => (
+                        <span
+                          key={game._id}
+                          className="rounded-full border border-[#f1c8c8] bg-[#fff4f4] px-3 py-1.5 text-xs font-medium text-[#b52b2b]"
+                        >
+                          Game: {game.name}
+                        </span>
+                      ))}
                     </div>
                   </div>
 
