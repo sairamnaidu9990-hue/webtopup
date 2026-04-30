@@ -181,6 +181,10 @@ const promoSnapshotSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    applicableGameIds: {
+      type: [String],
+      default: [],
+    },
     applicableCategories: {
       type: [String],
       default: [],

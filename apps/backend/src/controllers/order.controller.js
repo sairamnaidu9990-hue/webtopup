@@ -213,6 +213,7 @@ function buildPromoSnapshot(promoCode, discountAmount) {
       discountAmount: 0,
       minimumOrderAmount: 0,
       maxDailyUses: 0,
+      applicableGameIds: [],
       applicableCategories: [],
     };
   }
@@ -227,6 +228,11 @@ function buildPromoSnapshot(promoCode, discountAmount) {
     discountAmount: Number(discountAmount || 0),
     minimumOrderAmount: Number(promoCode.minimumOrderAmount || 0),
     maxDailyUses: Number(promoCode.maxDailyUses || 0),
+    applicableGameIds: Array.isArray(promoCode.applicableGameIds)
+      ? promoCode.applicableGameIds
+          .map((item) => toStringValue(item?._id || item))
+          .filter(Boolean)
+      : [],
     applicableCategories: Array.isArray(promoCode.applicableCategories)
       ? promoCode.applicableCategories
           .map((item) => toStringValue(item))
@@ -1219,6 +1225,7 @@ async function createOrderDraft(req, res) {
     if (normalizedPromoCode) {
       promoValidationResult = await validatePromoForOrder({
         code: normalizedPromoCode,
+        gameId: String(game._id || ""),
         category: toStringValue(game.category),
         subtotal: sellPrice,
       });

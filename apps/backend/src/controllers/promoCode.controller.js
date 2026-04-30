@@ -3,7 +3,9 @@ const {
   escapeRegex,
   getPromoDailyUsageCount,
   normalizeApplicableCategories,
+  normalizeApplicableGameIds,
   normalizeDiscountType,
+  normalizeGameId,
   normalizePromoCode,
   serializePromoCode,
   toNonNegativeNumber,
@@ -11,26 +13,58 @@ const {
   validatePromoForOrder,
 } = require("../utils/promoCode");
 
-function buildCategoryFilter(category) {
+function buildApplicabilityFilter({ gameId, category }) {
+  const normalizedGameId = normalizeGameId(gameId);
   const normalizedCategory = String(category || "").trim();
+  const orConditions = [
+    {
+      $and: [
+        { applicableGameIds: { $size: 0 } },
+        { applicableCategories: { $size: 0 } },
+      ],
+    },
+  ];
 
-  if (!normalizedCategory) {
+  if (normalizedGameId) {
+    orConditions.push({ applicableGameIds: normalizedGameId });
+  }
+
+  if (normalizedCategory) {
+    orConditions.push({
+      $and: [
+        { applicableGameIds: { $size: 0 } },
+        { applicableCategories: normalizedCategory },
+      ],
+    });
+  }
+
+  if (orConditions.length === 1) {
     return null;
   }
 
   return {
-    $or: [
-      { applicableCategories: { $size: 0 } },
-      { applicableCategories: normalizedCategory },
-    ],
+    $or: orConditions,
   };
+}
+
+function serializeApplicableGames(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item) => ({
+      _id: String(item?._id || "").trim(),
+      name: String(item?.name || "").trim(),
+      code: String(item?.code || "").trim().toUpperCase(),
+      category: String(item?.category || "").trim(),
+      logo: String(item?.logo || "").trim(),
+    }))
+    .filter((item) => item._id && item.name);
 }
 
 exports.getPromoCodes = async (req, res) => {
   try {
-    const filter = {};
+    const queryParts = [];
     const search = String(req.query.search || "").trim();
     const status = String(req.query.status || "ALL").trim().toUpperCase();
+    const gameId = req.query.gameId;
     const category = String(req.query.category || "").trim();
     const page = toPositiveInteger(req.query.page, 1);
     const limit = Math.min(toPositiveInteger(req.query.limit, 20), 100);
@@ -39,33 +73,53 @@ exports.getPromoCodes = async (req, res) => {
       req.query.limit != null ||
       req.query.search != null ||
       req.query.status != null ||
+      req.query.gameId != null ||
       req.query.category != null;
 
     if (search) {
       const regex = new RegExp(escapeRegex(search), "i");
-      filter.$or = [{ title: regex }, { code: regex }, { description: regex }];
+      queryParts.push({
+        $or: [{ title: regex }, { code: regex }, { description: regex }],
+      });
     }
 
     if (status === "ACTIVE") {
-      filter.isActive = true;
+      queryParts.push({ isActive: true });
     } else if (status === "INACTIVE") {
-      filter.isActive = false;
+      queryParts.push({ isActive: false });
     }
 
-    if (category) {
-      filter.applicableCategories = category;
+    const applicabilityFilter = buildApplicabilityFilter({
+      gameId,
+      category,
+    });
+
+    if (applicabilityFilter) {
+      queryParts.push(applicabilityFilter);
     }
 
-    const baseQuery = PromoCode.find(filter).sort({ order: 1, createdAt: -1 });
+    const filter =
+      queryParts.length === 0
+        ? {}
+        : queryParts.length === 1
+        ? queryParts[0]
+        : { $and: queryParts };
+
+    const baseQuery = PromoCode.find(filter)
+      .populate("applicableGameIds", "name code category logo")
+      .sort({ order: 1, createdAt: -1 });
 
     const serializeAdminItems = async (items) =>
       Promise.all(
         items.map(async (promoCode) => {
           const dailyUsageCount = await getPromoDailyUsageCount(promoCode);
 
-          return serializePromoCode(promoCode, {
-            dailyUsageCount,
-          });
+          return {
+            ...serializePromoCode(promoCode, {
+              dailyUsageCount,
+            }),
+            applicableGames: serializeApplicableGames(promoCode.applicableGameIds),
+          };
         })
       );
 
@@ -78,6 +132,7 @@ exports.getPromoCodes = async (req, res) => {
     const totalPages = Math.max(1, Math.ceil(totalItems / limit));
     const safePage = Math.min(page, totalPages);
     const items = await PromoCode.find(filter)
+      .populate("applicableGameIds", "name code category logo")
       .sort({ order: 1, createdAt: -1 })
       .skip((safePage - 1) * limit)
       .limit(limit);
@@ -101,15 +156,19 @@ exports.getPromoCodes = async (req, res) => {
 
 exports.getPublicPromoCodes = async (req, res) => {
   try {
+    const gameId = req.query.gameId;
     const category = String(req.query.category || "").trim();
     const subtotal = toNonNegativeNumber(req.query.subtotal, 0);
     const filter = {
       isActive: true,
     };
-    const categoryFilter = buildCategoryFilter(category);
+    const applicabilityFilter = buildApplicabilityFilter({
+      gameId,
+      category,
+    });
 
-    if (categoryFilter) {
-      Object.assign(filter, categoryFilter);
+    if (applicabilityFilter) {
+      Object.assign(filter, applicabilityFilter);
     }
 
     const items = await PromoCode.find(filter).sort({ order: 1, createdAt: -1 });
@@ -117,6 +176,7 @@ exports.getPublicPromoCodes = async (req, res) => {
       items.map(async (promoCode) => {
         const dailyUsageCount = await getPromoDailyUsageCount(promoCode);
         return serializePromoCode(promoCode, {
+          gameId,
           category,
           subtotal,
           dailyUsageCount,
@@ -138,10 +198,12 @@ exports.getPublicPromoCodes = async (req, res) => {
 exports.validatePublicPromoCode = async (req, res) => {
   try {
     const promoCode = req.body?.code;
+    const gameId = req.body?.gameId;
     const category = req.body?.category;
     const subtotal = req.body?.subtotal;
     const result = await validatePromoForOrder({
       code: promoCode,
+      gameId,
       category,
       subtotal,
       requireActive: true,
@@ -155,6 +217,7 @@ exports.validatePublicPromoCode = async (req, res) => {
 
     return res.status(200).json({
       promoCode: serializePromoCode(result.promoCode, {
+        gameId,
         category,
         subtotal,
         dailyUsageCount: result.dailyUsageCount,
@@ -180,6 +243,7 @@ exports.createPromoCode = async (req, res) => {
       discountValue = 0,
       minimumOrderAmount = 0,
       maxDailyUses = 0,
+      applicableGameIds = [],
       applicableCategories = [],
       isActive = true,
       order = 9999,
@@ -207,6 +271,10 @@ exports.createPromoCode = async (req, res) => {
       });
     }
 
+    const normalizedApplicableGameIds = normalizeApplicableGameIds(
+      applicableGameIds
+    );
+
     const item = await PromoCode.create({
       title: String(title || "").trim(),
       code: normalizedCode,
@@ -215,7 +283,11 @@ exports.createPromoCode = async (req, res) => {
       discountValue: toNonNegativeNumber(discountValue, 0),
       minimumOrderAmount: toNonNegativeNumber(minimumOrderAmount, 0),
       maxDailyUses: toPositiveInteger(maxDailyUses, 0),
-      applicableCategories: normalizeApplicableCategories(applicableCategories),
+      applicableGameIds: normalizedApplicableGameIds,
+      applicableCategories:
+        normalizedApplicableGameIds.length > 0
+          ? []
+          : normalizeApplicableCategories(applicableCategories),
       isActive: Boolean(isActive),
       order: toNonNegativeNumber(order, 9999),
     });
@@ -303,7 +375,19 @@ exports.updatePromoCode = async (req, res) => {
       );
     }
 
-    if (Object.prototype.hasOwnProperty.call(req.body, "applicableCategories")) {
+    if (Object.prototype.hasOwnProperty.call(req.body, "applicableGameIds")) {
+      const normalizedApplicableGameIds = normalizeApplicableGameIds(
+        req.body.applicableGameIds
+      );
+
+      updatePayload.applicableGameIds = normalizedApplicableGameIds;
+      updatePayload.applicableCategories =
+        normalizedApplicableGameIds.length > 0
+          ? []
+          : normalizeApplicableCategories(req.body.applicableCategories);
+    } else if (
+      Object.prototype.hasOwnProperty.call(req.body, "applicableCategories")
+    ) {
       updatePayload.applicableCategories = normalizeApplicableCategories(
         req.body.applicableCategories
       );

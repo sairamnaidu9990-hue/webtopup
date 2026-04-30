@@ -42,6 +42,15 @@ const promoCodeSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    applicableGameIds: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Game",
+        },
+      ],
+      default: [],
+    },
     applicableCategories: {
       type: [String],
       default: [],
@@ -60,6 +69,7 @@ const promoCodeSchema = new mongoose.Schema(
 );
 
 promoCodeSchema.index({ isActive: 1, order: 1, createdAt: -1 });
+promoCodeSchema.index({ applicableGameIds: 1, isActive: 1 });
 promoCodeSchema.index({ applicableCategories: 1, isActive: 1 });
 
 module.exports = mongoose.model("PromoCode", promoCodeSchema);

@@ -106,6 +106,7 @@ export type Order = {
     discountAmount?: number;
     minimumOrderAmount?: number;
     maxDailyUses?: number;
+    applicableGameIds?: string[];
     applicableCategories?: string[];
   };
   paymentMethodCode?: string;

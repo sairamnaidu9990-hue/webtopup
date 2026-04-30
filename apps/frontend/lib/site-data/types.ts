@@ -203,6 +203,7 @@ export type StorefrontPromoCode = {
   discountValue: number;
   minimumOrderAmount: number;
   maxDailyUses: number;
+  applicableGameIds: string[];
   applicableCategories: string[];
   isActive: boolean;
   order: number;
@@ -296,6 +297,7 @@ export type StorefrontOrder = {
     discountAmount: number;
     minimumOrderAmount: number;
     maxDailyUses: number;
+    applicableGameIds: string[];
     applicableCategories: string[];
   };
   region: string;
