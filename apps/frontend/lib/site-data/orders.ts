@@ -4,39 +4,37 @@ import { buildFrontendApiUrl } from "@/lib/runtimeConfig";
 import { normalizeStorefrontOrder } from "@/lib/site-data/normalizers";
 import type { RecentPublicOrder, StorefrontOrder } from "@/lib/site-data/types";
 
-export const getPublicOrderByInvoice = cache(
-  async (invoiceNumber: string): Promise<StorefrontOrder | null> => {
-    const normalizedInvoiceNumber = String(invoiceNumber || "")
-      .trim()
-      .toUpperCase();
+export async function getPublicOrderByInvoice(
+  invoiceNumber: string
+): Promise<StorefrontOrder | null> {
+  const normalizedInvoiceNumber = String(invoiceNumber || "")
+    .trim()
+    .toUpperCase();
 
-    if (!normalizedInvoiceNumber) {
-      return null;
-    }
-
-    try {
-      const response = await fetch(
-        await buildFrontendApiUrl(
-          `/api/orders/invoice/${encodeURIComponent(normalizedInvoiceNumber)}`
-        ),
-        {
-          next: {
-            revalidate: 10,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch order invoice");
-      }
-
-      const payload = await response.json();
-      return normalizeStorefrontOrder(payload.order);
-    } catch {
-      return null;
-    }
+  if (!normalizedInvoiceNumber) {
+    return null;
   }
-);
+
+  try {
+    const response = await fetch(
+      await buildFrontendApiUrl(
+        `/api/orders/invoice/${encodeURIComponent(normalizedInvoiceNumber)}`
+      ),
+      {
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch order invoice");
+    }
+
+    const payload = await response.json();
+    return normalizeStorefrontOrder(payload.order);
+  } catch {
+    return null;
+  }
+}
 
 export const getRecentPublicOrders = cache(
   async (limit = 10): Promise<RecentPublicOrder[]> => {
