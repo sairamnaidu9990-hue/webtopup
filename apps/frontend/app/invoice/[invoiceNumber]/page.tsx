@@ -162,7 +162,10 @@ export default async function InvoicePage({
                   <CopyInvoiceButton invoiceNumber={order.invoiceNumber} />
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <InvoiceAutoRefresh enabled={shouldAutoRefresh} />
+                  <InvoiceAutoRefresh
+                    enabled={shouldAutoRefresh}
+                    invoiceNumber={order.invoiceNumber}
+                  />
                 </div>
               </div>
             </div>

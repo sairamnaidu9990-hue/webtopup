@@ -27,6 +27,7 @@ const {
   buildWebhookUrls,
   getProductionReadinessWarnings,
 } = require("../utils/deploymentConfig");
+const { broadcastOrderUpdate } = require("../realtime/realtimeServer");
 const { validatePromoForOrder } = require("../utils/promoCode");
 const { serializeOrderReviewState } = require("./review.controller");
 
@@ -169,6 +170,12 @@ function buildCustomerDisplay(customerInputs) {
 
 function isManualPaymentMethod(paymentMethod) {
   return toStringValue(paymentMethod?.provider || "manual").toLowerCase() === "manual";
+}
+
+async function saveOrderAndBroadcast(order, source = "system") {
+  await order.save();
+  broadcastOrderUpdate(order, source);
+  return order;
 }
 
 function buildPaymentMethodSnapshot(paymentMethod) {
@@ -315,7 +322,7 @@ async function syncBangjeffOrderStatus(order) {
     }
 
     applyBangjeffOrderData(order, payload);
-    await order.save();
+    await saveOrderAndBroadcast(order, "bangjeff-sync");
   } catch {
     return order;
   }
@@ -358,7 +365,7 @@ async function processBangjeffOrder(order) {
     });
 
     applyBangjeffOrderData(order, payload);
-    await order.save();
+    await saveOrderAndBroadcast(order, "bangjeff-submit");
 
     return {
       ok: true,
@@ -369,7 +376,7 @@ async function processBangjeffOrder(order) {
     order.status = "FAILED";
     order.providerMessage = toStringValue(error.message);
     order.failedAt = new Date();
-    await order.save();
+    await saveOrderAndBroadcast(order, "bangjeff-submit");
 
     logError({
       source: "backend",
@@ -543,7 +550,7 @@ async function attachTokopayPaymentToOrder(order, paymentMethod, siteSetting) {
       expiresAt,
     };
     order.notes = warningMessage;
-    await order.save();
+    await saveOrderAndBroadcast(order, "tokopay-create");
 
     logWarn({
       source: "backend",
@@ -583,7 +590,7 @@ async function attachTokopayPaymentToOrder(order, paymentMethod, siteSetting) {
       "create"
     );
     order.notes = "";
-    await order.save();
+    await saveOrderAndBroadcast(order, "tokopay-create");
 
     return {
       order,
@@ -598,7 +605,7 @@ async function attachTokopayPaymentToOrder(order, paymentMethod, siteSetting) {
       expiresAt,
     };
     order.notes = toStringValue(error.message);
-    await order.save();
+    await saveOrderAndBroadcast(order, "tokopay-create");
 
     logError({
       source: "backend",
@@ -651,7 +658,7 @@ async function syncTokopayPaymentStatus(order) {
       order.paymentGateway?.expiresAt,
       "check"
     );
-    await order.save();
+    await saveOrderAndBroadcast(order, "tokopay-check");
     await maybeProcessBangjeffAfterPaid(order);
   } catch (error) {
     logWarn({
@@ -1341,6 +1348,7 @@ async function createOrderDraft(req, res) {
       },
       error,
     });
+    broadcastOrderUpdate(order, "order-create");
     return res.status(500).json({
       message: "Error membuat order draft",
       error: error.message,
@@ -1423,7 +1431,7 @@ async function updateOrderByAdmin(req, res) {
       reconcileAdminEditedOrderTimestamps(order);
     }
 
-    await order.save();
+    await saveOrderAndBroadcast(order, "admin-update");
 
     return res.status(200).json({
       message: "Perubahan order berhasil disimpan",
@@ -1497,7 +1505,7 @@ async function markManualOrderAsPaid(req, res) {
       rawStatus: "MANUAL_PAID",
       updatedAt: now,
     };
-    await order.save();
+    await saveOrderAndBroadcast(order, "manual-paid");
 
     if (toStringValue(order.provider).toLowerCase() === "bangjeff") {
       const result = await processBangjeffOrder(order);
@@ -1632,7 +1640,7 @@ async function resendOrderToProvider(req, res) {
     }
 
     resetBangjeffOrderForRetry(order);
-    await order.save();
+    await saveOrderAndBroadcast(order, "provider-retry");
 
     const result = await processBangjeffOrder(order);
 
@@ -1710,7 +1718,7 @@ async function tokopayCallback(req, res) {
       "webhook"
     );
     order.notes = "";
-    await order.save();
+    await saveOrderAndBroadcast(order, "tokopay-callback");
     await maybeProcessBangjeffAfterPaid(order);
 
     return res.status(200).json({
@@ -1794,7 +1802,7 @@ async function bangjeffCallback(req, res) {
     }
 
     applyBangjeffOrderData(order, payload);
-    await order.save();
+    await saveOrderAndBroadcast(order, "bangjeff-callback");
 
     return res.status(200).json({
       status: true,

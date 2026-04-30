@@ -1,7 +1,12 @@
 require("dotenv").config();
 
+const http = require("http");
 const app = require("./app");
 const connectDB = require("./src/config/db");
+const {
+  initRealtimeServer,
+  shutdownRealtimeServer,
+} = require("./src/realtime/realtimeServer");
 const { logError, logFatal, logInfo } = require("./src/utils/appLogger");
 const { buildWebhookUrls, getProductionReadinessWarnings } = require("./src/utils/deploymentConfig");
 const SiteSetting = require("./src/models/SiteSetting");
@@ -66,6 +71,7 @@ process.on("uncaughtException", (error) => {
   });
 
   if (server) {
+    shutdownRealtimeServer();
     server.close(() => process.exit(1));
     return;
   }
@@ -77,7 +83,10 @@ async function startServer() {
   try {
     await connectDB();
 
-    server = app.listen(PORT, HOST, () => {
+    server = http.createServer(app);
+    initRealtimeServer(server);
+
+    server.listen(PORT, HOST, () => {
       logInfo({
         source: "backend",
         scope: "server",

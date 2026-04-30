@@ -5,6 +5,7 @@ import Card from "@/app/components/ui/Card";
 import PaginationControls from "@/app/components/ui/PaginationControls";
 import SectionTitle from "@/app/components/ui/SectionTitle";
 import OrderEditorDialog from "@/app/components/orders/OrderEditorDialog";
+import useOrdersRealtime from "@/app/components/orders/useOrdersRealtime";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import type { Order, OrderSummary } from "@/app/types/Order";
 
@@ -34,7 +35,6 @@ const emptySummary: OrderSummary = {
   failedOrders: 0,
   processingOrders: 0,
 };
-const POLLING_INTERVAL_MS = 10000;
 
 function formatMoney(currency = "IDR", value = 0) {
   return new Intl.NumberFormat("id-ID", {
@@ -266,15 +266,11 @@ export default function OrdersPageClient() {
     void fetchOrders();
   }, [fetchOrders]);
 
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === "visible" && !updatingOrderId) {
-        void fetchOrders({ silent: true });
-      }
-    }, POLLING_INTERVAL_MS);
-
-    return () => window.clearInterval(intervalId);
-  }, [fetchOrders, updatingOrderId]);
+  const realtime = useOrdersRealtime({
+    enabled: true,
+    paused: Boolean(updatingOrderId),
+    onRefresh: () => fetchOrders({ silent: true }),
+  });
 
   useEffect(() => {
     if (!selectedOrder) {
@@ -333,6 +329,20 @@ export default function OrdersPageClient() {
     void fetchOrders({ silent: true });
   };
 
+  const realtimeBannerText =
+    realtime.mode === "live"
+      ? "Realtime order aktif. Data akan ikut bergerak saat transaksi berubah."
+      : realtime.mode === "connecting"
+      ? "Sedang menyambungkan realtime order..."
+      : "Realtime belum tersedia. Auto refresh cadangan tetap aktif setiap 10 detik.";
+
+  const realtimeBadgeText =
+    realtime.mode === "live"
+      ? "Realtime aktif"
+      : realtime.mode === "connecting"
+      ? "Menghubungkan..."
+      : "Fallback 10 detik";
+
   return (
     <div className="space-y-6">
       <SectionTitle
@@ -369,8 +379,8 @@ export default function OrdersPageClient() {
       <Card title="Daftar Order">
         <div className="space-y-5">
           <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-500">
-            <span>Data order diperbarui otomatis setiap 10 detik selama halaman aktif.</span>
-            <span>Auto update aktif</span>
+            <span>{realtimeBannerText}</span>
+            <span>{realtimeBadgeText}</span>
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">

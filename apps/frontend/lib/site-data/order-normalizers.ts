@@ -102,6 +102,11 @@ export function normalizeStorefrontOrder(
       discountAmount: Number(order?.promoSnapshot?.discountAmount || 0),
       minimumOrderAmount: Number(order?.promoSnapshot?.minimumOrderAmount || 0),
       maxDailyUses: Number(order?.promoSnapshot?.maxDailyUses || 0),
+      applicableGameIds: Array.isArray(order?.promoSnapshot?.applicableGameIds)
+        ? order.promoSnapshot.applicableGameIds.map((item) =>
+            String(item || "").trim()
+          )
+        : [],
       applicableCategories: Array.isArray(order?.promoSnapshot?.applicableCategories)
         ? order.promoSnapshot.applicableCategories.map((item) =>
             String(item || "").trim()

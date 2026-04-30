@@ -5,6 +5,7 @@ const {
   loginAdmin,
   getMe,
   logoutAdmin,
+  issueAdminRealtimeToken,
 } = require("../controllers/authController");
 
 const { protectAdmin } = require("../middleware/authMiddleware");
@@ -20,5 +21,6 @@ const loginRateLimit = createRateLimit({
 router.post("/login", loginRateLimit, loginAdmin);
 router.get("/me", protectAdmin, getMe);
 router.post("/logout", logoutAdmin);
+router.post("/realtime-token", protectAdmin, issueAdminRealtimeToken);
 
 module.exports = router;

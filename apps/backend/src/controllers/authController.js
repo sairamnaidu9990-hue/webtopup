@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const Admin = require("../models/admin");
 const generateToken = require("../utils/generateToken");
+const { createAdminRealtimeToken } = require("../utils/realtimeToken");
 const { logError, logWarn } = require("../utils/appLogger");
 
 async function loginAdmin(req, res) {
@@ -159,8 +160,38 @@ async function logoutAdmin(req, res) {
   });
 }
 
+async function issueAdminRealtimeToken(req, res) {
+  try {
+    const token = createAdminRealtimeToken(req.admin);
+
+    return res.status(200).json({
+      token,
+    });
+  } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "auth",
+      message: "Gagal membuat realtime token admin",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        adminId: req.admin?._id,
+      },
+      error,
+    });
+
+    return res.status(500).json({
+      message: "Gagal membuat realtime token",
+    });
+  }
+}
+
 module.exports = {
   loginAdmin,
   getMe,
   logoutAdmin,
+  issueAdminRealtimeToken,
 };
