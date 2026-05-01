@@ -8,6 +8,7 @@ import type { AppliedPromoCode } from "@/components/PromoCodeSection";
 
 export default function MobileCheckoutBar({
   selectedVariant,
+  quantity,
   createdOrder,
   totalPayment,
   baseSubtotal,
@@ -20,6 +21,7 @@ export default function MobileCheckoutBar({
   isCreatingOrder,
 }: {
   selectedVariant: StorefrontVariant | null;
+  quantity: number;
   createdOrder: {
     invoiceNumber: string;
     totalAmount: number;
@@ -119,6 +121,11 @@ export default function MobileCheckoutBar({
                         </div>
                       </>
                     ) : null}
+
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Jumlah Pembelian</span>
+                      <span className="font-medium text-white">{quantity}x</span>
+                    </div>
 
                     <div className="flex items-center justify-between gap-3">
                       <span>Biaya</span>

@@ -163,7 +163,8 @@ export default function RecentTransactionsSection({
                         {order.gameName || "-"}
                       </p>
                       <p className="mt-1 line-clamp-2 text-[11px] text-white/54">
-                        {order.variantName || "-"}
+                        {(order.variantName || "-") +
+                          (order.quantity > 1 ? ` x${order.quantity}` : "")}
                       </p>
                     </div>
                   </td>

@@ -148,6 +148,57 @@ export function VariantStepSection({
   );
 }
 
+export function QuantityStepSection({
+  quantity,
+  onQuantityChange,
+  disabled,
+}: {
+  quantity: number;
+  onQuantityChange: (nextQuantity: number) => void;
+  disabled: boolean;
+}) {
+  const normalizedQuantity = Math.min(Math.max(Number(quantity || 1), 1), 10);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <input
+          type="number"
+          min={1}
+          max={10}
+          inputMode="numeric"
+          value={normalizedQuantity}
+          onChange={(event) => onQuantityChange(Number(event.target.value || 1))}
+          disabled={disabled}
+          className="topup-number-input h-11 min-w-0 flex-1 rounded-[14px] border border-white/8 bg-[#3a3b40] px-3.5 text-base text-white outline-none transition placeholder:text-white/28 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-[42px] sm:text-[13px]"
+        />
+
+        <button
+          type="button"
+          onClick={() => onQuantityChange(normalizedQuantity + 1)}
+          disabled={disabled || normalizedQuantity >= 10}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#a88d62] text-xl font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[42px] sm:w-[42px]"
+        >
+          +
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onQuantityChange(normalizedQuantity - 1)}
+          disabled={disabled || normalizedQuantity <= 1}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#7b6748] text-xl font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[42px] sm:w-[42px]"
+        >
+          −
+        </button>
+      </div>
+
+      <p className="text-[11px] text-white/45">
+        Jumlah pembelian minimal 1 dan maksimal 10 kali untuk variant yang sama.
+      </p>
+    </div>
+  );
+}
+
 export function PaymentStepSection({
   paymentMethods,
   paymentMethodGroups,
@@ -156,6 +207,7 @@ export function PaymentStepSection({
   paymentMethodCode,
   onPaymentMethodSelect,
   selectedVariant,
+  subtotal,
 }: {
   paymentMethods: StorefrontPaymentMethod[];
   paymentMethodGroups: PaymentMethodGroup[];
@@ -164,6 +216,7 @@ export function PaymentStepSection({
   paymentMethodCode: string;
   onPaymentMethodSelect: (methodCode: string) => void;
   selectedVariant: StorefrontVariant | null;
+  subtotal: number;
 }) {
   if (paymentMethods.length === 0) {
     return (
@@ -211,7 +264,7 @@ export function PaymentStepSection({
                 {group.methods.map((paymentMethod) => {
                   const isSelected = paymentMethodCode === paymentMethod.code;
                   const totalByMethod = selectedVariant
-                    ? getPaymentTotal(selectedVariant.price, paymentMethod)
+                    ? getPaymentTotal(subtotal, paymentMethod)
                     : 0;
 
                   return (

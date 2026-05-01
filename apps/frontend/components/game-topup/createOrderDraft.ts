@@ -1,6 +1,7 @@
 type OrderDraftPayload = {
   gameCode: string;
   variantId: string;
+  quantity: number;
   paymentMethodCode: string;
   promoCode: string;
   customerInputs: Array<{

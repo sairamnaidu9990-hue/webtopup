@@ -63,6 +63,7 @@ export const getRecentPublicOrders = cache(
             invoiceNumber: String(item?.invoiceNumber || "").trim(),
             gameName: String(item?.gameName || "-").trim() || "-",
             variantName: String(item?.variantName || "-").trim() || "-",
+            quantity: Math.min(Math.max(Number(item?.quantity || 1), 1), 10),
             phoneNumber: String(item?.phoneNumber || "-").trim() || "-",
             currency: String(item?.currency || "IDR").trim().toUpperCase(),
             totalAmount: Number(item?.totalAmount || 0),

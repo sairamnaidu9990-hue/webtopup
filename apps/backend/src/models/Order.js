@@ -393,6 +393,11 @@ const orderSchema = new mongoose.Schema(
       ref: "Variant",
       default: null,
     },
+    quantity: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
     gameSnapshot: {
       type: gameSnapshotSchema,
       default: () => ({}),

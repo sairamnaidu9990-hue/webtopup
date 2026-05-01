@@ -21,6 +21,7 @@ export type Order = {
   providerInvoiceNumber?: string;
   providerReferenceNumber?: string;
   paymentReferenceNumber?: string;
+  quantity?: number;
   gameSnapshot?: {
     name?: string;
     code?: string;

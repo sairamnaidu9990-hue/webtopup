@@ -16,6 +16,7 @@ export default function DesktopCheckoutSidebar({
   game,
   reviewSummary,
   selectedVariant,
+  quantity,
   createdOrder,
   baseSubtotal,
   appliedPromo,
@@ -29,6 +30,7 @@ export default function DesktopCheckoutSidebar({
   game: StorefrontGame;
   reviewSummary: StorefrontGameReviewSummary;
   selectedVariant: StorefrontVariant | null;
+  quantity: number;
   createdOrder: {
     invoiceNumber: string;
     totalAmount: number;
@@ -120,7 +122,7 @@ export default function DesktopCheckoutSidebar({
 
               <div className="flex items-center justify-between gap-4">
                 <span>Jumlah Pembelian</span>
-                <span className="font-medium text-white">1</span>
+                <span className="font-medium text-white">{quantity}x</span>
               </div>
 
               <div className="flex items-center justify-between gap-4">

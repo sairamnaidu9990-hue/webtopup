@@ -13,6 +13,7 @@ export function normalizeStorefrontOrder(
     status: String(order?.status || "").trim().toUpperCase(),
     paymentStatus: String(order?.paymentStatus || "").trim().toUpperCase(),
     providerStatus: String(order?.providerStatus || "").trim().toUpperCase(),
+    quantity: Math.min(Math.max(Number(order?.quantity || 1), 1), 10),
     customerInputs: Array.isArray(order?.customerInputs)
       ? order.customerInputs.map((input) => ({
           name: String(input?.name || "").trim(),

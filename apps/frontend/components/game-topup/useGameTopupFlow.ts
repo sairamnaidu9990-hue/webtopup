@@ -39,6 +39,7 @@ export default function useGameTopupFlow({
     () => createInitialInputValues(resolvedInputs)
   );
   const [selectedVariantId, setSelectedVariantId] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [paymentMethodCode, setPaymentMethodCode] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const contactPhoneCode = "+62";
@@ -68,10 +69,11 @@ export default function useGameTopupFlow({
     Record<string, boolean>
   >({});
   const [highlightedStep, setHighlightedStep] = useState<
-    "account" | "variant" | "payment" | "contact" | null
+    "account" | "variant" | "quantity" | "payment" | "contact" | null
   >(null);
   const accountStepRef = useRef<HTMLDivElement | null>(null);
   const variantStepRef = useRef<HTMLDivElement | null>(null);
+  const quantityStepRef = useRef<HTMLDivElement | null>(null);
   const paymentStepRef = useRef<HTMLDivElement | null>(null);
   const contactStepRef = useRef<HTMLDivElement | null>(null);
   const highlightTimeoutRef = useRef<number | null>(null);
@@ -87,12 +89,14 @@ export default function useGameTopupFlow({
     [paymentMethods]
   );
   const variantStepNumber = showAccountStep ? 2 : 1;
-  const paymentStepNumber = variantStepNumber + 1;
+  const quantityStepNumber = variantStepNumber + 1;
+  const paymentStepNumber = quantityStepNumber + 1;
   const contactStepNumber = paymentStepNumber + 1;
   const promoStepNumber = contactStepNumber + 1;
   const selectedPaymentMethod =
     paymentMethods.find((method) => method.code === paymentMethodCode) || null;
-  const baseSubtotal = selectedVariant?.price || 0;
+  const safeQuantity = Math.min(Math.max(Number(quantity || 1), 1), 10);
+  const baseSubtotal = (selectedVariant?.price || 0) * safeQuantity;
   const promoDiscount = Math.min(
     Number(appliedPromo?.discountAmount || 0),
     baseSubtotal
@@ -209,7 +213,7 @@ export default function useGameTopupFlow({
 
   const focusStep = useCallback(
     (
-      step: "account" | "variant" | "payment" | "contact",
+      step: "account" | "variant" | "quantity" | "payment" | "contact",
       ref: RefObject<HTMLDivElement | null>
     ) => {
       setMobileContentTab("transaction");
@@ -262,10 +266,17 @@ export default function useGameTopupFlow({
       setIsMobileSummaryExpanded(false);
 
       window.requestAnimationFrame(() => {
-        focusStep("payment", paymentStepRef);
+        focusStep("quantity", quantityStepRef);
       });
     },
-    [clearCreatedOrder, focusStep, isAccountDataReady, resolvedInputs.length, showAlert]
+    [
+      clearCreatedOrder,
+      focusStep,
+      isAccountDataReady,
+      quantityStepRef,
+      resolvedInputs.length,
+      showAlert,
+    ]
   );
 
   const handlePaymentMethodSelect = useCallback(
@@ -331,6 +342,7 @@ export default function useGameTopupFlow({
         payload: {
           gameCode: game.code,
           variantId: selectedVariant._id,
+          quantity: safeQuantity,
           paymentMethodCode,
           promoCode: appliedPromo?.code || "",
           customerInputs: resolvedInputs.map((input) => {
@@ -391,6 +403,7 @@ export default function useGameTopupFlow({
     router,
     selectedVariant,
     showAlert,
+    safeQuantity,
     totalPayment,
   ]);
 
@@ -406,6 +419,9 @@ export default function useGameTopupFlow({
     contactStepNumber,
     contactStepRef,
     createdOrder,
+    quantity: safeQuantity,
+    quantityStepNumber,
+    quantityStepRef,
     handleOrderClick,
     handlePaymentMethodSelect,
     handlePromoChange,
@@ -461,6 +477,11 @@ export default function useGameTopupFlow({
       clearCreatedOrder();
       setSelectionAlert(null);
       setContactPhoneNumber(nextValue);
+    },
+    handleQuantityChange: (nextQuantity: number) => {
+      clearCreatedOrder();
+      setSelectionAlert(null);
+      setQuantity(Math.min(Math.max(Number(nextQuantity || 1), 1), 10));
     },
     toggleFaqItem: (index: number) =>
       setOpenFaqItems((current) => ({

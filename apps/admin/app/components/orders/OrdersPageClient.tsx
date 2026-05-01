@@ -515,14 +515,17 @@ export default function OrdersPageClient() {
                             </p>
                           </div>
 
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {order.variantSnapshot?.name || "-"}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                              {order.variantSnapshot?.providerCode || "-"}
-                            </p>
-                          </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {order.variantSnapshot?.name || "-"}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Qty: {Math.max(Number(order.quantity || 1), 1)}x
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                {order.variantSnapshot?.providerCode || "-"}
+                              </p>
+                            </div>
 
                           <div>
                             <p className="font-semibold text-gray-900">

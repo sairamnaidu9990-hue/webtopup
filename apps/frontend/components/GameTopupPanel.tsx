@@ -84,6 +84,9 @@ export default function GameTopupPanel({
             variantGroups={flow.variantGroups}
             onVariantSelect={flow.handleVariantSelect}
             variantStepNumber={flow.variantStepNumber}
+            quantity={flow.quantity}
+            onQuantityChange={flow.handleQuantityChange}
+            quantityStepNumber={flow.quantityStepNumber}
             paymentMethods={paymentMethods}
             paymentMethodGroups={flow.paymentMethodGroups}
             openPaymentGroups={flow.openPaymentGroups}
@@ -91,6 +94,7 @@ export default function GameTopupPanel({
             paymentMethodCode={flow.paymentMethodCode}
             onPaymentMethodSelect={flow.handlePaymentMethodSelect}
             paymentStepNumber={flow.paymentStepNumber}
+            paymentSubtotal={flow.baseSubtotal}
             contactEmail={flow.contactEmail}
             onContactEmailChange={flow.handleContactEmailChange}
             contactPhoneCode={flow.contactPhoneCode}
@@ -99,11 +103,13 @@ export default function GameTopupPanel({
             contactStepNumber={flow.contactStepNumber}
             promoStepNumber={flow.promoStepNumber}
             gameCategory={game.category || ""}
+            gameId={game._id}
             baseSubtotal={flow.baseSubtotal}
             selectedCurrency={flow.selectedVariant?.currency || "IDR"}
             onPromoChange={flow.handlePromoChange}
             accountStepRef={flow.accountStepRef}
             variantStepRef={flow.variantStepRef}
+            quantityStepRef={flow.quantityStepRef}
             paymentStepRef={flow.paymentStepRef}
             contactStepRef={flow.contactStepRef}
             highlightedStep={flow.highlightedStep}
@@ -113,6 +119,7 @@ export default function GameTopupPanel({
             game={game}
             reviewSummary={reviewSummary}
             selectedVariant={flow.selectedVariant}
+            quantity={flow.quantity}
             createdOrder={flow.createdOrder}
             baseSubtotal={flow.baseSubtotal}
             appliedPromo={flow.appliedPromo}
@@ -147,6 +154,7 @@ export default function GameTopupPanel({
             >
               <MobileCheckoutBar
                 selectedVariant={flow.selectedVariant}
+                quantity={flow.quantity}
                 createdOrder={flow.createdOrder}
                 totalPayment={flow.totalPayment}
                 baseSubtotal={flow.baseSubtotal}

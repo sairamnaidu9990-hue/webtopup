@@ -75,12 +75,14 @@ async function parseJson<T = unknown>(response: Response): Promise<T | null> {
 }
 
 export default function PromoCodeSection({
+  gameId,
   category,
   subtotal,
   currency,
   disabled,
   onPromoChange,
 }: {
+  gameId: string;
   category: string;
   subtotal: number;
   currency: string;
@@ -128,6 +130,7 @@ export default function PromoCodeSection({
         },
         body: JSON.stringify({
           code: appliedPromo.code,
+          gameId,
           category,
           subtotal,
         }),
@@ -159,7 +162,7 @@ export default function PromoCodeSection({
     return () => {
       isActive = false;
     };
-  }, [appliedPromo?.code, category, commitPromoChange, disabled, subtotal]);
+  }, [appliedPromo?.code, category, commitPromoChange, disabled, gameId, subtotal]);
 
   const applyPromoCode = async (code: string) => {
     const normalizedCode = String(code || "").trim().toUpperCase();
@@ -191,6 +194,7 @@ export default function PromoCodeSection({
         },
         body: JSON.stringify({
           code: normalizedCode,
+          gameId,
           category,
           subtotal,
         }),
@@ -233,6 +237,7 @@ export default function PromoCodeSection({
     try {
       setDialogLoading(true);
       const params = new URLSearchParams({
+        gameId,
         category,
         subtotal: String(subtotal || 0),
       });

@@ -51,6 +51,8 @@ const PROVIDER_STATUSES = [
   "UNKNOWN",
 ];
 const PROCESSING_SUMMARY_STATUSES = ["PAID", "PROCESSING"];
+const DEFAULT_ORDER_QUANTITY = 1;
+const MAX_ORDER_QUANTITY = 10;
 const DEFAULT_BANGJEFF_REGION = String(
   process.env.BANGJEFF_REGION || "ID"
 ).toUpperCase();
@@ -114,14 +116,17 @@ function buildTokopayCustomerPhone(order) {
 }
 
 function buildTokopayItems(order, invoiceUrl) {
+  const quantity = normalizeOrderQuantity(order.quantity, DEFAULT_ORDER_QUANTITY);
+  const baseName =
+    toStringValue(order.variantSnapshot?.name) ||
+    toStringValue(order.gameSnapshot?.name);
+
   return [
     {
       product_code:
         toStringValue(order.variantSnapshot?.providerCode) ||
         toStringValue(order.gameSnapshot?.code),
-      name:
-        toStringValue(order.variantSnapshot?.name) ||
-        toStringValue(order.gameSnapshot?.name),
+      name: quantity > 1 ? `${baseName} x${quantity}` : baseName,
       price: Number(
         order.price?.subtotalAfterDiscount ?? order.price?.sellPrice ?? 0
       ),
@@ -141,6 +146,13 @@ function toPositiveInteger(value, fallback) {
   }
 
   return Math.floor(parsed);
+}
+
+function normalizeOrderQuantity(value, fallback = DEFAULT_ORDER_QUANTITY) {
+  return Math.min(
+    Math.max(toPositiveInteger(value, fallback), DEFAULT_ORDER_QUANTITY),
+    MAX_ORDER_QUANTITY
+  );
 }
 
 function escapeRegex(value) {
@@ -355,6 +367,7 @@ async function processBangjeffOrder(order) {
       order.variantSnapshot?.basePrice || order.price?.buyPrice || 0
     );
     const checkoutRegion = normalizeBangjeffCheckoutRegion(order.region);
+    const quantity = normalizeOrderQuantity(order.quantity, DEFAULT_ORDER_QUANTITY);
 
     if (!variantCode) {
       throw new Error("Variant provider code belum tersedia");
@@ -368,7 +381,7 @@ async function processBangjeffOrder(order) {
       region: checkoutRegion,
       variantCode,
       referenceNumber: toStringValue(order.invoiceNumber),
-      qty: 1,
+      qty: quantity,
       price: {
         currency:
           toStringValue(order.variantSnapshot?.currency || order.price?.currency) ||
@@ -708,6 +721,7 @@ function serializePublicOrder(order, review = null) {
     status: order.status,
     paymentStatus: order.paymentStatus,
     providerStatus: order.providerStatus,
+    quantity: normalizeOrderQuantity(order.quantity, DEFAULT_ORDER_QUANTITY),
     customerInputs: Array.isArray(order.customerInputs) ? order.customerInputs : [],
     customerDisplay: order.customerDisplay,
     paymentMethodCode: order.paymentMethodCode,
@@ -770,6 +784,7 @@ function serializeRecentPublicOrder(order) {
       toStringValue(order.variantSnapshot?.name) ||
       toStringValue(order.gameSnapshot?.name) ||
       "-",
+    quantity: normalizeOrderQuantity(order.quantity, DEFAULT_ORDER_QUANTITY),
     phoneNumber: maskPhoneNumber(
       order.contactDetail?.phoneCountryCode,
       order.contactDetail?.phoneNumber
@@ -1192,6 +1207,7 @@ async function createOrderDraft(req, res) {
       variantId,
       paymentMethodCode,
       promoCode,
+      quantity,
       customerInputs = [],
       contactDetail = {},
     } = req.body || {};
@@ -1200,6 +1216,7 @@ async function createOrderDraft(req, res) {
     const normalizedVariantId = toStringValue(variantId);
     const normalizedPaymentMethodCode = normalizeCode(paymentMethodCode);
     const normalizedPromoCode = normalizeCode(promoCode);
+    const normalizedQuantity = normalizeOrderQuantity(quantity, DEFAULT_ORDER_QUANTITY);
     const normalizedPhoneNumber = toStringValue(contactDetail.phoneNumber).replace(
       /[^0-9]/g,
       ""
@@ -1302,8 +1319,10 @@ async function createOrderDraft(req, res) {
     }
 
     const invoiceNumber = await generateInvoiceNumber();
-    const sellPrice = Number(variant.price || 0);
-    const buyPrice = Number(variant.basePrice || 0);
+    const unitSellPrice = Number(variant.price || 0);
+    const unitBuyPrice = Number(variant.basePrice || 0);
+    const sellPrice = unitSellPrice * normalizedQuantity;
+    const buyPrice = unitBuyPrice * normalizedQuantity;
     let promoValidationResult = null;
 
     if (normalizedPromoCode) {
@@ -1347,6 +1366,7 @@ async function createOrderDraft(req, res) {
       provider: toStringValue(game.syncSource) || "bangjeff",
       game: game._id,
       variant: variant._id,
+      quantity: normalizedQuantity,
       gameSnapshot: {
         name: toStringValue(game.name),
         code: normalizeCode(game.code),
@@ -1359,8 +1379,8 @@ async function createOrderDraft(req, res) {
         providerCode: toStringValue(variant.providerCode),
         logo: toStringValue(variant.logo),
         currency: toStringValue(variant.currency) || "IDR",
-        basePrice: buyPrice,
-        sellPrice,
+        basePrice: unitBuyPrice,
+        sellPrice: unitSellPrice,
       },
       customerInputs: normalizedInputs,
       customerDisplay: buildCustomerDisplay(normalizedInputs),
@@ -1422,6 +1442,7 @@ async function createOrderDraft(req, res) {
         variantId: req.body?.variantId,
         paymentMethodCode: req.body?.paymentMethodCode,
         promoCode: req.body?.promoCode,
+        quantity: req.body?.quantity,
       },
       error,
     });

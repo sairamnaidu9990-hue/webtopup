@@ -83,8 +83,11 @@ export default function InvoicePaymentSummarySection({
             {order.gameSnapshot.name}
             {displayGameProvider ? ` • ${displayGameProvider}` : ""}
           </p>
-          {visibleCustomerInputs.length > 0 ? (
+          {visibleCustomerInputs.length > 0 || Number(order.quantity || 1) > 0 ? (
             <div className="flex flex-wrap gap-2 pt-1">
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/8 bg-[var(--accent-glow)] px-2.5 py-1 text-[11px] font-medium text-white">
+                {Math.max(Number(order.quantity || 1), 1)}x Pembelian
+              </span>
               {visibleCustomerInputs.map((input, index) => {
                 const label = formatCustomerInputLabel(input.title, input.name);
 
@@ -104,6 +107,10 @@ export default function InvoicePaymentSummarySection({
       </div>
 
       <dl className="divide-y divide-white/8">
+        <InvoiceDetailRow
+          label="Jumlah Pembelian"
+          value={`${Math.max(Number(order.quantity || 1), 1)}x`}
+        />
         <InvoiceDetailRow
           label="Harga"
           value={formatCurrency(order.price.sellPrice, paymentCurrency)}

@@ -14,6 +14,7 @@ import {
   AccountStepSection,
   ContactStepSection,
   PaymentStepSection,
+  QuantityStepSection,
   VariantStepSection,
 } from "@/components/game-topup/TransactionSections";
 import type {
@@ -22,7 +23,13 @@ import type {
   StorefrontVariant,
 } from "@/lib/siteData";
 
-type HighlightedStep = "account" | "variant" | "payment" | "contact" | null;
+type HighlightedStep =
+  | "account"
+  | "variant"
+  | "quantity"
+  | "payment"
+  | "contact"
+  | null;
 
 type TransactionContentProps = {
   mobileBottomSpacing: string;
@@ -35,6 +42,9 @@ type TransactionContentProps = {
   variantGroups: VariantGroup[];
   onVariantSelect: (variantId: string) => void;
   variantStepNumber: number;
+  quantity: number;
+  onQuantityChange: (nextQuantity: number) => void;
+  quantityStepNumber: number;
   paymentMethods: StorefrontPaymentMethod[];
   paymentMethodGroups: PaymentMethodGroup[];
   openPaymentGroups: Record<string, boolean>;
@@ -42,6 +52,7 @@ type TransactionContentProps = {
   paymentMethodCode: string;
   onPaymentMethodSelect: (methodCode: string) => void;
   paymentStepNumber: number;
+  paymentSubtotal: number;
   contactEmail: string;
   onContactEmailChange: (nextValue: string) => void;
   contactPhoneCode: string;
@@ -49,12 +60,14 @@ type TransactionContentProps = {
   onContactPhoneChange: (nextValue: string) => void;
   contactStepNumber: number;
   promoStepNumber: number;
+  gameId: string;
   gameCategory: string;
   baseSubtotal: number;
   selectedCurrency: string;
   onPromoChange: (promoCode: AppliedPromoCode | null) => void;
   accountStepRef: RefObject<HTMLDivElement | null>;
   variantStepRef: RefObject<HTMLDivElement | null>;
+  quantityStepRef: RefObject<HTMLDivElement | null>;
   paymentStepRef: RefObject<HTMLDivElement | null>;
   contactStepRef: RefObject<HTMLDivElement | null>;
   highlightedStep: HighlightedStep;
@@ -80,6 +93,9 @@ export default function TransactionContent({
   variantGroups,
   onVariantSelect,
   variantStepNumber,
+  quantity,
+  onQuantityChange,
+  quantityStepNumber,
   paymentMethods,
   paymentMethodGroups,
   openPaymentGroups,
@@ -87,6 +103,7 @@ export default function TransactionContent({
   paymentMethodCode,
   onPaymentMethodSelect,
   paymentStepNumber,
+  paymentSubtotal,
   contactEmail,
   onContactEmailChange,
   contactPhoneCode,
@@ -94,12 +111,14 @@ export default function TransactionContent({
   onContactPhoneChange,
   contactStepNumber,
   promoStepNumber,
+  gameId,
   gameCategory,
   baseSubtotal,
   selectedCurrency,
   onPromoChange,
   accountStepRef,
   variantStepRef,
+  quantityStepRef,
   paymentStepRef,
   contactStepRef,
   highlightedStep,
@@ -140,6 +159,20 @@ export default function TransactionContent({
         </StepPanel>
       </div>
 
+      <div ref={quantityStepRef}>
+        <StepPanel
+          number={quantityStepNumber}
+          title="Masukkan Jumlah Pembelian"
+          className={highlightClass(highlightedStep, "quantity")}
+        >
+          <QuantityStepSection
+            quantity={quantity}
+            onQuantityChange={onQuantityChange}
+            disabled={!selectedVariant}
+          />
+        </StepPanel>
+      </div>
+
       <div ref={paymentStepRef}>
         <StepPanel
           number={paymentStepNumber}
@@ -154,6 +187,7 @@ export default function TransactionContent({
             paymentMethodCode={paymentMethodCode}
             onPaymentMethodSelect={onPaymentMethodSelect}
             selectedVariant={selectedVariant}
+            subtotal={paymentSubtotal}
           />
         </StepPanel>
       </div>
@@ -177,6 +211,7 @@ export default function TransactionContent({
       <div>
         <StepPanel number={promoStepNumber} title="Kode Promo">
           <PromoCodeSection
+            gameId={gameId}
             category={gameCategory}
             subtotal={baseSubtotal}
             currency={selectedCurrency}

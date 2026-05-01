@@ -226,6 +226,7 @@ export type StorefrontOrder = {
   status: string;
   paymentStatus: string;
   providerStatus: string;
+  quantity: number;
   customerInputs: Array<{
     name: string;
     title: string;
@@ -328,6 +329,7 @@ export type RecentPublicOrder = {
   invoiceNumber: string;
   gameName: string;
   variantName: string;
+  quantity: number;
   phoneNumber: string;
   currency: string;
   totalAmount: number;
