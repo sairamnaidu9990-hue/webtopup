@@ -10,6 +10,8 @@ const emptyDashboard: OrderDashboardSummary = {
   totalOrders: 0,
   totalBasePrice: 0,
   totalSellPrice: 0,
+  totalPromoDiscount: 0,
+  totalPaymentFee: 0,
   totalProfit: 0,
   recentOrders: [],
 };
@@ -83,6 +85,8 @@ export default function DashboardPageClient() {
           totalOrders: Number(safePayload.totalOrders || 0),
           totalBasePrice: Number(safePayload.totalBasePrice || 0),
           totalSellPrice: Number(safePayload.totalSellPrice || 0),
+          totalPromoDiscount: Number(safePayload.totalPromoDiscount || 0),
+          totalPaymentFee: Number(safePayload.totalPaymentFee || 0),
           totalProfit: Number(safePayload.totalProfit || 0),
           recentOrders: Array.isArray(safePayload.recentOrders)
             ? safePayload.recentOrders
@@ -120,9 +124,19 @@ export default function DashboardPageClient() {
       variant: "success" as const,
     },
     {
+      title: "Total Nominal Promo",
+      value: formatMoney(dashboard.totalPromoDiscount),
+      variant: "danger" as const,
+    },
+    {
+      title: "Total Fee",
+      value: formatMoney(dashboard.totalPaymentFee),
+      variant: "warning" as const,
+    },
+    {
       title: "Total Profit",
       value: formatMoney(dashboard.totalProfit),
-      variant: "danger" as const,
+      variant: "info" as const,
     },
   ];
 
@@ -139,7 +153,7 @@ export default function DashboardPageClient() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {summaryCards.map((item) => (
           <Card key={item.title} title={item.title} variant={item.variant}>
             <p className="break-words text-2xl font-bold tracking-tight sm:text-3xl">

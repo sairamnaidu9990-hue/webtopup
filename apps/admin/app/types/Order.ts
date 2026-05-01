@@ -136,6 +136,8 @@ export type OrderDashboardSummary = {
   totalOrders: number;
   totalBasePrice: number;
   totalSellPrice: number;
+  totalPromoDiscount: number;
+  totalPaymentFee: number;
   totalProfit: number;
   recentOrders: Order[];
 };

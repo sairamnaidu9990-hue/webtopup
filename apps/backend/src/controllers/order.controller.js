@@ -1037,7 +1037,35 @@ async function buildDashboardSummary() {
               $ifNull: ["$price.subtotalAfterDiscount", "$price.sellPrice"],
             },
           },
-          totalProfit: { $sum: { $ifNull: ["$price.profit", 0] } },
+          totalPromoDiscount: {
+            $sum: { $ifNull: ["$price.promoDiscount", 0] },
+          },
+          totalPaymentFee: {
+            $sum: { $ifNull: ["$price.paymentFee", 0] },
+          },
+          totalProfit: {
+            $sum: {
+              $subtract: [
+                {
+                  $max: [
+                    {
+                      $ifNull: [
+                        "$price.subtotalAfterDiscount",
+                        {
+                          $subtract: [
+                            { $ifNull: ["$price.sellPrice", 0] },
+                            { $ifNull: ["$price.promoDiscount", 0] },
+                          ],
+                        },
+                      ],
+                    },
+                    0,
+                  ],
+                },
+                { $ifNull: ["$price.buyPrice", 0] },
+              ],
+            },
+          },
         },
       },
     ]),
@@ -1066,6 +1094,8 @@ async function buildDashboardSummary() {
     totalOrders: Number(metrics.totalOrders || 0),
     totalBasePrice: Number(metrics.totalBasePrice || 0),
     totalSellPrice: Number(metrics.totalSellPrice || 0),
+    totalPromoDiscount: Number(metrics.totalPromoDiscount || 0),
+    totalPaymentFee: Number(metrics.totalPaymentFee || 0),
     totalProfit: Number(metrics.totalProfit || 0),
     recentOrders,
   };
