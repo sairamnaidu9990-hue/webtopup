@@ -51,6 +51,14 @@ const PROVIDER_STATUSES = [
   "UNKNOWN",
 ];
 const PROCESSING_SUMMARY_STATUSES = ["PAID", "PROCESSING"];
+const DEFAULT_BANGJEFF_REGION = String(
+  process.env.BANGJEFF_REGION || "ID"
+).toUpperCase();
+const BANGJEFF_REGION_ALIASES = {
+  GLOBAL: DEFAULT_BANGJEFF_REGION,
+  INDONESIA: "ID",
+  INDO: "ID",
+};
 
 function toDigits(value) {
   return toStringValue(value).replace(/[^0-9]/g, "");
@@ -141,6 +149,16 @@ function escapeRegex(value) {
 
 function normalizeCode(value) {
   return String(value || "").trim().toUpperCase();
+}
+
+function normalizeBangjeffCheckoutRegion(value) {
+  const normalized = normalizeCode(value);
+
+  if (!normalized) {
+    return DEFAULT_BANGJEFF_REGION;
+  }
+
+  return BANGJEFF_REGION_ALIASES[normalized] || normalized;
 }
 
 function getInvoicePrefix(siteName) {
@@ -336,6 +354,7 @@ async function processBangjeffOrder(order) {
     const providerPrice = Number(
       order.variantSnapshot?.basePrice || order.price?.buyPrice || 0
     );
+    const checkoutRegion = normalizeBangjeffCheckoutRegion(order.region);
 
     if (!variantCode) {
       throw new Error("Variant provider code belum tersedia");
@@ -346,7 +365,7 @@ async function processBangjeffOrder(order) {
     }
 
     const payload = await checkoutBangjeff({
-      region: toStringValue(order.region) || "ID",
+      region: checkoutRegion,
       variantCode,
       referenceNumber: toStringValue(order.invoiceNumber),
       qty: 1,
@@ -364,6 +383,7 @@ async function processBangjeffOrder(order) {
         : [],
     });
 
+    order.region = checkoutRegion;
     applyBangjeffOrderData(order, payload);
     await saveOrderAndBroadcast(order, "bangjeff-submit");
 
@@ -1320,7 +1340,7 @@ async function createOrderDraft(req, res) {
         phoneNumber: normalizedPhoneNumber,
       },
       paymentMethodSnapshot,
-      region: toStringValue(variant.region) || "ID",
+      region: normalizeBangjeffCheckoutRegion(variant.region),
       price: {
         currency: toStringValue(variant.currency) || "IDR",
         buyPrice,
