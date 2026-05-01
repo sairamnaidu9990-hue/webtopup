@@ -1,5 +1,6 @@
 const Product = require("../models/Product");
 const Game = require("../models/Game");
+const ProviderBalanceLog = require("../models/ProviderBalanceLog");
 const Variant = require("../models/Variant");
 const calculatePrice = require("../utils/calculatePrice");
 const createSyncLog = require("../utils/createSyncLog");
@@ -48,6 +49,97 @@ function toNumber(value, fallback = 0) {
 
 function getErrorMessage(error, fallbackMessage) {
   return error?.bangjeff?.message || error?.message || fallbackMessage;
+}
+
+function getBalanceLogSource(req) {
+  const source = String(req.query?.source || req.body?.source || "")
+    .trim()
+    .toLowerCase();
+
+  if (["dashboard_auto", "manual_refresh", "sync_refresh"].includes(source)) {
+    return source;
+  }
+
+  return "dashboard_auto";
+}
+
+function getBalanceChangeType(deltaValue) {
+  if (deltaValue > 0) {
+    return "UP";
+  }
+
+  if (deltaValue < 0) {
+    return "DOWN";
+  }
+
+  return "SAME";
+}
+
+async function createProviderBalanceLog({
+  provider,
+  region,
+  membership,
+  currency,
+  balanceValue,
+  source,
+  admin,
+}) {
+  try {
+    const previousLog = await ProviderBalanceLog.findOne({
+      provider,
+      region,
+    })
+      .sort({ createdAt: -1 })
+      .select("balanceValue");
+
+    const previousBalanceValue = toNumber(previousLog?.balanceValue);
+    const deltaValue = balanceValue - previousBalanceValue;
+
+    return await ProviderBalanceLog.create({
+      provider,
+      region,
+      membership,
+      currency,
+      balanceValue,
+      previousBalanceValue,
+      deltaValue,
+      changeType: getBalanceChangeType(deltaValue),
+      source,
+      triggeredBy: admin
+        ? {
+            adminId: admin._id || null,
+            name: admin.name || "",
+            email: admin.email || "",
+            role: admin.role || "",
+          }
+        : undefined,
+    });
+  } catch (error) {
+    console.error("Failed to write provider balance log:", error.message);
+    return null;
+  }
+}
+
+function serializeProviderBalanceLog(item) {
+  return {
+    _id: String(item?._id || ""),
+    provider: String(item?.provider || "").trim(),
+    region: String(item?.region || "").trim().toUpperCase(),
+    membership: String(item?.membership || "").trim(),
+    currency: String(item?.currency || "IDR").trim().toUpperCase(),
+    balanceValue: toNumber(item?.balanceValue),
+    previousBalanceValue: toNumber(item?.previousBalanceValue),
+    deltaValue: toNumber(item?.deltaValue),
+    changeType: String(item?.changeType || "SAME").trim().toUpperCase(),
+    source: String(item?.source || "dashboard_auto").trim().toLowerCase(),
+    triggeredBy: {
+      name: String(item?.triggeredBy?.name || "").trim(),
+      email: String(item?.triggeredBy?.email || "").trim(),
+      role: String(item?.triggeredBy?.role || "").trim(),
+    },
+    createdAt: item?.createdAt || null,
+    updatedAt: item?.updatedAt || null,
+  };
 }
 
 function trimSyncErrors(errors, limit = 15) {
@@ -642,17 +734,31 @@ async function syncCatalog(req, res) {
 async function getBalance(req, res) {
   try {
     const region = getRegion(req);
+    const source = getBalanceLogSource(req);
     const balanceData = await getBangjeffBalance(region);
+    const resolvedRegion = balanceData?.region || region;
+    const currency = balanceData?.balance?.currency || "IDR";
+    const balanceValue = toNumber(balanceData?.balance?.value);
+
+    await createProviderBalanceLog({
+      provider: "bangjeff",
+      region: resolvedRegion,
+      membership: balanceData?.membership || "",
+      currency,
+      balanceValue,
+      source,
+      admin: req.admin || null,
+    });
 
     return res.status(200).json({
       message: "Saldo BangJeff berhasil diambil",
       region,
       data: {
         membership: balanceData?.membership || "",
-        region: balanceData?.region || region,
+        region: resolvedRegion,
         balance: {
-          currency: balanceData?.balance?.currency || "IDR",
-          value: toNumber(balanceData?.balance?.value),
+          currency,
+          value: balanceValue,
         },
       },
     });
@@ -661,6 +767,30 @@ async function getBalance(req, res) {
       message: "Error ambil saldo BangJeff",
       error: getErrorMessage(error, "Ambil saldo BangJeff gagal"),
       response: error.bangjeff || null,
+    });
+  }
+}
+
+async function getBalanceLogs(req, res) {
+  try {
+    const region = getRegion(req);
+    const limit = Math.min(toPositiveInteger(req.query.limit, 20), 50);
+    const items = await ProviderBalanceLog.find({
+      provider: "bangjeff",
+      region,
+    })
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    return res.status(200).json({
+      items: items.map(serializeProviderBalanceLog),
+      limit,
+      region,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error ambil log saldo BangJeff",
+      error: error.message,
     });
   }
 }
@@ -778,6 +908,7 @@ module.exports = {
   syncVariants,
   syncCatalog,
   getBalance,
+  getBalanceLogs,
   getProducts,
   createProduct,
   updateProduct,

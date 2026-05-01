@@ -48,6 +48,25 @@ type BangjeffBalance = {
   };
 };
 
+type BangjeffBalanceLog = {
+  _id: string;
+  provider?: string;
+  region?: string;
+  membership?: string;
+  currency?: string;
+  balanceValue?: number;
+  previousBalanceValue?: number;
+  deltaValue?: number;
+  changeType?: "UP" | "DOWN" | "SAME";
+  source?: string;
+  triggeredBy?: {
+    name?: string;
+    email?: string;
+    role?: string;
+  };
+  createdAt?: string | null;
+};
+
 const emptyStats: DashboardStats = {
   totalGames: 0,
   activeGames: 0,
@@ -69,7 +88,7 @@ function formatMoney(currency = "IDR", value = 0) {
   }).format(Number.isFinite(value) ? value : 0);
 }
 
-function formatLastUpdated(value: number | null) {
+function formatDateTime(value?: string | number | null) {
   if (!value) {
     return "-";
   }
@@ -81,6 +100,43 @@ function formatLastUpdated(value: number | null) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function formatSourceLabel(source?: string) {
+  switch (String(source || "").trim().toLowerCase()) {
+    case "manual_refresh":
+      return "Refresh Manual";
+    case "sync_refresh":
+      return "Setelah Sync";
+    default:
+      return "Auto Dashboard";
+  }
+}
+
+function getDeltaTone(changeType?: string) {
+  const normalized = String(changeType || "").trim().toUpperCase();
+
+  if (normalized === "UP") {
+    return "text-emerald-600";
+  }
+
+  if (normalized === "DOWN") {
+    return "text-red-600";
+  }
+
+  return "text-gray-500";
+}
+
+function formatDelta(currency: string, deltaValue = 0) {
+  if (deltaValue > 0) {
+    return `+${formatMoney(currency, deltaValue)}`;
+  }
+
+  if (deltaValue < 0) {
+    return `-${formatMoney(currency, Math.abs(deltaValue))}`;
+  }
+
+  return formatMoney(currency, 0);
 }
 
 function RefreshIcon() {
@@ -105,8 +161,11 @@ export default function BangjeffDashboardPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [balance, setBalance] = useState<BangjeffBalance | null>(null);
+  const [balanceLogs, setBalanceLogs] = useState<BangjeffBalanceLog[]>([]);
   const [balanceLoading, setBalanceLoading] = useState(true);
+  const [balanceLogsLoading, setBalanceLogsLoading] = useState(true);
   const [balanceError, setBalanceError] = useState("");
+  const [balanceLogsError, setBalanceLogsError] = useState("");
   const [lastBalanceUpdatedAt, setLastBalanceUpdatedAt] = useState<number | null>(
     null
   );
@@ -114,117 +173,160 @@ export default function BangjeffDashboardPage() {
   const gamesCacheKey = `${GAMES_CACHE_KEY}:bangjeff`;
   const variantsCacheKey = `${VARIANTS_CACHE_KEY}:bangjeff`;
 
-  const fetchDashboardData = useCallback(async ({
-    refreshGames = true,
-    refreshVariants = true,
-  }: {
-    refreshGames?: boolean;
-    refreshVariants?: boolean;
-  } = {}) => {
-    try {
-      const requests: Array<Promise<Response>> = [];
+  const fetchDashboardData = useCallback(
+    async ({
+      refreshGames = true,
+      refreshVariants = true,
+    }: {
+      refreshGames?: boolean;
+      refreshVariants?: boolean;
+    } = {}) => {
+      try {
+        const requests: Array<Promise<Response>> = [];
 
-      if (refreshGames) {
-        requests.push(fetch("/api/games?syncSource=bangjeff"));
-      }
-
-      if (refreshVariants) {
-        requests.push(fetch("/api/variants?syncSource=bangjeff"));
-      }
-
-      const responses = await Promise.all(requests);
-      let responseIndex = 0;
-
-      if (refreshGames) {
-        const gamesResponse = responses[responseIndex++];
-        const gamesPayload = await parseJsonSafely<unknown[]>(gamesResponse);
-        const nextGames = Array.isArray(gamesPayload)
-          ? (gamesPayload as Game[])
-          : [];
-
-        setGames(nextGames);
-        writeSessionCache(gamesCacheKey, nextGames);
-      }
-
-      if (refreshVariants) {
-        const variantsResponse = responses[responseIndex++];
-        const variantsPayload = await parseJsonSafely<unknown[]>(variantsResponse);
-        const nextVariants = Array.isArray(variantsPayload)
-          ? (variantsPayload as Variant[])
-          : [];
-
-        setVariants(nextVariants);
-        writeSessionCache(variantsCacheKey, nextVariants);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [gamesCacheKey, variantsCacheKey]);
-
-  const fetchBalance = useCallback(async ({
-    force = false,
-  }: {
-    force?: boolean;
-  } = {}) => {
-    try {
-      if (!force) {
-        const cachedBalance = readSessionCache<BangjeffBalance>(BALANCE_CACHE_KEY);
-
-        if (
-          cachedBalance?.data &&
-          isSessionCacheFresh(cachedBalance.savedAt, BALANCE_CACHE_TTL_MS)
-        ) {
-          setBalance(cachedBalance.data);
-          setLastBalanceUpdatedAt(cachedBalance.savedAt);
-          setBalanceLoading(false);
-          setBalanceError("");
-          return;
+        if (refreshGames) {
+          requests.push(fetch("/api/games?syncSource=bangjeff"));
         }
+
+        if (refreshVariants) {
+          requests.push(fetch("/api/variants?syncSource=bangjeff"));
+        }
+
+        const responses = await Promise.all(requests);
+        let responseIndex = 0;
+
+        if (refreshGames) {
+          const gamesResponse = responses[responseIndex++];
+          const gamesPayload = await parseJsonSafely<unknown[]>(gamesResponse);
+          const nextGames = Array.isArray(gamesPayload)
+            ? (gamesPayload as Game[])
+            : [];
+
+          setGames(nextGames);
+          writeSessionCache(gamesCacheKey, nextGames);
+        }
+
+        if (refreshVariants) {
+          const variantsResponse = responses[responseIndex++];
+          const variantsPayload = await parseJsonSafely<unknown[]>(variantsResponse);
+          const nextVariants = Array.isArray(variantsPayload)
+            ? (variantsPayload as Variant[])
+            : [];
+
+          setVariants(nextVariants);
+          writeSessionCache(variantsCacheKey, nextVariants);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
       }
+    },
+    [gamesCacheKey, variantsCacheKey]
+  );
 
-      setBalanceLoading(true);
-      setBalanceError("");
+  const fetchBalanceLogs = useCallback(async () => {
+    try {
+      setBalanceLogsLoading(true);
+      setBalanceLogsError("");
 
-      const response = await fetch(`/api/products/balance?region=ID`, {
+      const response = await fetch("/api/products/balance/logs?region=ID&limit=12", {
         cache: "no-store",
       });
       const payload = await parseJsonSafely<{
+        items?: BangjeffBalanceLog[];
         message?: string;
-        data?: BangjeffBalance;
         error?: string;
       }>(response);
 
       if (!response.ok) {
         throw new Error(
-          payload?.error || payload?.message || "Saldo BangJeff gagal diambil"
+          payload?.error || payload?.message || "Log saldo BangJeff gagal diambil"
         );
       }
 
-      const nextBalance = payload?.data || null;
-      setBalance(nextBalance);
-
-      if (nextBalance) {
-        writeSessionCache(BALANCE_CACHE_KEY, nextBalance);
-        setLastBalanceUpdatedAt(Date.now());
-      }
+      setBalanceLogs(Array.isArray(payload?.items) ? payload.items : []);
     } catch (error) {
-      setBalanceError(
-        error instanceof Error ? error.message : "Saldo BangJeff gagal diambil"
+      setBalanceLogs([]);
+      setBalanceLogsError(
+        error instanceof Error ? error.message : "Log saldo BangJeff gagal diambil"
       );
     } finally {
-      setBalanceLoading(false);
+      setBalanceLogsLoading(false);
     }
   }, []);
+
+  const fetchBalance = useCallback(
+    async ({
+      force = false,
+      source = "dashboard_auto",
+    }: {
+      force?: boolean;
+      source?: "dashboard_auto" | "manual_refresh" | "sync_refresh";
+    } = {}) => {
+      try {
+        if (!force) {
+          const cachedBalance = readSessionCache<BangjeffBalance>(BALANCE_CACHE_KEY);
+
+          if (
+            cachedBalance?.data &&
+            isSessionCacheFresh(cachedBalance.savedAt, BALANCE_CACHE_TTL_MS)
+          ) {
+            setBalance(cachedBalance.data);
+            setLastBalanceUpdatedAt(cachedBalance.savedAt);
+            setBalanceLoading(false);
+            setBalanceError("");
+            return;
+          }
+        }
+
+        setBalanceLoading(true);
+        setBalanceError("");
+
+        const response = await fetch(
+          `/api/products/balance?region=ID&source=${encodeURIComponent(source)}`,
+          {
+            cache: "no-store",
+          }
+        );
+        const payload = await parseJsonSafely<{
+          message?: string;
+          data?: BangjeffBalance;
+          error?: string;
+        }>(response);
+
+        if (!response.ok) {
+          throw new Error(
+            payload?.error || payload?.message || "Saldo BangJeff gagal diambil"
+          );
+        }
+
+        const nextBalance = payload?.data || null;
+        setBalance(nextBalance);
+
+        if (nextBalance) {
+          writeSessionCache(BALANCE_CACHE_KEY, nextBalance);
+          setLastBalanceUpdatedAt(Date.now());
+        }
+
+        await fetchBalanceLogs();
+      } catch (error) {
+        setBalanceError(
+          error instanceof Error ? error.message : "Saldo BangJeff gagal diambil"
+        );
+      } finally {
+        setBalanceLoading(false);
+      }
+    },
+    [fetchBalanceLogs]
+  );
 
   useEffect(() => {
     const cachedGames = readSessionCache<Game[]>(gamesCacheKey);
     const cachedVariants = readSessionCache<Variant[]>(variantsCacheKey);
     const cachedBalance = readSessionCache<BangjeffBalance>(BALANCE_CACHE_KEY);
 
-    const hasCachedGames =
-      !!cachedGames?.data && Array.isArray(cachedGames.data);
+    const hasCachedGames = !!cachedGames?.data && Array.isArray(cachedGames.data);
     const hasCachedVariants =
       !!cachedVariants?.data && Array.isArray(cachedVariants.data);
     const hasCachedBalance = !!cachedBalance?.data;
@@ -261,15 +363,18 @@ export default function BangjeffDashboardPage() {
       });
     }
 
+    void fetchBalanceLogs();
+
     if (
       !hasCachedBalance ||
       !isSessionCacheFresh(cachedBalance.savedAt, BALANCE_CACHE_TTL_MS)
     ) {
       void fetchBalance({
         force: true,
+        source: "dashboard_auto",
       });
     }
-  }, [fetchBalance, fetchDashboardData, gamesCacheKey, variantsCacheKey]);
+  }, [fetchBalance, fetchBalanceLogs, fetchDashboardData, gamesCacheKey, variantsCacheKey]);
 
   const stats: DashboardStats = {
     totalGames: games.length,
@@ -290,7 +395,7 @@ export default function BangjeffDashboardPage() {
     balance?.balance?.currency || "IDR",
     balance?.balance?.value || 0
   );
-  const lastUpdatedText = formatLastUpdated(lastBalanceUpdatedAt);
+  const lastUpdatedText = formatDateTime(lastBalanceUpdatedAt);
 
   return (
     <div className="space-y-6">
@@ -314,7 +419,9 @@ export default function BangjeffDashboardPage() {
 
               <button
                 type="button"
-                onClick={() => fetchBalance({ force: true })}
+                onClick={() =>
+                  void fetchBalance({ force: true, source: "manual_refresh" })
+                }
                 disabled={balanceLoading}
                 className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-red-200/80 bg-white/90 text-red-500 shadow-[0_10px_24px_rgba(239,68,68,0.14)] transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label="Refresh saldo BangJeff"
@@ -343,7 +450,6 @@ export default function BangjeffDashboardPage() {
                 {balanceError ? balanceError : lastUpdatedText}
               </p>
             </div>
-
           </div>
         </div>
       </div>
@@ -383,12 +489,78 @@ export default function BangjeffDashboardPage() {
           });
           await fetchBalance({
             force: true,
+            source: "sync_refresh",
           });
         }}
         title="Sinkronisasi BangJeff"
         description="Jalankan pembaruan katalog dari BangJeff ke database internal. Proses ini menambahkan data baru dan memperbarui status data yang sudah ada."
       />
 
+      <Card title="Log Saldo BangJeff" className="overflow-hidden">
+        {balanceLogsLoading ? (
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+            Memuat riwayat saldo...
+          </div>
+        ) : balanceLogsError ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-600">
+            {balanceLogsError}
+          </div>
+        ) : balanceLogs.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+            Belum ada log saldo BangJeff.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b border-gray-200 text-xs uppercase tracking-[0.16em] text-gray-400">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Waktu</th>
+                  <th className="px-4 py-3 font-semibold">Saldo</th>
+                  <th className="px-4 py-3 font-semibold">Selisih</th>
+                  <th className="px-4 py-3 font-semibold">Source</th>
+                  <th className="px-4 py-3 font-semibold">Admin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {balanceLogs.map((item) => {
+                  const currency = item.currency || "IDR";
+                  const adminName =
+                    item.triggeredBy?.name?.trim() ||
+                    item.triggeredBy?.email?.trim() ||
+                    "-";
+
+                  return (
+                    <tr
+                      key={item._id}
+                      className="border-b border-gray-100 last:border-b-0"
+                    >
+                      <td className="px-4 py-3 text-gray-600">
+                        {formatDateTime(item.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-gray-900">
+                        {formatMoney(currency, item.balanceValue || 0)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`font-semibold ${getDeltaTone(
+                            item.changeType
+                          )}`}
+                        >
+                          {formatDelta(currency, item.deltaValue || 0)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {formatSourceLabel(item.source)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{adminName}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
