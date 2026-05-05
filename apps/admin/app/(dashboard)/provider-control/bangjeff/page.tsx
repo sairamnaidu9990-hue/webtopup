@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import SyncPanel from "@/app/components/bangjeff/SyncPanel";
+import BangjeffAutoSyncCard from "@/app/components/bangjeff/BangjeffAutoSyncCard";
 import { parseJsonSafely } from "@/app/lib/http";
 import {
   CATALOG_CACHE_TTL_MS,
@@ -495,6 +496,8 @@ export default function BangjeffDashboardPage() {
         title="Sinkronisasi BangJeff"
         description="Jalankan pembaruan katalog dari BangJeff ke database internal. Proses ini menambahkan data baru dan memperbarui status data yang sudah ada."
       />
+
+      <BangjeffAutoSyncCard />
 
       <Card title="Log Saldo BangJeff" className="overflow-hidden">
         {balanceLogsLoading ? (

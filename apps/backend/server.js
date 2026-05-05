@@ -7,6 +7,10 @@ const {
   initRealtimeServer,
   shutdownRealtimeServer,
 } = require("./src/realtime/realtimeServer");
+const {
+  startBangjeffAutoSyncScheduler,
+  stopBangjeffAutoSyncScheduler,
+} = require("./src/schedulers/bangjeffAutoSyncScheduler");
 const { logError, logFatal, logInfo } = require("./src/utils/appLogger");
 const { buildWebhookUrls, getProductionReadinessWarnings } = require("./src/utils/deploymentConfig");
 const SiteSetting = require("./src/models/SiteSetting");
@@ -71,6 +75,7 @@ process.on("uncaughtException", (error) => {
   });
 
   if (server) {
+    stopBangjeffAutoSyncScheduler();
     shutdownRealtimeServer();
     server.close(() => process.exit(1));
     return;
@@ -85,6 +90,7 @@ async function startServer() {
 
     server = http.createServer(app);
     initRealtimeServer(server);
+    startBangjeffAutoSyncScheduler();
 
     server.listen(PORT, HOST, () => {
       logInfo({

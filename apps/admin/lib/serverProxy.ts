@@ -28,7 +28,7 @@ function getAdminLastActive(req: NextRequest) {
 
 type ForwardAdminRequestOptions = {
   endpoint: string;
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
 };
 

@@ -562,182 +562,257 @@ async function syncVariantsData(region, requestedProductCode = "") {
   return summary;
 }
 
-async function syncGames(req, res) {
-  const region = getRegion(req);
-  const logPayload = {
-    provider: "bangjeff",
-    action: "sync_games",
-    syncSource: "bangjeff",
-    region,
-    admin: req.admin || null,
-  };
+async function runBangjeffSyncAction({
+  action,
+  region = DEFAULT_REGION,
+  productCode = "",
+  admin = null,
+}) {
+  const normalizedAction = String(action || "").trim().toLowerCase();
+  let logPayload = null;
+  let fallbackErrorMessage = "Sync BangJeff gagal";
+  let operation = null;
+
+  switch (normalizedAction) {
+    case "games":
+      fallbackErrorMessage = "Sync product gagal";
+      logPayload = {
+        provider: "bangjeff",
+        action: "sync_games",
+        scope: "provider",
+        syncSource: "bangjeff",
+        region,
+        admin,
+      };
+      operation = async () => {
+        const summary = await syncGamesData(region);
+        return {
+          statusCode: 200,
+          body: {
+            message: "Sync product selesai",
+            region,
+            summary,
+          },
+          summary,
+        };
+      };
+      break;
+    case "details":
+      fallbackErrorMessage = "Sync product detail gagal";
+      logPayload = {
+        provider: "bangjeff",
+        action: "sync_game_details",
+        scope: productCode ? "product" : "provider",
+        syncSource: "bangjeff",
+        region,
+        productCode,
+        admin,
+      };
+      operation = async () => {
+        const summary = await syncGameDetailsData(region, productCode);
+        const allFailed =
+          summary.totalRequested > 0 && summary.failed >= summary.totalRequested;
+        const body = {
+          message: allFailed
+            ? "Sync product detail gagal"
+            : "Sync product detail selesai",
+          region,
+          productCode: productCode || null,
+          summary,
+        };
+
+        return {
+          statusCode: allFailed ? 502 : 200,
+          body,
+          summary,
+        };
+      };
+      break;
+    case "variants":
+      fallbackErrorMessage = "Sync variant gagal";
+      logPayload = {
+        provider: "bangjeff",
+        action: "sync_variants",
+        scope: productCode ? "product" : "provider",
+        syncSource: "bangjeff",
+        region,
+        productCode,
+        admin,
+      };
+      operation = async () => {
+        const summary = await syncVariantsData(region, productCode);
+        return {
+          statusCode: 200,
+          body: {
+            message: "Sync variant selesai",
+            region,
+            productCode: productCode || null,
+            summary,
+          },
+          summary,
+        };
+      };
+      break;
+    case "all":
+      fallbackErrorMessage = "Sync catalog gagal";
+      logPayload = {
+        provider: "bangjeff",
+        action: "sync_catalog",
+        scope: productCode ? "product" : "provider",
+        syncSource: "bangjeff",
+        region,
+        productCode,
+        admin,
+      };
+      operation = async () => {
+        const games = await syncGamesData(region);
+        const details = await syncGameDetailsData(region, productCode);
+        const variants = await syncVariantsData(region, productCode);
+        const summary = {
+          games,
+          details,
+          variants,
+        };
+
+        return {
+          statusCode: 200,
+          body: {
+            message: "Sync BangJeff selesai",
+            region,
+            productCode: productCode || null,
+            summary,
+          },
+          summary,
+        };
+      };
+      break;
+    default:
+      throw new Error(`Aksi sync BangJeff tidak dikenal: ${action}`);
+  }
+
   const syncLog = await startSyncLog(logPayload);
 
   try {
-    const summary = await syncGamesData(region);
+    const result = await operation();
+
+    if (result.statusCode >= 400) {
+      const syncError = new Error(
+        result.body?.error || result.body?.message || fallbackErrorMessage
+      );
+      syncError.syncResponseStatus = result.statusCode;
+      syncError.syncResponseBody = result.body;
+      throw syncError;
+    }
 
     await finalizeSyncLog(syncLog, logPayload, {
       status: "SUCCESS",
-      summary,
+      summary: result.summary,
     });
 
-    return res.status(200).json({
-      message: "Sync product selesai",
-      region,
-      summary,
-    });
+    return result;
   } catch (error) {
+    const responseBody =
+      error?.syncResponseBody || {
+        message: `Error ${logPayload.action.replaceAll("_", " ")}`,
+        error: getErrorMessage(error, fallbackErrorMessage),
+        response: error.bangjeff || null,
+      };
+
     await finalizeSyncLog(syncLog, logPayload, {
       status: "FAILED",
-      errorMessage: getErrorMessage(error, "Sync product gagal"),
-      summary: error.bangjeff || null,
+      errorMessage:
+        responseBody.error ||
+        responseBody.message ||
+        getErrorMessage(error, fallbackErrorMessage),
+      summary:
+        error?.syncResponseBody?.summary ||
+        error.bangjeff ||
+        responseBody.response ||
+        null,
     });
 
-    return res.status(500).json({
-      message: "Error sync product",
-      error: getErrorMessage(error, "Sync product gagal"),
-      response: error.bangjeff || null,
+    error.syncResponseStatus = error?.syncResponseStatus || 500;
+    error.syncResponseBody = responseBody;
+    throw error;
+  }
+}
+
+async function syncGames(req, res) {
+  try {
+    const result = await runBangjeffSyncAction({
+      action: "games",
+      region: getRegion(req),
+      admin: req.admin || null,
     });
+
+    return res.status(result.statusCode).json(result.body);
+  } catch (error) {
+    return res.status(error.syncResponseStatus || 500).json(
+      error.syncResponseBody || {
+        message: "Error sync product",
+        error: getErrorMessage(error, "Sync product gagal"),
+      }
+    );
   }
 }
 
 async function syncGameDetails(req, res) {
-  const region = getRegion(req);
-  const productCode = getRequestedProductCode(req);
-  const logPayload = {
-    provider: "bangjeff",
-    action: "sync_game_details",
-    scope: productCode ? "product" : "provider",
-    syncSource: "bangjeff",
-    region,
-    productCode,
-    admin: req.admin || null,
-  };
-  const syncLog = await startSyncLog(logPayload);
-
   try {
-    const summary = await syncGameDetailsData(region, productCode);
-    const allFailed =
-      summary.totalRequested > 0 && summary.failed >= summary.totalRequested;
-
-    await finalizeSyncLog(syncLog, logPayload, {
-      status: "SUCCESS",
-      summary,
+    const result = await runBangjeffSyncAction({
+      action: "details",
+      region: getRegion(req),
+      productCode: getRequestedProductCode(req),
+      admin: req.admin || null,
     });
 
-    return res.status(allFailed ? 502 : 200).json({
-      message: allFailed
-        ? "Sync product detail gagal"
-        : "Sync product detail selesai",
-      region,
-      productCode: productCode || null,
-      summary,
-    });
+    return res.status(result.statusCode).json(result.body);
   } catch (error) {
-    await finalizeSyncLog(syncLog, logPayload, {
-      status: "FAILED",
-      errorMessage: getErrorMessage(error, "Sync product detail gagal"),
-      summary: error.bangjeff || null,
-    });
-
-    return res.status(500).json({
-      message: "Error sync product detail",
-      error: getErrorMessage(error, "Sync product detail gagal"),
-      response: error.bangjeff || null,
-    });
+    return res.status(error.syncResponseStatus || 500).json(
+      error.syncResponseBody || {
+        message: "Error sync product detail",
+        error: getErrorMessage(error, "Sync product detail gagal"),
+      }
+    );
   }
 }
 
 async function syncVariants(req, res) {
-  const region = getRegion(req);
-  const productCode = getRequestedProductCode(req);
-  const logPayload = {
-    provider: "bangjeff",
-    action: "sync_variants",
-    scope: productCode ? "product" : "provider",
-    syncSource: "bangjeff",
-    region,
-    productCode,
-    admin: req.admin || null,
-  };
-  const syncLog = await startSyncLog(logPayload);
-
   try {
-    const summary = await syncVariantsData(region, productCode);
-
-    await finalizeSyncLog(syncLog, logPayload, {
-      status: "SUCCESS",
-      summary,
+    const result = await runBangjeffSyncAction({
+      action: "variants",
+      region: getRegion(req),
+      productCode: getRequestedProductCode(req),
+      admin: req.admin || null,
     });
 
-    return res.status(200).json({
-      message: "Sync variant selesai",
-      region,
-      productCode: productCode || null,
-      summary,
-    });
+    return res.status(result.statusCode).json(result.body);
   } catch (error) {
-    await finalizeSyncLog(syncLog, logPayload, {
-      status: "FAILED",
-      errorMessage: getErrorMessage(error, "Sync variant gagal"),
-      summary: error.bangjeff || null,
-    });
-
-    return res.status(500).json({
-      message: "Error sync variant",
-      error: getErrorMessage(error, "Sync variant gagal"),
-      response: error.bangjeff || null,
-    });
+    return res.status(error.syncResponseStatus || 500).json(
+      error.syncResponseBody || {
+        message: "Error sync variant",
+        error: getErrorMessage(error, "Sync variant gagal"),
+      }
+    );
   }
 }
 
 async function syncCatalog(req, res) {
-  const region = getRegion(req);
-  const productCode = getRequestedProductCode(req);
-  const logPayload = {
-    provider: "bangjeff",
-    action: "sync_catalog",
-    scope: productCode ? "product" : "provider",
-    syncSource: "bangjeff",
-    region,
-    productCode,
-    admin: req.admin || null,
-  };
-  const syncLog = await startSyncLog(logPayload);
-
   try {
-    const games = await syncGamesData(region);
-    const details = await syncGameDetailsData(region, productCode);
-    const variants = await syncVariantsData(region, productCode);
-    const summary = {
-      games,
-      details,
-      variants,
-    };
-
-    await finalizeSyncLog(syncLog, logPayload, {
-      status: "SUCCESS",
-      summary,
+    const result = await runBangjeffSyncAction({
+      action: "all",
+      region: getRegion(req),
+      productCode: getRequestedProductCode(req),
+      admin: req.admin || null,
     });
 
-    return res.status(200).json({
-      message: "Sync BangJeff selesai",
-      region,
-      productCode: productCode || null,
-      summary,
-    });
+    return res.status(result.statusCode).json(result.body);
   } catch (error) {
-    await finalizeSyncLog(syncLog, logPayload, {
-      status: "FAILED",
-      errorMessage: getErrorMessage(error, "Sync catalog gagal"),
-      summary: error.bangjeff || null,
-    });
-
-    return res.status(500).json({
-      message: "Error sync catalog BangJeff",
-      error: getErrorMessage(error, "Sync catalog gagal"),
-      response: error.bangjeff || null,
-    });
+    return res.status(error.syncResponseStatus || 500).json(
+      error.syncResponseBody || {
+        message: "Error sync catalog BangJeff",
+        error: getErrorMessage(error, "Sync catalog gagal"),
+      }
+    );
   }
 }
 
@@ -913,6 +988,7 @@ async function deleteProduct(req, res) {
 }
 
 module.exports = {
+  runBangjeffSyncAction,
   syncGames,
   syncGameDetails,
   syncVariants,
