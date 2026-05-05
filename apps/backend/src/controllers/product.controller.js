@@ -47,6 +47,16 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toPositiveInteger(value, fallback = 1) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
 function getErrorMessage(error, fallbackMessage) {
   return error?.bangjeff?.message || error?.message || fallbackMessage;
 }
