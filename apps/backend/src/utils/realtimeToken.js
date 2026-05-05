@@ -7,6 +7,7 @@ function createAdminRealtimeToken(admin) {
   return jwt.sign(
     {
       id: admin._id,
+      name: admin.name,
       email: admin.email,
       role: admin.role,
       scope: ADMIN_REALTIME_SCOPE,

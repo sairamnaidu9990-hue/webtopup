@@ -7,6 +7,7 @@ const { errorHandler } = require("./src/middleware/errorHandler");
 const appLogRoutes = require("./src/routes/appLog.routes");
 const authRoutes = require("./src/routes/authRoutes");
 const adminRoutes = require("./src/routes/admin.routes");
+const adminTeamChatRoutes = require("./src/routes/adminTeamChat.routes");
 const gameRoutes = require("./src/routes/game.routes");
 const orderRoutes = require("./src/routes/order.routes");
 const paymentMethodRoutes = require("./src/routes/paymentMethod.routes");
@@ -82,6 +83,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/app-logs", appLogRoutes);
 app.use("/api/admins", adminRoutes);
+app.use("/api/admin-team-chat", adminTeamChatRoutes);
 app.use("/api/games", gameRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payment-methods", paymentMethodRoutes);

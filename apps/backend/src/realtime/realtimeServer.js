@@ -4,6 +4,7 @@ const { logError, logInfo, logWarn } = require("../utils/appLogger");
 const { verifyAdminRealtimeToken } = require("../utils/realtimeToken");
 
 const ADMIN_ORDERS_CHANNEL = "admin.orders";
+const ADMIN_TEAM_CHAT_CHANNEL = "admin.team-chat";
 const RECONNECTABLE_CLOSE_CODE = 1011;
 const READY_STATE_OPEN = 1;
 
@@ -48,6 +49,71 @@ function buildOrderRealtimePayload(order) {
   };
 }
 
+function buildAdminProfile(client) {
+  if (!client?.adminId) {
+    return null;
+  }
+
+  return {
+    adminId: client.adminId,
+    name: String(client.adminName || "").trim(),
+    email: String(client.adminEmail || "").trim(),
+    role: String(client.adminRole || "").trim(),
+  };
+}
+
+function buildOnlineAdminsPayload() {
+  const uniqueAdmins = new Map();
+
+  clients.forEach((client) => {
+    if (!client.isAdminAuthenticated || !client.adminId) {
+      return;
+    }
+
+    if (!uniqueAdmins.has(client.adminId)) {
+      uniqueAdmins.set(client.adminId, buildAdminProfile(client));
+    }
+  });
+
+  return Array.from(uniqueAdmins.values()).filter(Boolean);
+}
+
+function broadcastTeamChatPresence() {
+  const onlineAdmins = buildOnlineAdminsPayload();
+
+  clients.forEach((client) => {
+    if (!client.isAdminAuthenticated) {
+      return;
+    }
+
+    if (!client.subscriptions.has(ADMIN_TEAM_CHAT_CHANNEL)) {
+      return;
+    }
+
+    safeSend(client.ws, {
+      type: "team-chat.presence",
+      onlineAdmins,
+    });
+  });
+}
+
+function broadcastTeamChatMessage(message) {
+  clients.forEach((client) => {
+    if (!client.isAdminAuthenticated) {
+      return;
+    }
+
+    if (!client.subscriptions.has(ADMIN_TEAM_CHAT_CHANNEL)) {
+      return;
+    }
+
+    safeSend(client.ws, {
+      type: "team-chat.message",
+      message,
+    });
+  });
+}
+
 function handleRealtimeMessage(client, rawMessage) {
   let payload = null;
 
@@ -74,10 +140,15 @@ function handleRealtimeMessage(client, rawMessage) {
         const decoded = verifyAdminRealtimeToken(token);
         client.isAdminAuthenticated = true;
         client.adminId = String(decoded.id || "");
+        client.adminName = String(decoded.name || "").trim();
+        client.adminEmail = String(decoded.email || "").trim();
+        client.adminRole = String(decoded.role || "").trim();
 
         safeSend(client.ws, {
           type: "auth.success",
+          admin: buildAdminProfile(client),
         });
+        broadcastTeamChatPresence();
       } catch (error) {
         sendClientError(
           client,
@@ -97,6 +168,22 @@ function handleRealtimeMessage(client, rawMessage) {
       safeSend(client.ws, {
         type: "subscribed",
         channel: ADMIN_ORDERS_CHANNEL,
+      });
+      return;
+    case "subscribe.admin.team-chat":
+      if (!client.isAdminAuthenticated) {
+        sendClientError(client, "Autentikasi admin belum dilakukan", "AUTH_REQUIRED");
+        return;
+      }
+
+      client.subscriptions.add(ADMIN_TEAM_CHAT_CHANNEL);
+      safeSend(client.ws, {
+        type: "subscribed",
+        channel: ADMIN_TEAM_CHAT_CHANNEL,
+      });
+      safeSend(client.ws, {
+        type: "team-chat.presence",
+        onlineAdmins: buildOnlineAdminsPayload(),
       });
       return;
     case "subscribe.invoice": {
@@ -167,6 +254,9 @@ function initRealtimeServer(server) {
       subscriptions: new Set(),
       isAdminAuthenticated: false,
       adminId: "",
+      adminName: "",
+      adminEmail: "",
+      adminRole: "",
     };
 
     clients.add(client);
@@ -190,6 +280,9 @@ function initRealtimeServer(server) {
 
     ws.on("close", () => {
       clients.delete(client);
+      if (client.isAdminAuthenticated) {
+        broadcastTeamChatPresence();
+      }
     });
   });
 
@@ -267,7 +360,9 @@ function shutdownRealtimeServer() {
 
 module.exports = {
   ADMIN_ORDERS_CHANNEL,
+  ADMIN_TEAM_CHAT_CHANNEL,
   broadcastOrderUpdate,
+  broadcastTeamChatMessage,
   initRealtimeServer,
   shutdownRealtimeServer,
 };
