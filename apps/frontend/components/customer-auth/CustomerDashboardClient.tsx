@@ -384,12 +384,10 @@ export default function CustomerDashboardClient() {
               Dashboard Member
             </div>
             <h1 className="mt-5 text-3xl font-semibold tracking-tight text-white">
-              Masuk dulu untuk lihat dashboard
+              Halo, Gamer!
             </h1>
             <p className="mt-4 text-sm leading-7 text-white/65 sm:text-[15px]">
-              User tetap bisa beli dan cek transaksi tanpa login. Tapi untuk saldo
-              KITAGG, topup saldo, dan riwayat transaksi pribadi, kamu perlu masuk
-              ke akun dulu.
+              Masuk dulu untuk lihat dashboard kamu, cek riwayat transaksi, dan topup saldo KITAGG!
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
@@ -424,9 +422,7 @@ export default function CustomerDashboardClient() {
                 Halo, {customer.name}
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-white/66 sm:text-[15px]">
-                Semua pembelian tetap bisa dilakukan tanpa login. Tapi kalau kamu
-                masuk, di sini kamu bisa topup saldo KITAGG, bayar langsung pakai
-                saldo, dan pantau histori transaksi pribadi dengan lebih rapi.
+                Selamat datang di dashboard user KITAGG!
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -593,8 +589,7 @@ export default function CustomerDashboardClient() {
               <div>
                 <h2 className="text-xl font-semibold text-white">Mutasi Saldo</h2>
                 <p className="mt-2 text-sm leading-6 text-white/60">
-                  Semua saldo masuk dan keluar akan tercatat di sini supaya lebih
-                  mudah dilacak.
+                  Semua saldo masuk dan keluar akan tercatat di sini.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right">
