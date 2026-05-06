@@ -42,6 +42,7 @@ const primaryItems = [{ label: "Dashboard", href: "/dashboard" }];
 const menuItems = [
   { label: "Orders", href: "/orders" },
   { label: "Monitoring", href: "/monitoring" },
+  { label: "Users", href: "/customers" },
   { label: "Team Chat", href: "/team-chat" },
   { label: "Reviews", href: "/reviews" },
   { label: "Promo Codes", href: "/promo-codes" },

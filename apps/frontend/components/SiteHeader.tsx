@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { PublicSiteSetting } from "@/lib/siteData";
+import CustomerAuthActions from "@/components/customer-auth/CustomerAuthActions";
 import MobileMenu from "@/components/site-header/MobileMenu";
 import SearchResults from "@/components/site-header/SearchResults";
 import {
@@ -197,7 +198,7 @@ export default function SiteHeader({
               ) : null}
             </div>
 
-            <div className="hidden shrink-0 items-center md:flex">
+            <div className="hidden shrink-0 items-center gap-3 md:flex">
               <Link
                 href="/cek-transaksi"
                 className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(211,59,59,0.28)] transition hover:brightness-110"
@@ -205,6 +206,7 @@ export default function SiteHeader({
                 <ReceiptSearchIcon />
                 <span>Cek Transaksi</span>
               </Link>
+              <CustomerAuthActions />
             </div>
 
             <div className="flex items-center gap-2 md:hidden">

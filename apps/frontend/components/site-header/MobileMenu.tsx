@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import CustomerAuthActions from "@/components/customer-auth/CustomerAuthActions";
 import type { PublicSiteSetting } from "@/lib/siteData";
 import { getInitials } from "@/components/site-header/shared";
 
@@ -79,6 +80,10 @@ export default function MobileMenu({
           >
             Cek Transaksi
           </Link>
+
+          <div className="pt-2">
+            <CustomerAuthActions mobile onNavigate={onClose} />
+          </div>
         </nav>
       </aside>
     </div>

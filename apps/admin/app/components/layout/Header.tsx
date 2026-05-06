@@ -68,6 +68,10 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
       return "Monitoring";
     }
 
+    if (pathname.startsWith("/customers")) {
+      return "Users";
+    }
+
     if (pathname.startsWith("/team-chat")) {
       return "Team Chat";
     }

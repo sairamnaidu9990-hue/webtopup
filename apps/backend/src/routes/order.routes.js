@@ -3,6 +3,7 @@ const express = require("express");
 const {
   bangjeffCallback,
   createOrderDraft,
+  getCurrentCustomerOrders,
   getOrderDashboard,
   getOrders,
   getPublicOrderByInvoice,
@@ -14,6 +15,7 @@ const {
   updateOrderByAdmin,
 } = require("../controllers/order.controller");
 const { protectAdmin } = require("../middleware/authMiddleware");
+const { attachCustomerFromToken, protectCustomer } = require("../middleware/customerAuthMiddleware");
 const { createRateLimit } = require("../middleware/rateLimit");
 const { createCallbackIpAllowlist } = require("../middleware/callbackSecurity");
 
@@ -62,7 +64,8 @@ router.get(
   getPublicOrderByInvoice
 );
 router.get("/recent", publicRecentOrdersRateLimit, getRecentPublicOrders);
-router.post("/", createOrderRateLimit, createOrderDraft);
+router.get("/me", protectCustomer, getCurrentCustomerOrders);
+router.post("/", createOrderRateLimit, attachCustomerFromToken, createOrderDraft);
 router.get("/dashboard", protectAdmin, getOrderDashboard);
 router.get("/", protectAdmin, getOrders);
 router.patch("/:id", protectAdmin, updateOrderByAdmin);

@@ -193,6 +193,37 @@ const promoSnapshotSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const customerAccountSnapshotSchema = new mongoose.Schema(
+  {
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      default: null,
+    },
+    username: {
+      type: String,
+      default: "",
+    },
+    name: {
+      type: String,
+      default: "",
+    },
+    email: {
+      type: String,
+      default: "",
+    },
+    phoneCountryCode: {
+      type: String,
+      default: "+62",
+    },
+    phoneNumber: {
+      type: String,
+      default: "",
+    },
+  },
+  { _id: false }
+);
+
 const paymentMethodSnapshotSchema = new mongoose.Schema(
   {
     name: {
@@ -393,6 +424,12 @@ const orderSchema = new mongoose.Schema(
       ref: "Variant",
       default: null,
     },
+    customer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      default: null,
+      index: true,
+    },
     quantity: {
       type: Number,
       default: 1,
@@ -417,6 +454,10 @@ const orderSchema = new mongoose.Schema(
     },
     contactDetail: {
       type: contactDetailSchema,
+      default: () => ({}),
+    },
+    customerAccountSnapshot: {
+      type: customerAccountSnapshotSchema,
       default: () => ({}),
     },
     promoSnapshot: {

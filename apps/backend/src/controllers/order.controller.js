@@ -198,6 +198,28 @@ function buildCustomerDisplay(customerInputs) {
     .join(" / ");
 }
 
+function buildCustomerAccountSnapshot(customer) {
+  if (!customer?._id) {
+    return {
+      customerId: null,
+      username: "",
+      name: "",
+      email: "",
+      phoneCountryCode: "+62",
+      phoneNumber: "",
+    };
+  }
+
+  return {
+    customerId: customer._id,
+    username: toStringValue(customer.username).toLowerCase(),
+    name: toStringValue(customer.name),
+    email: toStringValue(customer.email).toLowerCase(),
+    phoneCountryCode: toStringValue(customer.phoneCountryCode) || "+62",
+    phoneNumber: toStringValue(customer.phoneNumber).replace(/[^0-9]/g, ""),
+  };
+}
+
 function isManualPaymentMethod(paymentMethod) {
   return toStringValue(paymentMethod?.provider || "manual").toLowerCase() === "manual";
 }
@@ -902,6 +924,25 @@ function normalizeEditableContactDetail(rawContactDetail, fallbackContactDetail 
   };
 }
 
+function serializeCustomerOrder(order) {
+  return {
+    _id: order._id,
+    invoiceNumber: order.invoiceNumber,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    providerStatus: order.providerStatus,
+    quantity: normalizeOrderQuantity(order.quantity, DEFAULT_ORDER_QUANTITY),
+    gameSnapshot: order.gameSnapshot,
+    variantSnapshot: order.variantSnapshot,
+    paymentMethodName: order.paymentMethodName,
+    price: order.price,
+    providerMessage: order.providerMessage,
+    notes: order.notes,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+  };
+}
+
 function reconcileAdminEditedOrderTimestamps(order) {
   const now = new Date();
   const currentStatus = normalizeCode(order.status);
@@ -1200,6 +1241,47 @@ async function getRecentPublicOrders(req, res) {
   }
 }
 
+async function getCurrentCustomerOrders(req, res) {
+  try {
+    const limit = Math.min(toPositiveInteger(req.query.limit, 50), MAX_LIMIT);
+    const items = await Order.find({ customer: req.customer._id })
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    await Promise.all(
+      items.map(async (order) => {
+        await syncTokopayPaymentStatus(order);
+        await maybeProcessBangjeffAfterPaid(order);
+        await syncBangjeffOrderStatus(order);
+      })
+    );
+
+    return res.status(200).json({
+      items: items.map((order) => serializeCustomerOrder(order)),
+      limit,
+    });
+  } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "order",
+      message: "Error ambil riwayat order customer",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        customerId: req.customer?._id,
+      },
+      error,
+    });
+    return res.status(500).json({
+      message: "Error ambil riwayat transaksi customer",
+      error: error.message,
+    });
+  }
+}
+
 async function createOrderDraft(req, res) {
   try {
     const {
@@ -1366,6 +1448,7 @@ async function createOrderDraft(req, res) {
       provider: toStringValue(game.syncSource) || "bangjeff",
       game: game._id,
       variant: variant._id,
+      customer: req.customer?._id || null,
       quantity: normalizedQuantity,
       gameSnapshot: {
         name: toStringValue(game.name),
@@ -1389,6 +1472,7 @@ async function createOrderDraft(req, res) {
         phoneCountryCode: normalizedPhoneCountryCode,
         phoneNumber: normalizedPhoneNumber,
       },
+      customerAccountSnapshot: buildCustomerAccountSnapshot(req.customer),
       paymentMethodSnapshot,
       region: normalizeBangjeffCheckoutRegion(variant.region),
       price: {
@@ -2053,6 +2137,7 @@ async function getOrderDashboard(req, res) {
 module.exports = {
   bangjeffCallback,
   createOrderDraft,
+  getCurrentCustomerOrders,
   getOrderDashboard,
   getOrders,
   getPublicOrderByInvoice,
