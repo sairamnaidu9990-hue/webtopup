@@ -303,6 +303,12 @@ export default async function GameVariantsPage({
         game={game}
         variants={variants}
         paymentMethods={paymentMethods}
+        balanceLogoUrl={
+          siteSetting.kitaggBalanceLogoUrl ||
+          siteSetting.siteLogoUrl ||
+          siteSetting.siteFaviconUrl ||
+          ""
+        }
         categoryDescription={categoryDescription}
         gameFaqs={gameFaqs}
         reviewSummary={reviewSummary}

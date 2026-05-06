@@ -64,6 +64,7 @@ export default function WebsiteSettingsPage() {
           siteName: form.siteName,
           siteLogoUrl: form.siteLogoUrl,
           siteFaviconUrl: form.siteFaviconUrl,
+          kitaggBalanceLogoUrl: form.kitaggBalanceLogoUrl,
           siteDomain: form.siteDomain,
           googleSiteVerification: form.googleSiteVerification,
           siteTitle: form.siteTitle,
@@ -213,6 +214,27 @@ export default function WebsiteSettingsPage() {
                 placeholder="contoh: topupkamu.com atau https://topupkamu.com"
                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                URL Logo Saldo KITAGG
+              </label>
+              <input
+                value={form.kitaggBalanceLogoUrl}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    kitaggBalanceLogoUrl: event.target.value,
+                  }))
+                }
+                placeholder="https://... atau kosongkan untuk pakai logo web"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Logo ini dipakai untuk metode pembayaran Saldo KITAGG dan kartu
+                saldo di dashboard user.
+              </p>
             </div>
 
             <div className="space-y-2 lg:col-span-2">

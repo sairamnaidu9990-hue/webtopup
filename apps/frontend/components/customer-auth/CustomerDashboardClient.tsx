@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -126,6 +127,7 @@ export default function CustomerDashboardClient() {
   const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(true);
   const [error, setError] = useState("");
   const [topupFeedback, setTopupFeedback] = useState("");
+  const [balanceLogoUrl, setBalanceLogoUrl] = useState("");
   const [topupAmount, setTopupAmount] = useState(String(MIN_TOPUP_AMOUNT));
   const [topupPaymentMethodCode, setTopupPaymentMethodCode] = useState("");
   const [topupSubmitting, setTopupSubmitting] = useState(false);
@@ -163,7 +165,12 @@ export default function CustomerDashboardClient() {
         setPaymentMethodsLoading(true);
         setError("");
 
-        const [ordersResponse, balanceResponse, paymentMethodsResponse] =
+        const [
+          ordersResponse,
+          balanceResponse,
+          paymentMethodsResponse,
+          siteSettingResponse,
+        ] =
           await Promise.all([
             fetch("/api/customer-orders/me?limit=20", {
               cache: "no-store",
@@ -177,9 +184,18 @@ export default function CustomerDashboardClient() {
               cache: "no-store",
               signal: controller.signal,
             }),
+            fetch("/api/site-settings/public", {
+              cache: "no-store",
+              signal: controller.signal,
+            }),
           ]);
 
-        const [ordersPayload, balancePayload, paymentMethodsPayload] =
+        const [
+          ordersPayload,
+          balancePayload,
+          paymentMethodsPayload,
+          siteSettingPayload,
+        ] =
           await Promise.all([
             ordersResponse.json().catch(() => ({
               items: [],
@@ -192,6 +208,9 @@ export default function CustomerDashboardClient() {
             paymentMethodsResponse.json().catch(() => ({
               items: [],
               message: "Respons metode pembayaran tidak valid",
+            })),
+            siteSettingResponse.json().catch(() => ({
+              siteSetting: null,
             })),
           ]);
 
@@ -223,6 +242,14 @@ export default function CustomerDashboardClient() {
         setOrders(Array.isArray(ordersPayload.items) ? ordersPayload.items : []);
         setBalanceTransactions(
           Array.isArray(balancePayload.items) ? balancePayload.items : []
+        );
+        setBalanceLogoUrl(
+          String(
+            siteSettingPayload?.siteSetting?.kitaggBalanceLogoUrl ||
+              siteSettingPayload?.siteSetting?.siteLogoUrl ||
+              siteSettingPayload?.siteSetting?.siteFaviconUrl ||
+              ""
+          ).trim()
         );
         setPaymentMethods(nextPaymentMethods);
         setTopupPaymentMethodCode((current) => {
@@ -434,14 +461,28 @@ export default function CustomerDashboardClient() {
                     @{customer.username}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/42">
-                    Saldo KITAGG
-                  </p>
-                  <p className="mt-3 text-lg font-semibold text-red-200">
-                    {formatCurrency(customer.balance)}
-                  </p>
-                </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      {balanceLogoUrl ? (
+                        <div className="overflow-hidden rounded-xl border border-white/10 bg-white p-1 shadow-[0_10px_24px_rgba(0,0,0,0.18)]">
+                          <Image
+                            src={balanceLogoUrl}
+                            alt="Logo Saldo KITAGG"
+                            width={36}
+                            height={36}
+                            sizes="36px"
+                            className="h-9 w-9 object-contain"
+                          />
+                        </div>
+                      ) : null}
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/42">
+                        Saldo KITAGG
+                      </p>
+                    </div>
+                    <p className="mt-3 text-lg font-semibold text-red-200">
+                      {formatCurrency(customer.balance)}
+                    </p>
+                  </div>
                 <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/42">
                     Order Berhasil
@@ -507,9 +548,23 @@ export default function CustomerDashboardClient() {
           <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.24)] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-white">
-                  Topup Saldo KITAGG
-                </h2>
+                <div className="flex items-center gap-3">
+                  {balanceLogoUrl ? (
+                    <div className="overflow-hidden rounded-xl border border-white/10 bg-white p-1 shadow-[0_10px_24px_rgba(0,0,0,0.18)]">
+                      <Image
+                        src={balanceLogoUrl}
+                        alt="Logo Saldo KITAGG"
+                        width={40}
+                        height={40}
+                        sizes="40px"
+                        className="h-10 w-10 object-contain"
+                      />
+                    </div>
+                  ) : null}
+                  <h2 className="text-xl font-semibold text-white">
+                    Topup Saldo KITAGG
+                  </h2>
+                </div>
                 <p className="mt-2 text-sm leading-6 text-white/60">
                   Isi saldo pakai metode pembayaran aktif, lalu kamu bisa bayar
                   checkout game langsung dari saldo KITAGG.

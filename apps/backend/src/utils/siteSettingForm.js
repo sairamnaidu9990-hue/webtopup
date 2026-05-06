@@ -19,6 +19,7 @@ const defaultSiteSetting = {
   siteName: "WebTopup",
   siteLogoUrl: "",
   siteFaviconUrl: "",
+  kitaggBalanceLogoUrl: "",
   siteDomain: "",
   googleSiteVerification: "",
   siteTitle: "WebTopup - Top Up Game Realtime",

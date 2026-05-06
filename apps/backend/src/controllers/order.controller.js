@@ -243,6 +243,15 @@ function buildPurchaseOrderFilter(extraQuery = {}) {
   };
 }
 
+function resolveKitaggBalanceLogoUrl(siteSetting) {
+  return String(
+    siteSetting?.kitaggBalanceLogoUrl ||
+      siteSetting?.siteLogoUrl ||
+      siteSetting?.siteFaviconUrl ||
+      ""
+  ).trim();
+}
+
 function isBalanceTopupOrder(order) {
   return normalizeOrderType(order?.orderType) === "BALANCE_TOPUP";
 }
@@ -251,7 +260,7 @@ function isKitaggBalancePaymentCode(value) {
   return normalizeCode(value) === KITAGG_BALANCE_PAYMENT_CODE;
 }
 
-function buildKitaggBalancePaymentMethod(customer) {
+function buildKitaggBalancePaymentMethod(customer, logo = "") {
   return {
     _id: "kitagg-balance",
     name: "Saldo KITAGG",
@@ -264,7 +273,7 @@ function buildKitaggBalancePaymentMethod(customer) {
       order: 0,
       isActive: true,
     },
-    logo: "",
+    logo: String(logo || "").trim(),
     currency: "IDR",
     feeType: "fixed",
     feeValue: 0,
@@ -1518,7 +1527,7 @@ async function createOrderDraft(req, res) {
       });
     }
 
-    const [game, variant, paymentMethodDocument] = await Promise.all([
+    const [game, variant, paymentMethodDocument, siteSetting] = await Promise.all([
       Game.findOne({ code: normalizedGameCode, status: "ACTIVE" }),
       Variant.findOne({
         _id: normalizedVariantId,
@@ -1531,10 +1540,18 @@ async function createOrderDraft(req, res) {
             code: normalizedPaymentMethodCode,
             isActive: true,
           }).populate("category", "name code isActive order"),
+      isBalancePayment
+        ? SiteSetting.findOne()
+            .select("kitaggBalanceLogoUrl siteLogoUrl siteFaviconUrl")
+            .lean()
+        : Promise.resolve(null),
     ]);
 
     const paymentMethod = isBalancePayment
-      ? buildKitaggBalancePaymentMethod(req.customer)
+      ? buildKitaggBalancePaymentMethod(
+          req.customer,
+          resolveKitaggBalanceLogoUrl(siteSetting)
+        )
       : paymentMethodDocument;
 
     if (!game) {

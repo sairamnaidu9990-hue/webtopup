@@ -4,6 +4,7 @@ export const defaultSiteSetting: PublicSiteSetting = {
   siteName: "WebTopup",
   siteLogoUrl: "",
   siteFaviconUrl: "",
+  kitaggBalanceLogoUrl: "",
   siteDomain: "",
   googleSiteVerification: "",
   siteTitle: "WebTopup - Top Up Game Realtime",

@@ -68,6 +68,7 @@ export function normalizeSiteSetting(
   return {
     ...defaultSiteSetting,
     ...siteSetting,
+    kitaggBalanceLogoUrl: String(siteSetting?.kitaggBalanceLogoUrl || "").trim(),
     googleSiteVerification: String(
       siteSetting?.googleSiteVerification || ""
     ).trim(),

@@ -22,6 +22,7 @@ type GameTopupPanelProps = {
   game: GameDetail;
   variants: StorefrontVariant[];
   paymentMethods: StorefrontPaymentMethod[];
+  balanceLogoUrl?: string;
   categoryDescription?: string;
   gameFaqs?: Array<{
     question: string;
@@ -34,6 +35,7 @@ export default function GameTopupPanel({
   game,
   variants,
   paymentMethods,
+  balanceLogoUrl = "",
   categoryDescription = "",
   gameFaqs = [],
   reviewSummary,
@@ -53,7 +55,7 @@ export default function GameTopupPanel({
         _id: "kitagg-balance",
         name: "Saldo KITAGG",
         code: "KITAGG_BALANCE",
-        logo: "",
+        logo: balanceLogoUrl,
         type: "ewallet",
         category: {
           _id: "kitagg-balance",
@@ -74,7 +76,7 @@ export default function GameTopupPanel({
       },
       ...visibleMethods,
     ];
-  }, [customer, paymentMethods]);
+  }, [balanceLogoUrl, customer, paymentMethods]);
 
   const flow = useGameTopupFlow({
     game,

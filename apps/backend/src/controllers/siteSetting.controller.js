@@ -46,6 +46,7 @@ function serializeSiteSetting(siteSetting) {
     siteName: siteSetting.siteName || defaultSiteSetting.siteName,
     siteLogoUrl: siteSetting.siteLogoUrl || "",
     siteFaviconUrl: siteSetting.siteFaviconUrl || "",
+    kitaggBalanceLogoUrl: siteSetting.kitaggBalanceLogoUrl || "",
     siteDomain: siteSetting.siteDomain || "",
     googleSiteVerification: normalizeGoogleSiteVerification(
       siteSetting.googleSiteVerification
@@ -178,6 +179,12 @@ exports.updateSiteSetting = async (req, res) => {
 
     if (req.body.siteFaviconUrl != null) {
       siteSetting.siteFaviconUrl = String(req.body.siteFaviconUrl).trim();
+    }
+
+    if (req.body.kitaggBalanceLogoUrl != null) {
+      siteSetting.kitaggBalanceLogoUrl = String(
+        req.body.kitaggBalanceLogoUrl
+      ).trim();
     }
 
     if (req.body.siteDomain != null) {

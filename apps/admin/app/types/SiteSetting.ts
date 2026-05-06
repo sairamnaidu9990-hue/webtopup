@@ -27,6 +27,7 @@ export type SiteSetting = {
   siteName: string;
   siteLogoUrl: string;
   siteFaviconUrl: string;
+  kitaggBalanceLogoUrl: string;
   siteDomain: string;
   googleSiteVerification: string;
   siteTitle: string;

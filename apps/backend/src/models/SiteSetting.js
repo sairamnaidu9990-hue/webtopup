@@ -77,6 +77,11 @@ const siteSettingSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    kitaggBalanceLogoUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     siteDomain: {
       type: String,
       default: "",

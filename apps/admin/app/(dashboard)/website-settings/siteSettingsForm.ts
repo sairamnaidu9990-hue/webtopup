@@ -54,6 +54,7 @@ export const defaultSiteSettingForm: SiteSetting = {
   siteName: "WebTopup",
   siteLogoUrl: "",
   siteFaviconUrl: "",
+  kitaggBalanceLogoUrl: "",
   siteDomain: "",
   googleSiteVerification: "",
   siteTitle: "WebTopup - Top Up Game Realtime",
@@ -196,6 +197,7 @@ export function normalizeSiteSetting(
   return {
     ...defaultSiteSettingForm,
     ...value,
+    kitaggBalanceLogoUrl: String(value?.kitaggBalanceLogoUrl || "").trim(),
     gameCategories,
     categoryDescriptions: syncCategoryDescriptions(
       value?.categoryDescriptions ?? defaultSiteSettingForm.categoryDescriptions,
