@@ -231,6 +231,18 @@ function normalizeOrderType(value) {
   return ORDER_TYPES.includes(normalized) ? normalized : "PURCHASE";
 }
 
+function buildPurchaseOrderFilter(extraQuery = {}) {
+  return {
+    ...extraQuery,
+    $or: [
+      { orderType: "PURCHASE" },
+      { orderType: { $exists: false } },
+      { orderType: null },
+      { orderType: "" },
+    ],
+  };
+}
+
 function isBalanceTopupOrder(order) {
   return normalizeOrderType(order?.orderType) === "BALANCE_TOPUP";
 }
@@ -1227,16 +1239,15 @@ async function generateInvoiceNumber() {
 }
 
 async function buildSummary() {
-  const purchaseFilter = { orderType: "PURCHASE" };
+  const purchaseFilter = buildPurchaseOrderFilter();
   const [totalOrders, successOrders, failedOrders, processingOrders] =
     await Promise.all([
       Order.countDocuments(purchaseFilter),
-      Order.countDocuments({ ...purchaseFilter, status: "SUCCESS" }),
-      Order.countDocuments({ ...purchaseFilter, status: "FAILED" }),
-      Order.countDocuments({
-        ...purchaseFilter,
+      Order.countDocuments(buildPurchaseOrderFilter({ status: "SUCCESS" })),
+      Order.countDocuments(buildPurchaseOrderFilter({ status: "FAILED" })),
+      Order.countDocuments(buildPurchaseOrderFilter({
         status: { $in: PROCESSING_SUMMARY_STATUSES },
-      }),
+      })),
     ]);
 
   return {
@@ -1251,10 +1262,7 @@ async function buildDashboardSummary() {
   const [aggregateResult, recentOrders] = await Promise.all([
     Order.aggregate([
       {
-        $match: {
-          orderType: "PURCHASE",
-          status: "SUCCESS",
-        },
+        $match: buildPurchaseOrderFilter({ status: "SUCCESS" }),
       },
       {
         $group: {
@@ -1298,7 +1306,7 @@ async function buildDashboardSummary() {
         },
       },
     ]),
-    Order.find({ orderType: "PURCHASE" })
+    Order.find(buildPurchaseOrderFilter())
       .sort({ createdAt: -1 })
       .limit(10)
       .select(
@@ -1381,7 +1389,7 @@ async function getPublicOrderByInvoice(req, res) {
 async function getRecentPublicOrders(req, res) {
   try {
     const limit = Math.min(toPositiveInteger(req.query.limit, 10), 20);
-    const items = await Order.find({ orderType: "PURCHASE" })
+    const items = await Order.find(buildPurchaseOrderFilter())
       .sort({ createdAt: -1 })
       .limit(limit);
 

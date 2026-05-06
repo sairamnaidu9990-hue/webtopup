@@ -286,12 +286,6 @@ export function PaymentStepSection({
                         {paymentMethod.name}
                       </p>
 
-                      {paymentMethod.description ? (
-                        <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-white/54">
-                          {paymentMethod.description}
-                        </p>
-                      ) : null}
-
                       <p className="mt-2 text-[12px] font-semibold text-white">
                         {selectedVariant
                           ? formatCurrency(
