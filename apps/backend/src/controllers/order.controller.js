@@ -1658,7 +1658,7 @@ async function createOrderDraft(req, res) {
       });
     }
 
-    const siteSetting = await SiteSetting.findOne(
+    const invoiceSiteSetting = await SiteSetting.findOne(
       {},
       { siteName: 1, siteDomain: 1 }
     ).lean();
@@ -1729,7 +1729,7 @@ async function createOrderDraft(req, res) {
       const result = await attachTokopayPaymentToOrder(
         order,
         paymentMethod,
-        siteSetting
+        invoiceSiteSetting
       );
       warning = result.warning || "";
     }
