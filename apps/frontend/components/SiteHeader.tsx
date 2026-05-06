@@ -12,10 +12,15 @@ import {
   getInitials,
   HamburgerIcon,
   HeaderIconButton,
-  ReceiptSearchIcon,
   SearchIcon,
   type SearchGameItem,
 } from "@/components/site-header/shared";
+
+const navigationItems = [
+  { href: "/", label: "Home" },
+  { href: "/reviews", label: "Ulasan" },
+  { href: "/cek-transaksi", label: "Cek Transaksi" },
+];
 
 export default function SiteHeader({
   siteSetting,
@@ -34,6 +39,7 @@ export default function SiteHeader({
   const mobileSearchRef = useRef<HTMLDivElement | null>(null);
   const mobileInputRef = useRef<HTMLInputElement | null>(null);
   const pathname = usePathname();
+  const normalizedPathname = String(pathname || "");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -199,13 +205,32 @@ export default function SiteHeader({
             </div>
 
             <div className="hidden shrink-0 items-center gap-3 md:flex">
-              <Link
-                href="/cek-transaksi"
-                className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(211,59,59,0.28)] transition hover:brightness-110"
-              >
-                <ReceiptSearchIcon />
-                <span>Cek Transaksi</span>
-              </Link>
+              <nav className="flex items-center gap-2">
+                {navigationItems.map((item) => {
+                  const isActive =
+                    item.href === "/"
+                      ? normalizedPathname === "/"
+                      : item.href === "/cek-transaksi"
+                        ? normalizedPathname === item.href ||
+                          normalizedPathname.startsWith("/invoice/")
+                      : normalizedPathname === item.href ||
+                        normalizedPathname.startsWith(`${item.href}/`);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                        isActive
+                          ? "border-[rgba(211,59,59,0.45)] bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] text-white shadow-[0_14px_28px_rgba(211,59,59,0.28)]"
+                          : "border-white/10 bg-[#23262d] text-white/78 hover:border-[rgba(211,59,59,0.45)] hover:bg-[rgba(211,59,59,0.12)] hover:text-white"
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
               <CustomerAuthActions />
             </div>
 

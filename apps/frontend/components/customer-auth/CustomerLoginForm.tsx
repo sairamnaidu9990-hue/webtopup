@@ -14,7 +14,7 @@ export default function CustomerLoginForm() {
 
   useEffect(() => {
     if (!loading && customer) {
-      router.replace("/dashboard");
+      router.replace("/");
     }
   }, [customer, loading, router]);
 
@@ -44,7 +44,7 @@ export default function CustomerLoginForm() {
 
       await refresh();
       router.refresh();
-      router.push("/dashboard");
+      router.push("/");
     } catch (submitError) {
       setError(
         submitError instanceof Error ? submitError.message : "Login gagal"

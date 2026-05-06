@@ -24,7 +24,7 @@ export default function CustomerRegisterForm() {
 
   useEffect(() => {
     if (!loading && customer) {
-      router.replace("/dashboard");
+      router.replace("/");
     }
   }, [customer, loading, router]);
 
@@ -62,7 +62,7 @@ export default function CustomerRegisterForm() {
 
       await refresh();
       router.refresh();
-      router.push("/dashboard");
+      router.push("/");
     } catch (submitError) {
       setError(
         submitError instanceof Error
