@@ -1,6 +1,4 @@
 "use client";
-
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CustomerAuthLayout from "@/components/customer-auth/CustomerAuthLayout";
@@ -58,11 +56,14 @@ export default function CustomerLoginForm() {
 
   return (
     <CustomerAuthLayout
-      title="Masuk ke akunmu"
-      subtitle="Gunakan username atau email untuk masuk. Guest checkout tetap tersedia, jadi akun ini khusus untuk user yang ingin dashboard dan histori transaksi pribadi."
+      title="Masuk"
+      subtitle="Masuk dengan akun yang telah Kamu daftarkan."
       alternateHref="/daftar"
       alternateLabel="Daftar sekarang"
       alternateText="Belum punya akun?"
+      eyebrow=""
+      showFeatureCards={false}
+      showAlternateNotice={false}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -110,13 +111,6 @@ export default function CustomerLoginForm() {
         </button>
       </form>
 
-      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm leading-6 text-white/60">
-        Tetap ingin checkout tanpa akun? Langsung saja kembali ke{" "}
-        <Link href="/" className="font-semibold text-red-300 hover:text-red-200">
-          homepage KITAGG
-        </Link>
-        .
-      </div>
     </CustomerAuthLayout>
   );
 }
