@@ -96,7 +96,7 @@ export default function CustomerRegisterForm() {
             onChange={(event) =>
               setForm((current) => ({ ...current, username: event.target.value }))
             }
-            placeholder="Contoh: apri_kita"
+            placeholder="Contoh: kitagg123"
             className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none transition placeholder:text-white/28 focus:border-red-400/40 focus:bg-white/[0.08]"
             autoComplete="username"
             required
