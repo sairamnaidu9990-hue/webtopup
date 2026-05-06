@@ -6,6 +6,10 @@ export function normalizeStorefrontOrder(
   return {
     _id: String(order?._id || "").trim(),
     invoiceNumber: String(order?.invoiceNumber || "").trim(),
+    orderType:
+      String(order?.orderType || "").trim().toUpperCase() === "BALANCE_TOPUP"
+        ? "BALANCE_TOPUP"
+        : "PURCHASE",
     provider: String(order?.provider || "").trim(),
     providerInvoiceNumber: String(order?.providerInvoiceNumber || "").trim(),
     providerReferenceNumber: String(order?.providerReferenceNumber || "").trim(),

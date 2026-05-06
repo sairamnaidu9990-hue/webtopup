@@ -385,6 +385,7 @@ const PROVIDER_STATUSES = [
   "FAILED",
   "UNKNOWN",
 ];
+const ORDER_TYPES = ["PURCHASE", "BALANCE_TOPUP"];
 
 const orderSchema = new mongoose.Schema(
   {
@@ -392,6 +393,12 @@ const orderSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      index: true,
+    },
+    orderType: {
+      type: String,
+      enum: ORDER_TYPES,
+      default: "PURCHASE",
       index: true,
     },
     provider: {
@@ -513,6 +520,10 @@ const orderSchema = new mongoose.Schema(
     notes: {
       type: String,
       default: "",
+    },
+    customerBalanceAppliedAt: {
+      type: Date,
+      default: null,
     },
     paidAt: {
       type: Date,

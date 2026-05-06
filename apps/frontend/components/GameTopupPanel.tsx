@@ -1,6 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import { createPortal } from "react-dom";
+import { useCustomerSession } from "@/components/customer-auth/CustomerSessionProvider";
 import DetailContent from "@/components/game-topup/DetailContent";
 import DesktopCheckoutSidebar from "@/components/game-topup/DesktopCheckoutSidebar";
 import MobileContentTabs from "@/components/game-topup/MobileContentTabs";
@@ -36,10 +38,48 @@ export default function GameTopupPanel({
   gameFaqs = [],
   reviewSummary,
 }: GameTopupPanelProps) {
+  const { customer } = useCustomerSession();
+  const resolvedPaymentMethods = useMemo(() => {
+    const visibleMethods = paymentMethods.filter(
+      (paymentMethod) => paymentMethod.code !== "KITAGG_BALANCE"
+    );
+
+    if (!customer) {
+      return visibleMethods;
+    }
+
+    return [
+      {
+        _id: "kitagg-balance",
+        name: "Saldo KITAGG",
+        code: "KITAGG_BALANCE",
+        logo: "",
+        type: "ewallet",
+        category: {
+          _id: "kitagg-balance",
+          name: "Saldo KITAGG",
+          code: "KITAGG_BALANCE",
+          order: -1,
+        },
+        feeType: "fixed" as const,
+        feeValue: 0,
+        feeFixed: 0,
+        feePercent: 0,
+        currency: "IDR",
+        gatewayChannelCode: "",
+        description: `Saldo tersedia Rp${Number(customer.balance || 0).toLocaleString(
+          "id-ID"
+        )}`,
+        order: -1,
+      },
+      ...visibleMethods,
+    ];
+  }, [customer, paymentMethods]);
+
   const flow = useGameTopupFlow({
     game,
     variants,
-    paymentMethods,
+    paymentMethods: resolvedPaymentMethods,
   });
 
   return (
@@ -87,7 +127,7 @@ export default function GameTopupPanel({
             quantity={flow.quantity}
             onQuantityChange={flow.handleQuantityChange}
             quantityStepNumber={flow.quantityStepNumber}
-            paymentMethods={paymentMethods}
+            paymentMethods={resolvedPaymentMethods}
             paymentMethodGroups={flow.paymentMethodGroups}
             openPaymentGroups={flow.openPaymentGroups}
             setOpenPaymentGroups={flow.setOpenPaymentGroups}

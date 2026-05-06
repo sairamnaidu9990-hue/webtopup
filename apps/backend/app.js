@@ -8,6 +8,7 @@ const appLogRoutes = require("./src/routes/appLog.routes");
 const authRoutes = require("./src/routes/authRoutes");
 const adminRoutes = require("./src/routes/admin.routes");
 const customerAuthRoutes = require("./src/routes/customerAuth.routes");
+const customerBalanceRoutes = require("./src/routes/customerBalance.routes");
 const customerRoutes = require("./src/routes/customer.routes");
 const adminTeamChatRoutes = require("./src/routes/adminTeamChat.routes");
 const gameRoutes = require("./src/routes/game.routes");
@@ -84,6 +85,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/customer-auth", customerAuthRoutes);
+app.use("/api/customer-balance", customerBalanceRoutes);
 app.use("/api/app-logs", appLogRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/customers", customerRoutes);

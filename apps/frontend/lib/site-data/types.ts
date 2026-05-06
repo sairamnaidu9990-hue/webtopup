@@ -176,6 +176,7 @@ export type StorefrontPaymentMethod = {
   _id: string;
   name: string;
   code: string;
+  provider?: string;
   logo?: string;
   type: string;
   category?: {
@@ -192,6 +193,22 @@ export type StorefrontPaymentMethod = {
   gatewayChannelCode?: string;
   description?: string;
   order: number;
+};
+
+export type StorefrontBalanceTransaction = {
+  id: string;
+  type: string;
+  source: string;
+  amount: number;
+  currency: string;
+  balanceBefore: number;
+  balanceAfter: number;
+  description: string;
+  invoiceNumber: string;
+  orderId: string;
+  createdByAdmin: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 export type StorefrontPromoCode = {
@@ -219,6 +236,7 @@ export type StorefrontPromoCode = {
 export type StorefrontOrder = {
   _id: string;
   invoiceNumber: string;
+  orderType: "PURCHASE" | "BALANCE_TOPUP";
   provider: string;
   providerInvoiceNumber: string;
   providerReferenceNumber: string;

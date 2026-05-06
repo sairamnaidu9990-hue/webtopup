@@ -28,6 +28,10 @@ const {
   getProductionReadinessWarnings,
 } = require("../utils/deploymentConfig");
 const { broadcastOrderUpdate } = require("../realtime/realtimeServer");
+const {
+  creditCustomerBalance,
+  debitCustomerBalance,
+} = require("../utils/customerBalance");
 const { validatePromoForOrder } = require("../utils/promoCode");
 const { serializeOrderReviewState } = require("./review.controller");
 
@@ -50,9 +54,11 @@ const PROVIDER_STATUSES = [
   "FAILED",
   "UNKNOWN",
 ];
+const ORDER_TYPES = ["PURCHASE", "BALANCE_TOPUP"];
 const PROCESSING_SUMMARY_STATUSES = ["PAID", "PROCESSING"];
 const DEFAULT_ORDER_QUANTITY = 1;
 const MAX_ORDER_QUANTITY = 10;
+const KITAGG_BALANCE_PAYMENT_CODE = "KITAGG_BALANCE";
 const DEFAULT_BANGJEFF_REGION = String(
   process.env.BANGJEFF_REGION || "ID"
 ).toUpperCase();
@@ -220,6 +226,47 @@ function buildCustomerAccountSnapshot(customer) {
   };
 }
 
+function normalizeOrderType(value) {
+  const normalized = normalizeCode(value);
+  return ORDER_TYPES.includes(normalized) ? normalized : "PURCHASE";
+}
+
+function isBalanceTopupOrder(order) {
+  return normalizeOrderType(order?.orderType) === "BALANCE_TOPUP";
+}
+
+function isKitaggBalancePaymentCode(value) {
+  return normalizeCode(value) === KITAGG_BALANCE_PAYMENT_CODE;
+}
+
+function buildKitaggBalancePaymentMethod(customer) {
+  return {
+    _id: "kitagg-balance",
+    name: "Saldo KITAGG",
+    code: KITAGG_BALANCE_PAYMENT_CODE,
+    provider: "kitagg_balance",
+    type: "ewallet",
+    category: {
+      name: "Saldo KITAGG",
+      code: "KITAGG_BALANCE",
+      order: 0,
+      isActive: true,
+    },
+    logo: "",
+    currency: "IDR",
+    feeType: "fixed",
+    feeValue: 0,
+    feeFixed: 0,
+    feePercent: 0,
+    gatewayChannelCode: "",
+    description: `Saldo tersedia Rp${Number(customer?.balance || 0).toLocaleString(
+      "id-ID"
+    )}`,
+    accountHolderName: "",
+    accountNumber: "",
+  };
+}
+
 function isManualPaymentMethod(paymentMethod) {
   return toStringValue(paymentMethod?.provider || "manual").toLowerCase() === "manual";
 }
@@ -227,6 +274,124 @@ function isManualPaymentMethod(paymentMethod) {
 async function saveOrderAndBroadcast(order, source = "system") {
   await order.save();
   broadcastOrderUpdate(order, source);
+  return order;
+}
+
+async function finalizeBalanceTopupOrder(order, source = "balance-topup") {
+  if (!isBalanceTopupOrder(order)) {
+    return order;
+  }
+
+  if (normalizeCode(order.paymentStatus) !== "PAID") {
+    return order;
+  }
+
+  if (order.customerBalanceAppliedAt) {
+    if (normalizeCode(order.status) !== "SUCCESS") {
+      order.status = "SUCCESS";
+      order.providerStatus = "SUCCESS";
+      order.providerMessage =
+        toStringValue(order.providerMessage) || "Saldo KITAGG berhasil ditambahkan";
+      order.completedAt = order.completedAt || new Date();
+      await saveOrderAndBroadcast(order, source);
+    }
+    return order;
+  }
+
+  const customerId =
+    order.customer || order.customerAccountSnapshot?.customerId || null;
+
+  if (!customerId) {
+    order.status = "FAILED";
+    order.providerStatus = "FAILED";
+    order.providerMessage = "Akun customer untuk topup saldo tidak ditemukan";
+    order.failedAt = new Date();
+    await saveOrderAndBroadcast(order, source);
+    return order;
+  }
+
+  const creditResult = await creditCustomerBalance({
+    customerId,
+    amount: Number(order.price?.sellPrice || 0),
+    currency: toStringValue(order.price?.currency || "IDR") || "IDR",
+    source: "BALANCE_TOPUP",
+    description: `Topup saldo dari invoice ${order.invoiceNumber}`,
+    orderId: order._id,
+    invoiceNumber: order.invoiceNumber,
+  });
+
+  order.customerBalanceAppliedAt = new Date();
+  order.status = "SUCCESS";
+  order.providerStatus = "SUCCESS";
+  order.providerMessage = "Saldo KITAGG berhasil ditambahkan";
+  order.notes = "";
+  order.completedAt = order.completedAt || new Date();
+  order.customerAccountSnapshot = {
+    ...order.customerAccountSnapshot,
+    customerId,
+    username:
+      toStringValue(creditResult.customer?.username) ||
+      toStringValue(order.customerAccountSnapshot?.username),
+    name:
+      toStringValue(creditResult.customer?.name) ||
+      toStringValue(order.customerAccountSnapshot?.name),
+    email:
+      toStringValue(creditResult.customer?.email) ||
+      toStringValue(order.customerAccountSnapshot?.email),
+    phoneCountryCode:
+      toStringValue(creditResult.customer?.phoneCountryCode) ||
+      toStringValue(order.customerAccountSnapshot?.phoneCountryCode) ||
+      "+62",
+    phoneNumber:
+      toStringValue(creditResult.customer?.phoneNumber) ||
+      toStringValue(order.customerAccountSnapshot?.phoneNumber),
+  };
+
+  await saveOrderAndBroadcast(order, source);
+  return order;
+}
+
+async function payOrderWithCustomerBalance(order, customer) {
+  if (!customer?._id) {
+    throw new Error("Login diperlukan untuk memakai saldo KITAGG");
+  }
+
+  await debitCustomerBalance({
+    customerId: customer._id,
+    amount: Number(order.price?.totalAmount || 0),
+    currency: toStringValue(order.price?.currency || "IDR") || "IDR",
+    source: "ORDER_PAYMENT",
+    description: `Pembayaran saldo untuk invoice ${order.invoiceNumber}`,
+    orderId: order._id,
+    invoiceNumber: order.invoiceNumber,
+  });
+
+  const now = new Date();
+  order.paymentStatus = "PAID";
+  order.paidAt = now;
+  order.expiredAt = null;
+  order.status = "PAID";
+  order.notes = "";
+  order.customerBalanceAppliedAt = now;
+  order.paymentGateway = {
+    provider: "kitagg_balance",
+    channelCode: KITAGG_BALANCE_PAYMENT_CODE,
+    transactionId: order.invoiceNumber,
+    reference: order.invoiceNumber,
+    payUrl: "",
+    checkoutUrl: "",
+    qrLink: "",
+    qrString: "",
+    virtualAccountNumber: "",
+    instructionsHtml: "",
+    rawStatus: "BALANCE_PAID",
+    totalPaid: Number(order.price?.totalAmount || 0),
+    netAmount: Number(order.price?.totalAmount || 0),
+    expiresAt: null,
+    updatedAt: now,
+  };
+
+  await saveOrderAndBroadcast(order, "balance-payment");
   return order;
 }
 
@@ -714,6 +879,7 @@ async function syncTokopayPaymentStatus(order) {
       "check"
     );
     await saveOrderAndBroadcast(order, "tokopay-check");
+    await finalizeBalanceTopupOrder(order, "balance-topup-check");
     await maybeProcessBangjeffAfterPaid(order);
   } catch (error) {
     logWarn({
@@ -736,6 +902,7 @@ function serializePublicOrder(order, review = null) {
   return {
     _id: order._id,
     invoiceNumber: order.invoiceNumber,
+    orderType: normalizeOrderType(order.orderType),
     provider: order.provider,
     providerInvoiceNumber: order.providerInvoiceNumber,
     providerReferenceNumber: order.providerReferenceNumber,
@@ -928,6 +1095,7 @@ function serializeCustomerOrder(order) {
   return {
     _id: order._id,
     invoiceNumber: order.invoiceNumber,
+    orderType: normalizeOrderType(order.orderType),
     status: order.status,
     paymentStatus: order.paymentStatus,
     providerStatus: order.providerStatus,
@@ -1059,12 +1227,16 @@ async function generateInvoiceNumber() {
 }
 
 async function buildSummary() {
+  const purchaseFilter = { orderType: "PURCHASE" };
   const [totalOrders, successOrders, failedOrders, processingOrders] =
     await Promise.all([
-      Order.countDocuments(),
-      Order.countDocuments({ status: "SUCCESS" }),
-      Order.countDocuments({ status: "FAILED" }),
-      Order.countDocuments({ status: { $in: PROCESSING_SUMMARY_STATUSES } }),
+      Order.countDocuments(purchaseFilter),
+      Order.countDocuments({ ...purchaseFilter, status: "SUCCESS" }),
+      Order.countDocuments({ ...purchaseFilter, status: "FAILED" }),
+      Order.countDocuments({
+        ...purchaseFilter,
+        status: { $in: PROCESSING_SUMMARY_STATUSES },
+      }),
     ]);
 
   return {
@@ -1080,6 +1252,7 @@ async function buildDashboardSummary() {
     Order.aggregate([
       {
         $match: {
+          orderType: "PURCHASE",
           status: "SUCCESS",
         },
       },
@@ -1125,7 +1298,7 @@ async function buildDashboardSummary() {
         },
       },
     ]),
-    Order.find({})
+    Order.find({ orderType: "PURCHASE" })
       .sort({ createdAt: -1 })
       .limit(10)
       .select(
@@ -1176,6 +1349,7 @@ async function getPublicOrderByInvoice(req, res) {
     }
 
     await syncTokopayPaymentStatus(order);
+    await finalizeBalanceTopupOrder(order, "balance-topup-public");
     await syncBangjeffOrderStatus(order);
     const review = await Review.findOne({ order: order._id }).lean();
 
@@ -1207,7 +1381,7 @@ async function getPublicOrderByInvoice(req, res) {
 async function getRecentPublicOrders(req, res) {
   try {
     const limit = Math.min(toPositiveInteger(req.query.limit, 10), 20);
-    const items = await Order.find({})
+    const items = await Order.find({ orderType: "PURCHASE" })
       .sort({ createdAt: -1 })
       .limit(limit);
 
@@ -1251,6 +1425,7 @@ async function getCurrentCustomerOrders(req, res) {
     await Promise.all(
       items.map(async (order) => {
         await syncTokopayPaymentStatus(order);
+        await finalizeBalanceTopupOrder(order, "balance-topup-customer");
         await maybeProcessBangjeffAfterPaid(order);
         await syncBangjeffOrderStatus(order);
       })
@@ -1283,6 +1458,9 @@ async function getCurrentCustomerOrders(req, res) {
 }
 
 async function createOrderDraft(req, res) {
+  let order = null;
+  let isBalancePayment = false;
+
   try {
     const {
       gameCode,
@@ -1299,6 +1477,7 @@ async function createOrderDraft(req, res) {
     const normalizedPaymentMethodCode = normalizeCode(paymentMethodCode);
     const normalizedPromoCode = normalizeCode(promoCode);
     const normalizedQuantity = normalizeOrderQuantity(quantity, DEFAULT_ORDER_QUANTITY);
+    isBalancePayment = isKitaggBalancePaymentCode(normalizedPaymentMethodCode);
     const normalizedPhoneNumber = toStringValue(contactDetail.phoneNumber).replace(
       /[^0-9]/g,
       ""
@@ -1325,18 +1504,30 @@ async function createOrderDraft(req, res) {
       });
     }
 
-    const [game, variant, paymentMethod] = await Promise.all([
+    if (isBalancePayment && !req.customer?._id) {
+      return res.status(401).json({
+        message: "Login diperlukan untuk memakai saldo KITAGG",
+      });
+    }
+
+    const [game, variant, paymentMethodDocument] = await Promise.all([
       Game.findOne({ code: normalizedGameCode, status: "ACTIVE" }),
       Variant.findOne({
         _id: normalizedVariantId,
         status: "ACTIVE",
         isActive: true,
       }).populate("game", "code"),
-      PaymentMethod.findOne({
-        code: normalizedPaymentMethodCode,
-        isActive: true,
-      }).populate("category", "name code isActive order"),
+      isBalancePayment
+        ? Promise.resolve(null)
+        : PaymentMethod.findOne({
+            code: normalizedPaymentMethodCode,
+            isActive: true,
+          }).populate("category", "name code isActive order"),
     ]);
+
+    const paymentMethod = isBalancePayment
+      ? buildKitaggBalancePaymentMethod(req.customer)
+      : paymentMethodDocument;
 
     if (!game) {
       return res.status(404).json({
@@ -1433,6 +1624,15 @@ async function createOrderDraft(req, res) {
     const paymentFee = paymentFeeBreakdown.totalFee;
     const totalAmount = subtotalAfterDiscount + paymentFee;
     const profit = subtotalAfterDiscount - buyPrice;
+
+    if (isBalancePayment && Number(req.customer?.balance || 0) < totalAmount) {
+      return res.status(400).json({
+        message: `Saldo KITAGG tidak cukup. Saldo tersedia Rp${Number(
+          req.customer?.balance || 0
+        ).toLocaleString("id-ID")}`,
+      });
+    }
+
     const siteSetting = await SiteSetting.findOne(
       {},
       { siteName: 1, siteDomain: 1 }
@@ -1443,7 +1643,7 @@ async function createOrderDraft(req, res) {
       promoDiscount
     );
 
-    const order = await Order.create({
+    order = await Order.create({
       invoiceNumber,
       provider: toStringValue(game.syncSource) || "bangjeff",
       game: game._id,
@@ -1497,7 +1697,10 @@ async function createOrderDraft(req, res) {
 
     let warning = "";
 
-    if (!isManualPaymentMethod(paymentMethod)) {
+    if (isBalancePayment) {
+      await payOrderWithCustomerBalance(order, req.customer);
+      await maybeProcessBangjeffAfterPaid(order);
+    } else if (!isManualPaymentMethod(paymentMethod)) {
       const result = await attachTokopayPaymentToOrder(
         order,
         paymentMethod,
@@ -1530,7 +1733,15 @@ async function createOrderDraft(req, res) {
       },
       error,
     });
-    broadcastOrderUpdate(order, "order-create");
+
+    if (
+      isBalancePayment &&
+      order?._id &&
+      normalizeCode(order.paymentStatus) !== "PAID"
+    ) {
+      await Order.findByIdAndDelete(order._id).catch(() => null);
+    }
+
     return res.status(500).json({
       message: "Error membuat order draft",
       error: error.message,
@@ -1706,9 +1917,15 @@ async function markManualOrderAsPaid(req, res) {
     };
     await saveOrderAndBroadcast(order, "manual-paid");
 
+    if (isBalanceTopupOrder(order)) {
+      await finalizeBalanceTopupOrder(order, "balance-topup-manual");
+    }
+
     return res.status(200).json({
       message:
-        "Pembayaran berhasil ditandai paid. Gunakan aksi kirim ulang order jika ingin submit ke provider.",
+        isBalanceTopupOrder(order)
+          ? "Pembayaran topup saldo berhasil ditandai paid dan saldo user sudah ditambahkan."
+          : "Pembayaran berhasil ditandai paid. Gunakan aksi kirim ulang order jika ingin submit ke provider.",
       order,
     });
   } catch (error) {
@@ -1907,6 +2124,7 @@ async function tokopayCallback(req, res) {
     );
     order.notes = "";
     await saveOrderAndBroadcast(order, "tokopay-callback");
+    await finalizeBalanceTopupOrder(order, "balance-topup-callback");
     await maybeProcessBangjeffAfterPaid(order);
 
     return res.status(200).json({

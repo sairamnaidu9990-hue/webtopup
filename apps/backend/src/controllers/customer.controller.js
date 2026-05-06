@@ -113,18 +113,6 @@ async function updateCustomer(req, res) {
       customer.phoneNumber = normalizePhoneNumber(req.body.phoneNumber);
     }
 
-    if (req.body.balance != null) {
-      const balance = Number(req.body.balance);
-
-      if (!Number.isFinite(balance) || balance < 0) {
-        return res.status(400).json({
-          message: "Saldo tidak valid",
-        });
-      }
-
-      customer.balance = balance;
-    }
-
     if (req.body.isActive != null) {
       customer.isActive = toBoolean(req.body.isActive, customer.isActive);
     }

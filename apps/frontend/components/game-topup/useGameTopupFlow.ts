@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import type { AppliedPromoCode } from "@/components/PromoCodeSection";
+import { useCustomerSession } from "@/components/customer-auth/CustomerSessionProvider";
 import createOrderDraft from "@/components/game-topup/createOrderDraft";
 import {
   buildPaymentMethodGroups,
@@ -31,6 +32,7 @@ export default function useGameTopupFlow({
   paymentMethods: StorefrontPaymentMethod[];
 }) {
   const router = useRouter();
+  const { customer, refresh } = useCustomerSession();
   const resolvedInputs = useMemo(() => getBangjeffInputs(game), [game]);
   const isVoucherCategory =
     String(game.category || "").trim().toLowerCase() === "voucher";
@@ -110,6 +112,7 @@ export default function useGameTopupFlow({
   const reviewPageHref = `/reviews?game=${encodeURIComponent(
     String(game.code || "").trim().toUpperCase()
   )}&name=${encodeURIComponent(game.name)}`;
+  const isBalancePayment = paymentMethodCode === "KITAGG_BALANCE";
   const isAccountDataReady =
     !showAccountStep ||
     (resolvedInputs.length > 0 &&
@@ -333,6 +336,22 @@ export default function useGameTopupFlow({
       return;
     }
 
+    if (isBalancePayment && !customer) {
+      showAlert("Login diperlukan untuk memakai saldo KITAGG.");
+      focusStep("payment", paymentStepRef);
+      return;
+    }
+
+    if (isBalancePayment && Number(customer?.balance || 0) < totalPayment) {
+      showAlert(
+        `Saldo KITAGG tidak cukup. Saldo tersedia Rp${Number(
+          customer?.balance || 0
+        ).toLocaleString("id-ID")}`
+      );
+      focusStep("payment", paymentStepRef);
+      return;
+    }
+
     try {
       setIsCreatingOrder(true);
       setSelectionAlert(null);
@@ -366,6 +385,9 @@ export default function useGameTopupFlow({
       });
 
       if (draftOrder.invoiceNumber) {
+        if (isBalancePayment) {
+          await refresh();
+        }
         router.push(`/invoice/${encodeURIComponent(draftOrder.invoiceNumber)}`);
         return;
       }
@@ -396,9 +418,12 @@ export default function useGameTopupFlow({
     contactEmail,
     focusStep,
     game.code,
+    customer,
     isAccountDataReady,
+    isBalancePayment,
     paymentMethodCode,
     paymentMethods.length,
+    refresh,
     resolvedInputs,
     router,
     selectedVariant,
