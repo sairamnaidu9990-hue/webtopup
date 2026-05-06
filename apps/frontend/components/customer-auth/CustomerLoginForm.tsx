@@ -59,11 +59,11 @@ export default function CustomerLoginForm() {
       title="Masuk"
       subtitle="Masuk dengan akun yang telah Kamu daftarkan."
       alternateHref="/daftar"
-      alternateLabel="Daftar sekarang"
+      alternateLabel="Daftar di sini"
       alternateText="Belum punya akun?"
       eyebrow=""
       showFeatureCards={false}
-      showAlternateNotice={false}
+      showAlternateNotice
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">

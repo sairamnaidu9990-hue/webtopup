@@ -76,11 +76,14 @@ export default function CustomerRegisterForm() {
 
   return (
     <CustomerAuthLayout
-      title="Buat akun KITAGG"
-      subtitle="Daftar sekali, lalu user bisa punya dashboard sendiri untuk saldo KITAGG dan riwayat transaksi. Pembelian tanpa login tetap boleh."
+      title="Daftar"
+      subtitle="Masukkan informasi pendaftaran yang valid."
       alternateHref="/masuk"
       alternateLabel="Masuk di sini"
       alternateText="Sudah punya akun?"
+      eyebrow=""
+      showFeatureCards={false}
+      showAlternateNotice
     >
       <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 md:col-span-2">
