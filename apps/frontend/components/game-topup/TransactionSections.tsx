@@ -206,6 +206,7 @@ function renderPaymentMethodCard({
   selectedVariant,
   subtotal,
   compactPrice = false,
+  standalone = false,
 }: {
   paymentMethod: StorefrontPaymentMethod;
   isSelected: boolean;
@@ -213,6 +214,7 @@ function renderPaymentMethodCard({
   selectedVariant: StorefrontVariant | null;
   subtotal: number;
   compactPrice?: boolean;
+  standalone?: boolean;
 }) {
   const isKitaggBalanceMethod = paymentMethod.code === "KITAGG_BALANCE";
   const totalByMethod = selectedVariant ? getPaymentTotal(subtotal, paymentMethod) : 0;
@@ -221,52 +223,110 @@ function renderPaymentMethodCard({
     isKitaggBalanceMethod &&
     Boolean(selectedVariant) &&
     availableBalance < totalByMethod;
+  const helperText = isKitaggBalanceMethod
+    ? selectedVariant
+      ? "Bayar langsung dengan saldo akunmu."
+      : "Pilih nominal dulu."
+    : selectedVariant
+      ? "Pembayaran otomatis"
+      : "Pilih nominal dulu";
+  const sideText = isKitaggBalanceMethod
+    ? isInsufficientBalance
+      ? "Topup dulu"
+      : selectedVariant
+        ? "Siap dipakai"
+        : "Pilih nominal"
+    : selectedVariant
+      ? formatCurrency(
+          totalByMethod,
+          paymentMethod.currency || selectedVariant.currency
+        )
+      : "Pilih nominal";
 
   return (
     <button
       key={paymentMethod.code}
       type="button"
       onClick={() => onPaymentMethodSelect(paymentMethod.code)}
-      className={`w-full rounded-[14px] border px-3 py-3 text-left transition ${
+      className={`relative w-full overflow-hidden border text-left transition ${
         isSelected
           ? "border-[var(--accent)] bg-[#4b4b50] shadow-[0_0_0_1px_var(--accent-glow)]"
           : "border-white/8 bg-[#4a4a4f] hover:border-[rgba(211,59,59,0.55)]"
-      }`}
+      } ${standalone ? "rounded-[18px] px-5 py-4" : "rounded-[14px] px-3 py-3"}`}
     >
-      <div className="flex min-h-[44px] items-start">
-        <PaymentMethodLogo paymentMethod={paymentMethod} />
-      </div>
+      {standalone ? (
+        <span className="absolute right-0 top-0 inline-flex rounded-bl-[14px] bg-[linear-gradient(180deg,#ff922e_0%,#ff6a1a_100%)] px-3 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_10px_20px_rgba(255,106,26,0.22)]">
+          Pilih Cepat
+        </span>
+      ) : null}
 
-      <p className="mt-3 text-[12px] font-medium text-white/88">
-        {paymentMethod.name}
-      </p>
+      {standalone ? (
+        <div className="space-y-3 pr-16">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-semibold text-white/92">
+                {paymentMethod.name}
+              </p>
+            </div>
 
-      {isKitaggBalanceMethod ? (
-        <div className="mt-2 space-y-1.5">
-          <p className="text-[11px] font-medium text-white/62">
-            {selectedVariant
-              ? "Bayar langsung dengan saldo akunmu."
-              : "Pilih nominal dulu."}
-          </p>
-          {isInsufficientBalance ? (
-            <p className="text-[10px] font-medium text-[rgba(255,212,212,0.92)]">
+            <div className="shrink-0 pl-3 text-right">
+              <p
+                className={`text-[12px] font-semibold ${
+                  isKitaggBalanceMethod ? "text-[var(--accent-soft)]" : "text-white"
+                }`}
+              >
+                {sideText}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex min-h-[44px] items-start">
+            <PaymentMethodLogo paymentMethod={paymentMethod} />
+          </div>
+
+          <p className="text-[12px] text-white/56">{helperText}</p>
+          {isKitaggBalanceMethod && isInsufficientBalance ? (
+            <p className="text-[11px] font-medium text-[rgba(255,212,212,0.92)]">
               Saldo tidak cukup, silakan topup terlebih dahulu.
             </p>
           ) : null}
         </div>
       ) : (
-        <p
-          className={`mt-2 font-semibold text-white ${
-            compactPrice ? "text-[12px]" : "text-[13px]"
-          }`}
-        >
-          {selectedVariant
-            ? formatCurrency(
-                totalByMethod,
-                paymentMethod.currency || selectedVariant.currency
-              )
-            : "Pilih nominal dulu"}
-        </p>
+        <>
+          <div className="flex min-h-[44px] items-start">
+            <PaymentMethodLogo paymentMethod={paymentMethod} />
+          </div>
+
+          <p className="mt-3 text-[12px] font-medium text-white/88">
+            {paymentMethod.name}
+          </p>
+
+          {isKitaggBalanceMethod ? (
+            <div className="mt-2 space-y-1.5">
+              <p className="text-[11px] font-medium text-white/62">
+                {helperText}
+              </p>
+              {isInsufficientBalance ? (
+                <p className="text-[10px] font-medium text-[rgba(255,212,212,0.92)]">
+                  Saldo tidak cukup, silakan topup terlebih dahulu.
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p
+              className={`mt-2 font-semibold text-white ${
+                compactPrice ? "text-[12px]" : "text-[13px]"
+              }`}
+            >
+              {selectedVariant
+                ? formatCurrency(
+                    totalByMethod,
+                    paymentMethod.currency || selectedVariant.currency
+                  )
+                : "Pilih nominal dulu"}
+            </p>
+          )}
+        </>
       )}
     </button>
   );
@@ -313,6 +373,7 @@ export function PaymentStepSection({
               selectedVariant,
               subtotal,
               compactPrice: true,
+              standalone: true,
             })
           )}
         </div>
