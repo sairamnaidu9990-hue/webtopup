@@ -21,6 +21,14 @@ export type PaymentMethodGroup = {
   methods: StorefrontPaymentMethod[];
 };
 
+export function buildStandalonePaymentMethods(
+  paymentMethods: StorefrontPaymentMethod[]
+) {
+  return paymentMethods
+    .filter((paymentMethod) => paymentMethod.displayMode === "standalone")
+    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+}
+
 export function getBangjeffInputs(game: GameDetail) {
   return Array.isArray(game.inputs)
     ? game.inputs.filter(
@@ -180,6 +188,10 @@ export function buildPaymentMethodGroups(
   >();
 
   paymentMethods.forEach((paymentMethod) => {
+    if (paymentMethod.displayMode === "standalone") {
+      return;
+    }
+
     const categoryId = String(paymentMethod.category?._id || "").trim();
     const groupId = categoryId || "other";
     const groupTitle = paymentMethod.category?.name || "Metode Lainnya";

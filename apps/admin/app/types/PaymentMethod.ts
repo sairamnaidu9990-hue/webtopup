@@ -5,6 +5,8 @@ export type PaymentMethodType =
   | "retail"
   | "virtual_account";
 
+export type PaymentMethodDisplayMode = "grouped" | "standalone";
+
 export type PaymentFeeType = "fixed" | "percent" | "mixed";
 
 export type PaymentMethodCategory = {
@@ -26,6 +28,7 @@ export type PaymentMethod = {
   category?: PaymentMethodCategory | null;
   logo?: string;
   type: PaymentMethodType;
+  displayMode?: PaymentMethodDisplayMode;
   feeType: PaymentFeeType;
   feeValue: number;
   feeFixed?: number;

@@ -95,6 +95,11 @@ export function normalizeStorefrontPaymentMethod(
     code: String(paymentMethod?.code || "").trim().toUpperCase(),
     logo: String(paymentMethod?.logo || "").trim(),
     type: String(paymentMethod?.type || "bank_transfer").trim(),
+    displayMode:
+      String(paymentMethod?.displayMode || "").trim().toLowerCase() ===
+      "standalone"
+        ? "standalone"
+        : "grouped",
     category:
       paymentMethod?.category &&
       typeof paymentMethod.category === "object" &&

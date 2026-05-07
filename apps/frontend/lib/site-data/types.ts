@@ -181,6 +181,7 @@ export type StorefrontPaymentMethod = {
   logo?: string;
   balanceAmount?: number;
   type: string;
+  displayMode: "grouped" | "standalone";
   category?: {
     _id: string;
     name: string;

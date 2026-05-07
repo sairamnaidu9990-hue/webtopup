@@ -58,6 +58,7 @@ export default function GameTopupPanel({
         logo: balanceLogoUrl,
         balanceAmount: Number(customer.balance || 0),
         type: "ewallet",
+        displayMode: "standalone" as const,
         category: {
           _id: "kitagg-balance",
           name: "Saldo KITAGG",
@@ -131,6 +132,7 @@ export default function GameTopupPanel({
             onQuantityChange={flow.handleQuantityChange}
             quantityStepNumber={flow.quantityStepNumber}
             paymentMethods={resolvedPaymentMethods}
+            standalonePaymentMethods={flow.standalonePaymentMethods}
             paymentMethodGroups={flow.paymentMethodGroups}
             openPaymentGroups={flow.openPaymentGroups}
             setOpenPaymentGroups={flow.setOpenPaymentGroups}

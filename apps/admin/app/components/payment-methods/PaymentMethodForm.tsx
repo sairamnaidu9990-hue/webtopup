@@ -2,6 +2,7 @@
 
 import type {
   PaymentMethodCategory,
+  PaymentMethodDisplayMode,
   PaymentMethodType,
 } from "@/app/types/PaymentMethod";
 
@@ -42,6 +43,7 @@ type Props = {
   categories: PaymentMethodCategory[];
   logo: string;
   type: PaymentMethodType;
+  displayMode: PaymentMethodDisplayMode;
   feeFixed: string;
   feePercent: string;
   currency: string;
@@ -57,6 +59,7 @@ type Props = {
   setCategoryId: (value: string) => void;
   setLogo: (value: string) => void;
   setType: (value: PaymentMethodType) => void;
+  setDisplayMode: (value: PaymentMethodDisplayMode) => void;
   setFeeFixed: (value: string) => void;
   setFeePercent: (value: string) => void;
   setCurrency: (value: string) => void;
@@ -84,6 +87,7 @@ export default function PaymentMethodForm({
   categories,
   logo,
   type,
+  displayMode,
   feeFixed,
   feePercent,
   currency,
@@ -99,6 +103,7 @@ export default function PaymentMethodForm({
   setCategoryId,
   setLogo,
   setType,
+  setDisplayMode,
   setFeeFixed,
   setFeePercent,
   setCurrency,
@@ -226,6 +231,24 @@ export default function PaymentMethodForm({
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="block">
+            <span className={labelClassName}>Tampilan Storefront</span>
+            <select
+              value={displayMode}
+              onChange={(event) =>
+                setDisplayMode(event.target.value as PaymentMethodDisplayMode)
+              }
+              className={fieldClassName}
+            >
+              <option value="grouped">Masuk ke grup kategori</option>
+              <option value="standalone">Tampil langsung sebagai card</option>
+            </select>
+            <p className="mt-2 text-xs leading-5 text-gray-500">
+              Mode grouped akan masuk ke accordion kategori. Mode standalone
+              akan tampil langsung di atas daftar grup payment method.
+            </p>
           </label>
 
           <label className="block">

@@ -219,6 +219,11 @@ export default function PaymentMethodList({
                   <span className="rounded-full bg-fuchsia-50 px-2 py-1 text-fuchsia-700">
                     {paymentMethod.category?.name || "Tanpa kategori"}
                   </span>
+                  <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">
+                    {paymentMethod.displayMode === "standalone"
+                      ? "Card langsung"
+                      : "Dalam grup"}
+                  </span>
                   <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600">
                     {paymentMethod.type}
                   </span>

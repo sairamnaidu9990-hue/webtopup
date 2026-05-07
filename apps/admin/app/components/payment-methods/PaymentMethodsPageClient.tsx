@@ -9,6 +9,7 @@ import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import type {
   PaymentMethod,
   PaymentMethodCategory,
+  PaymentMethodDisplayMode,
   PaymentMethodType,
 } from "@/app/types/PaymentMethod";
 
@@ -69,6 +70,8 @@ export default function PaymentMethodsPageClient() {
   const [categoryId, setCategoryId] = useState("");
   const [logo, setLogo] = useState("");
   const [type, setType] = useState<PaymentMethodType>("bank_transfer");
+  const [displayMode, setDisplayMode] =
+    useState<PaymentMethodDisplayMode>("grouped");
   const [feeFixed, setFeeFixed] = useState("0");
   const [feePercent, setFeePercent] = useState("0");
   const [currency, setCurrency] = useState("IDR");
@@ -99,6 +102,7 @@ export default function PaymentMethodsPageClient() {
     setCategoryId("");
     setLogo("");
     setType("bank_transfer");
+    setDisplayMode("grouped");
     setFeeFixed("0");
     setFeePercent("0");
     setCurrency("IDR");
@@ -207,6 +211,7 @@ export default function PaymentMethodsPageClient() {
     setCategoryId(paymentMethod.category?._id || "");
     setLogo(paymentMethod.logo || "");
     setType(paymentMethod.type);
+    setDisplayMode(paymentMethod.displayMode || "grouped");
     setFeeFixed(String(getPaymentMethodFeeFixed(paymentMethod)));
     setFeePercent(String(getPaymentMethodFeePercent(paymentMethod)));
     setCurrency(paymentMethod.currency || "IDR");
@@ -359,6 +364,7 @@ export default function PaymentMethodsPageClient() {
           category: categoryId,
           logo,
           type,
+          displayMode,
           feeFixed: Number(resetNumber(feeFixed, "0")),
           feePercent: Number(resetNumber(feePercent, "0")),
           currency,
@@ -448,6 +454,7 @@ export default function PaymentMethodsPageClient() {
         categories={categories}
         logo={logo}
         type={type}
+        displayMode={displayMode}
         feeFixed={feeFixed}
         feePercent={feePercent}
         currency={currency}
@@ -463,6 +470,7 @@ export default function PaymentMethodsPageClient() {
         setCategoryId={setCategoryId}
         setLogo={setLogo}
         setType={setType}
+        setDisplayMode={setDisplayMode}
         setFeeFixed={setFeeFixed}
         setFeePercent={setFeePercent}
         setCurrency={setCurrency}

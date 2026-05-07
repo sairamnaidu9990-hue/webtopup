@@ -46,6 +46,7 @@ type TransactionContentProps = {
   onQuantityChange: (nextQuantity: number) => void;
   quantityStepNumber: number;
   paymentMethods: StorefrontPaymentMethod[];
+  standalonePaymentMethods: StorefrontPaymentMethod[];
   paymentMethodGroups: PaymentMethodGroup[];
   openPaymentGroups: Record<string, boolean>;
   setOpenPaymentGroups: Dispatch<SetStateAction<Record<string, boolean>>>;
@@ -97,6 +98,7 @@ export default function TransactionContent({
   onQuantityChange,
   quantityStepNumber,
   paymentMethods,
+  standalonePaymentMethods,
   paymentMethodGroups,
   openPaymentGroups,
   setOpenPaymentGroups,
@@ -181,6 +183,7 @@ export default function TransactionContent({
         >
           <PaymentStepSection
             paymentMethods={paymentMethods}
+            standalonePaymentMethods={standalonePaymentMethods}
             paymentMethodGroups={paymentMethodGroups}
             openPaymentGroups={openPaymentGroups}
             setOpenPaymentGroups={setOpenPaymentGroups}

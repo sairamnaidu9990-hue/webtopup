@@ -8,6 +8,7 @@ const PAYMENT_METHOD_TYPES = [
   "retail",
   "virtual_account",
 ];
+const PAYMENT_DISPLAY_MODES = ["grouped", "standalone"];
 const PAYMENT_FEE_TYPES = ["fixed", "percent", "mixed"];
 
 function toNumber(value, fallback = 0) {
@@ -43,6 +44,11 @@ function normalizeType(value) {
 function normalizeFeeType(value) {
   const normalized = String(value || "").trim().toLowerCase();
   return PAYMENT_FEE_TYPES.includes(normalized) ? normalized : "fixed";
+}
+
+function normalizeDisplayMode(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return PAYMENT_DISPLAY_MODES.includes(normalized) ? normalized : "grouped";
 }
 
 function deriveLegacyFeeFields(feeFixed, feePercent) {
@@ -229,7 +235,7 @@ exports.getPublicPaymentMethods = async (req, res) => {
       PaymentMethod.find({ isActive: true })
         .sort({ order: 1, createdAt: -1 })
         .select(
-          "name code provider logo type feeType feeValue feeFixed feePercent currency gatewayChannelCode description order category"
+          "name code provider logo type displayMode feeType feeValue feeFixed feePercent currency gatewayChannelCode description order category"
         )
     );
 
@@ -256,6 +262,7 @@ exports.createPaymentMethod = async (req, res) => {
       provider = "manual",
       logo = "",
       type = "bank_transfer",
+      displayMode = "grouped",
       category = "",
       currency = "IDR",
       gatewayChannelCode = "",
@@ -310,6 +317,7 @@ exports.createPaymentMethod = async (req, res) => {
       category: categoryDocument?._id || null,
       logo: String(logo || "").trim(),
       type: normalizeType(type),
+      displayMode: normalizeDisplayMode(displayMode),
       ...feeConfiguration,
       currency: normalizeCurrency(currency),
       gatewayChannelCode: String(gatewayChannelCode || "").trim(),
@@ -372,6 +380,10 @@ exports.updatePaymentMethod = async (req, res) => {
 
     if (Object.prototype.hasOwnProperty.call(req.body, "type")) {
       updatePayload.type = normalizeType(req.body.type);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "displayMode")) {
+      updatePayload.displayMode = normalizeDisplayMode(req.body.displayMode);
     }
 
     if (

@@ -7,6 +7,7 @@ import type { AppliedPromoCode } from "@/components/PromoCodeSection";
 import { useCustomerSession } from "@/components/customer-auth/CustomerSessionProvider";
 import createOrderDraft from "@/components/game-topup/createOrderDraft";
 import {
+  buildStandalonePaymentMethods,
   buildPaymentMethodGroups,
   buildVariantGroups,
   createInitialInputValues,
@@ -88,6 +89,10 @@ export default function useGameTopupFlow({
   );
   const paymentMethodGroups = useMemo(
     () => buildPaymentMethodGroups(paymentMethods),
+    [paymentMethods]
+  );
+  const standalonePaymentMethods = useMemo(
+    () => buildStandalonePaymentMethods(paymentMethods),
     [paymentMethods]
   );
   const variantStepNumber = showAccountStep ? 2 : 1;
@@ -497,6 +502,7 @@ export default function useGameTopupFlow({
     paymentFee,
     paymentMethodCode,
     paymentMethodGroups,
+    standalonePaymentMethods,
     paymentStepNumber,
     paymentStepRef,
     promoDiscount,

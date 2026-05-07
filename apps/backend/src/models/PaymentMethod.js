@@ -35,6 +35,11 @@ const paymentMethodSchema = new mongoose.Schema(
       enum: ["bank_transfer", "ewallet", "qris", "retail", "virtual_account"],
       default: "bank_transfer",
     },
+    displayMode: {
+      type: String,
+      enum: ["grouped", "standalone"],
+      default: "grouped",
+    },
     feeType: {
       type: String,
       enum: ["fixed", "percent", "mixed"],
