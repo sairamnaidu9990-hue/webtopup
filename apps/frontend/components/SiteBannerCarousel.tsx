@@ -48,8 +48,8 @@ export default function SiteBannerCarousel({
 
   return (
     <section className="relative left-1/2 right-1/2 w-screen -translate-x-1/2 overflow-hidden bg-[#1a1c22]/82">
-      <div className="site-shell relative flex items-center justify-center py-2.5 sm:py-3 lg:min-h-[553.96px] lg:py-4">
-        <div className="relative w-full min-w-0 overflow-hidden rounded-[24px] bg-[#0f1218] sm:rounded-[28px] lg:min-h-[490px] lg:rounded-[32px]">
+      <div className="site-shell relative flex items-center justify-center py-2.5 sm:py-3 lg:py-4">
+        <div className="relative w-full min-w-0 overflow-hidden rounded-[24px] bg-[linear-gradient(180deg,#11141b_0%,#0d1016_100%)] sm:rounded-[28px] lg:rounded-[32px]">
           <div
             className="flex transition-transform duration-700 ease-out"
             style={{ transform: `translateX(-${resolvedActiveIndex * 100}%)` }}
@@ -57,7 +57,7 @@ export default function SiteBannerCarousel({
             {banners.map((banner, index) => (
               <div
                 key={`${banner.imageUrl}-${index}`}
-                className="relative aspect-[16/6.35] w-full shrink-0 sm:aspect-[16/7.8] lg:h-[490px] lg:aspect-auto"
+                className="relative aspect-[2/1] w-full shrink-0"
               >
                 <Image
                   src={banner.imageUrl}
@@ -67,7 +67,7 @@ export default function SiteBannerCarousel({
                   fill
                   priority={index === 0}
                   sizes="(max-width: 640px) calc(100vw - 1.25rem), (max-width: 1024px) calc(100vw - 3rem), 1260px"
-                  className="object-cover object-center"
+                  className="object-contain object-center"
                 />
               </div>
             ))}
