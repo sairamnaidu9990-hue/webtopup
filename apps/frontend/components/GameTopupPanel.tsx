@@ -56,6 +56,7 @@ export default function GameTopupPanel({
         name: "Saldo KITAGG",
         code: "KITAGG_BALANCE",
         logo: balanceLogoUrl,
+        balanceAmount: Number(customer.balance || 0),
         type: "ewallet",
         category: {
           _id: "kitagg-balance",

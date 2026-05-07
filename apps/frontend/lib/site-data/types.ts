@@ -179,6 +179,7 @@ export type StorefrontPaymentMethod = {
   code: string;
   provider?: string;
   logo?: string;
+  balanceAmount?: number;
   type: string;
   category?: {
     _id: string;

@@ -263,9 +263,16 @@ export function PaymentStepSection({
               <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
                 {group.methods.map((paymentMethod) => {
                   const isSelected = paymentMethodCode === paymentMethod.code;
+                  const isKitaggBalanceMethod =
+                    paymentMethod.code === "KITAGG_BALANCE";
                   const totalByMethod = selectedVariant
                     ? getPaymentTotal(subtotal, paymentMethod)
                     : 0;
+                  const availableBalance = Number(paymentMethod.balanceAmount || 0);
+                  const isInsufficientBalance =
+                    isKitaggBalanceMethod &&
+                    Boolean(selectedVariant) &&
+                    availableBalance < totalByMethod;
 
                   return (
                     <button
@@ -275,7 +282,9 @@ export function PaymentStepSection({
                       className={`rounded-[14px] border px-3 py-3 text-left transition ${
                         isSelected
                           ? "border-[var(--accent)] bg-[#4b4b50] shadow-[0_0_0_1px_var(--accent-glow)]"
-                          : "border-white/8 bg-[#4a4a4f] hover:border-[rgba(211,59,59,0.55)]"
+                          : isKitaggBalanceMethod
+                            ? "border-[rgba(211,59,59,0.16)] bg-[linear-gradient(140deg,rgba(211,59,59,0.18)_0%,rgba(74,19,24,0.1)_100%)] hover:border-[rgba(211,59,59,0.55)]"
+                            : "border-white/8 bg-[#4a4a4f] hover:border-[rgba(211,59,59,0.55)]"
                       }`}
                     >
                       <div className="flex min-h-[44px] items-start">
@@ -286,7 +295,30 @@ export function PaymentStepSection({
                         {paymentMethod.name}
                       </p>
 
-                      <p className="mt-2 text-[12px] font-semibold text-white">
+                      {isKitaggBalanceMethod ? (
+                        <div className="mt-2 space-y-1.5">
+                          <p className="text-[11px] font-medium text-white/62">
+                            Saldo tersedia
+                          </p>
+                          <p className="text-[15px] font-semibold text-white">
+                            {formatCurrency(
+                              availableBalance,
+                              paymentMethod.currency || selectedVariant?.currency || "IDR"
+                            )}
+                          </p>
+                          {isInsufficientBalance ? (
+                            <p className="text-[10px] font-medium text-[rgba(255,212,212,0.92)]">
+                              Saldo tidak cukup, silakan topup terlebih dahulu.
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      <p
+                        className={`mt-2 text-[12px] font-semibold ${
+                          isKitaggBalanceMethod ? "text-red-100" : "text-white"
+                        }`}
+                      >
                         {selectedVariant
                           ? formatCurrency(
                               totalByMethod,

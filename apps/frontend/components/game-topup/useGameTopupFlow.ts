@@ -290,6 +290,31 @@ export default function useGameTopupFlow({
         return;
       }
 
+      const nextPaymentMethod =
+        paymentMethods.find((method) => method.code === methodCode) || null;
+      const isKitaggBalanceMethod = methodCode === "KITAGG_BALANCE";
+
+      if (isKitaggBalanceMethod && !customer) {
+        showAlert("Login diperlukan untuk memakai saldo KITAGG.");
+        focusStep("payment", paymentStepRef);
+        return;
+      }
+
+      if (isKitaggBalanceMethod && nextPaymentMethod) {
+        const nextTotal = getPaymentTotal(subtotalAfterDiscount, nextPaymentMethod);
+        const availableBalance = Number(customer?.balance || 0);
+
+        if (availableBalance < nextTotal) {
+          showAlert(
+            `Saldo tidak cukup, silakan topup terlebih dahulu. Saldo tersedia Rp${availableBalance.toLocaleString(
+              "id-ID"
+            )}.`
+          );
+          focusStep("payment", paymentStepRef);
+          return;
+        }
+      }
+
       clearCreatedOrder();
       setSelectionAlert(null);
       setPaymentMethodCode(methodCode);
@@ -298,7 +323,17 @@ export default function useGameTopupFlow({
         focusStep("contact", contactStepRef);
       });
     },
-    [clearCreatedOrder, focusStep, selectedVariant, showAlert]
+    [
+      clearCreatedOrder,
+      customer,
+      focusStep,
+      paymentMethods,
+      paymentStepRef,
+      selectedVariant,
+      showAlert,
+      subtotalAfterDiscount,
+      variantStepRef,
+    ]
   );
 
   const handleOrderClick = useCallback(async () => {
