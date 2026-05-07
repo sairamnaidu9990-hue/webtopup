@@ -89,6 +89,11 @@ runTest("Tokopay status mapping handles unpaid and paid states", () => {
     orderStatus: "PAID",
   });
   assert.equal(getTokopayRawStatus({ data: { status: "Success" } }, "check"), "Success");
+  assert.equal(getTokopayRawStatus({ status: "success", data: {} }, "check"), "");
+  assert.deepEqual(mapTokopayStatus(getTokopayRawStatus({ status: "success", data: {} }, "check")), {
+    paymentStatus: "UNPAID",
+    orderStatus: "UNPAID",
+  });
 });
 
 runTest("BangJeff provider status mapping handles success and processing", () => {

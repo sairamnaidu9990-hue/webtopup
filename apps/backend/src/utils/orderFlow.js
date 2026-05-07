@@ -50,12 +50,47 @@ function getTokopayExpiryDate() {
   return new Date(Date.now() + getTokopayExpireMinutes() * 60 * 1000);
 }
 
-function getTokopayRawStatus(payload, source) {
-  if (source === "create") {
-    return toStringValue(payload?.data?.status) || "UNPAID";
+function getFirstNonEmptyStatus(candidates) {
+  for (const candidate of candidates) {
+    const value = toStringValue(candidate);
+
+    if (value) {
+      return value;
+    }
   }
 
-  return toStringValue(payload?.data?.status) || toStringValue(payload?.status);
+  return "";
+}
+
+function getTokopayRawStatus(payload, source) {
+  const transactionStatus = getFirstNonEmptyStatus([
+    payload?.data?.status,
+    payload?.data?.payment_status,
+    payload?.data?.transaction_status,
+    payload?.data?.trx_status,
+    payload?.data?.status_transaksi,
+    payload?.data?.status_bayar,
+  ]);
+
+  if (source === "create") {
+    return transactionStatus || "UNPAID";
+  }
+
+  if (source === "check") {
+    return transactionStatus;
+  }
+
+  return (
+    transactionStatus ||
+    getFirstNonEmptyStatus([
+      payload?.status,
+      payload?.payment_status,
+      payload?.transaction_status,
+      payload?.trx_status,
+      payload?.status_transaksi,
+      payload?.status_bayar,
+    ])
+  );
 }
 
 function mapTokopayStatus(rawStatus) {
