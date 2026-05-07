@@ -195,18 +195,12 @@ export default function useGameTopupFlow({
   useEffect(() => {
     setOpenPaymentGroups((current) => {
       const next: Record<string, boolean> = {};
-      let firstOpenAssigned = false;
 
       paymentMethodGroups.forEach((group) => {
         const containsSelected = group.methods.some(
           (paymentMethod) => paymentMethod.code === paymentMethodCode
         );
-        const defaultOpen = containsSelected || !firstOpenAssigned;
-        next[group.id] = containsSelected ? true : current[group.id] ?? defaultOpen;
-
-        if (next[group.id]) {
-          firstOpenAssigned = true;
-        }
+        next[group.id] = containsSelected ? true : current[group.id] ?? false;
       });
 
       const currentKeys = Object.keys(current);

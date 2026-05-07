@@ -227,7 +227,7 @@ function renderPaymentMethodCard({
       key={paymentMethod.code}
       type="button"
       onClick={() => onPaymentMethodSelect(paymentMethod.code)}
-      className={`rounded-[14px] border px-3 py-3 text-left transition ${
+      className={`w-full rounded-[14px] border px-3 py-3 text-left transition ${
         isSelected
           ? "border-[var(--accent)] bg-[#4b4b50] shadow-[0_0_0_1px_var(--accent-glow)]"
           : "border-white/8 bg-[#4a4a4f] hover:border-[rgba(211,59,59,0.55)]"
