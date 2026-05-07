@@ -51,6 +51,9 @@ export default function InvoicePaymentSummarySection({
   const paymentProcessLabel = isManualPayment
     ? "Verifikasi manual"
     : "Proses otomatis";
+  const paymentQrDownloadHref = `/api/orders/invoice/${encodeURIComponent(
+    order.invoiceNumber
+  )}/payment-qr`;
 
   return (
     <section className="space-y-4 rounded-[20px] border border-white/8 bg-[#24262d] p-4 sm:p-5">
@@ -226,6 +229,12 @@ export default function InvoicePaymentSummarySection({
                 <p className="text-[12px] text-white/54">
                   Scan QR ini untuk menyelesaikan pembayaran.
                 </p>
+                <a
+                  href={paymentQrDownloadHref}
+                  className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] px-4 text-[12px] font-semibold text-white shadow-[0_12px_24px_var(--accent-glow)] transition hover:brightness-105"
+                >
+                  Download QRIS
+                </a>
               </div>
             ) : order.paymentGateway.virtualAccountNumber ? (
               <div className="space-y-3">

@@ -177,7 +177,7 @@ export function QuantityStepSection({
           type="button"
           onClick={() => onQuantityChange(normalizedQuantity + 1)}
           disabled={disabled || normalizedQuantity >= 10}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#a88d62] text-xl font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[42px] sm:w-[42px]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] text-xl font-semibold text-white shadow-[0_12px_22px_var(--accent-glow)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[42px] sm:w-[42px]"
         >
           +
         </button>
@@ -186,7 +186,7 @@ export function QuantityStepSection({
           type="button"
           onClick={() => onQuantityChange(normalizedQuantity - 1)}
           disabled={disabled || normalizedQuantity <= 1}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#7b6748] text-xl font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[42px] sm:w-[42px]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[linear-gradient(180deg,var(--accent-strong)_0%,var(--accent)_100%)] text-xl font-semibold text-white shadow-[0_12px_22px_var(--accent-glow)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[42px] sm:w-[42px]"
         >
           −
         </button>
@@ -282,9 +282,7 @@ export function PaymentStepSection({
                       className={`rounded-[14px] border px-3 py-3 text-left transition ${
                         isSelected
                           ? "border-[var(--accent)] bg-[#4b4b50] shadow-[0_0_0_1px_var(--accent-glow)]"
-                          : isKitaggBalanceMethod
-                            ? "border-[rgba(211,59,59,0.16)] bg-[linear-gradient(140deg,rgba(211,59,59,0.18)_0%,rgba(74,19,24,0.1)_100%)] hover:border-[rgba(211,59,59,0.55)]"
-                            : "border-white/8 bg-[#4a4a4f] hover:border-[rgba(211,59,59,0.55)]"
+                          : "border-white/8 bg-[#4a4a4f] hover:border-[rgba(211,59,59,0.55)]"
                       }`}
                     >
                       <div className="flex min-h-[44px] items-start">
@@ -298,13 +296,9 @@ export function PaymentStepSection({
                       {isKitaggBalanceMethod ? (
                         <div className="mt-2 space-y-1.5">
                           <p className="text-[11px] font-medium text-white/62">
-                            Saldo tersedia
-                          </p>
-                          <p className="text-[15px] font-semibold text-white">
-                            {formatCurrency(
-                              availableBalance,
-                              paymentMethod.currency || selectedVariant?.currency || "IDR"
-                            )}
+                            {selectedVariant
+                              ? "Bayar langsung dengan saldo akunmu."
+                              : "Pilih nominal dulu."}
                           </p>
                           {isInsufficientBalance ? (
                             <p className="text-[10px] font-medium text-[rgba(255,212,212,0.92)]">
@@ -312,20 +306,16 @@ export function PaymentStepSection({
                             </p>
                           ) : null}
                         </div>
-                      ) : null}
-
-                      <p
-                        className={`mt-2 text-[12px] font-semibold ${
-                          isKitaggBalanceMethod ? "text-red-100" : "text-white"
-                        }`}
-                      >
-                        {selectedVariant
-                          ? formatCurrency(
-                              totalByMethod,
-                              paymentMethod.currency || selectedVariant.currency
-                            )
-                          : "Pilih nominal dulu"}
-                      </p>
+                      ) : (
+                        <p className="mt-2 text-[12px] font-semibold text-white">
+                          {selectedVariant
+                            ? formatCurrency(
+                                totalByMethod,
+                                paymentMethod.currency || selectedVariant.currency
+                              )
+                            : "Pilih nominal dulu"}
+                        </p>
+                      )}
                     </button>
                   );
                 })}
