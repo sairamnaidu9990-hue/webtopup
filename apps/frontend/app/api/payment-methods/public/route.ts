@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 
 import { BACKEND_API_BASE } from "@/lib/runtimeConfig";
 
+export const revalidate = 60;
+
 export async function GET() {
   try {
     const response = await fetch(`${BACKEND_API_BASE}/api/payment-methods/public`, {
-      cache: "no-store",
+      next: {
+        revalidate,
+      },
     });
 
     const payload = await response.json().catch(() => ({

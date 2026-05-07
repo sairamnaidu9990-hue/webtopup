@@ -5,6 +5,8 @@ const { verifyAdminRealtimeToken } = require("../utils/realtimeToken");
 
 const ADMIN_ORDERS_CHANNEL = "admin.orders";
 const ADMIN_TEAM_CHAT_CHANNEL = "admin.team-chat";
+const ADMIN_SYNC_LOGS_CHANNEL = "admin.sync-logs";
+const PUBLIC_RECENT_ORDERS_CHANNEL = "public.recent-orders";
 const RECONNECTABLE_CLOSE_CODE = 1011;
 const READY_STATE_OPEN = 1;
 
@@ -59,6 +61,19 @@ function buildAdminProfile(client) {
     name: String(client.adminName || "").trim(),
     email: String(client.adminEmail || "").trim(),
     role: String(client.adminRole || "").trim(),
+  };
+}
+
+function buildSyncLogRealtimePayload(syncLog) {
+  return {
+    id: String(syncLog?._id || ""),
+    provider: String(syncLog?.provider || "").trim().toLowerCase(),
+    action: String(syncLog?.action || "").trim(),
+    status: String(syncLog?.status || "").trim().toUpperCase(),
+    scope: String(syncLog?.scope || "").trim(),
+    updatedAt: syncLog?.updatedAt
+      ? new Date(syncLog.updatedAt).toISOString()
+      : new Date().toISOString(),
   };
 }
 
@@ -186,6 +201,18 @@ function handleRealtimeMessage(client, rawMessage) {
         onlineAdmins: buildOnlineAdminsPayload(),
       });
       return;
+    case "subscribe.admin.sync-logs":
+      if (!client.isAdminAuthenticated) {
+        sendClientError(client, "Autentikasi admin belum dilakukan", "AUTH_REQUIRED");
+        return;
+      }
+
+      client.subscriptions.add(ADMIN_SYNC_LOGS_CHANNEL);
+      safeSend(client.ws, {
+        type: "subscribed",
+        channel: ADMIN_SYNC_LOGS_CHANNEL,
+      });
+      return;
     case "subscribe.invoice": {
       const invoiceNumber = normalizeInvoiceNumber(payload?.invoiceNumber);
 
@@ -201,6 +228,13 @@ function handleRealtimeMessage(client, rawMessage) {
       });
       return;
     }
+    case "subscribe.public.recent-orders":
+      client.subscriptions.add(PUBLIC_RECENT_ORDERS_CHANNEL);
+      safeSend(client.ws, {
+        type: "subscribed",
+        channel: PUBLIC_RECENT_ORDERS_CHANNEL,
+      });
+      return;
     case "unsubscribe.invoice": {
       const invoiceNumber = normalizeInvoiceNumber(payload?.invoiceNumber);
 
@@ -325,6 +359,39 @@ function broadcastOrderUpdate(order, source = "system") {
         type: "orders.updated",
         source,
         order: orderPayload,
+        });
+      }
+
+      if (client.subscriptions.has(PUBLIC_RECENT_ORDERS_CHANNEL)) {
+        safeSend(client.ws, {
+          type: "recent-orders.updated",
+          source,
+          order: orderPayload,
+        });
+      }
+    });
+}
+
+function broadcastSyncLogUpdate(syncLog, source = "system") {
+  if (!syncLog) {
+    return;
+  }
+
+  const payload = buildSyncLogRealtimePayload(syncLog);
+
+  clients.forEach((client) => {
+    if (!client.ws || client.ws.readyState !== READY_STATE_OPEN) {
+      return;
+    }
+
+    if (
+      client.isAdminAuthenticated &&
+      client.subscriptions.has(ADMIN_SYNC_LOGS_CHANNEL)
+    ) {
+      safeSend(client.ws, {
+        type: "sync-logs.updated",
+        source,
+        syncLog: payload,
       });
     }
   });
@@ -360,8 +427,11 @@ function shutdownRealtimeServer() {
 
 module.exports = {
   ADMIN_ORDERS_CHANNEL,
+  ADMIN_SYNC_LOGS_CHANNEL,
   ADMIN_TEAM_CHAT_CHANNEL,
+  PUBLIC_RECENT_ORDERS_CHANNEL,
   broadcastOrderUpdate,
+  broadcastSyncLogUpdate,
   broadcastTeamChatMessage,
   initRealtimeServer,
   shutdownRealtimeServer,

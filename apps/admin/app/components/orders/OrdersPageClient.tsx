@@ -4,7 +4,7 @@ import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import Card from "@/app/components/ui/Card";
 import PaginationControls from "@/app/components/ui/PaginationControls";
 import SectionTitle from "@/app/components/ui/SectionTitle";
-import OrderEditorDialog from "@/app/components/orders/OrderEditorDialog";
+import LazyOrderEditorDialog from "@/app/components/orders/LazyOrderEditorDialog";
 import useOrdersRealtime from "@/app/components/orders/useOrdersRealtime";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import type { Order, OrderSummary } from "@/app/types/Order";
@@ -172,6 +172,37 @@ function formatContactPhone(order: Order) {
   }
 
   return `${countryCode || "+62"} ${phoneNumber}`.trim();
+}
+
+function SummaryValue({ loading, value }: { loading: boolean; value: number }) {
+  if (loading) {
+    return <div className="h-10 w-20 animate-pulse rounded-2xl bg-white/35" />;
+  }
+
+  return <p className="text-4xl font-bold tracking-tight">{value}</p>;
+}
+
+function OrdersTableSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div
+          key={index}
+          className="rounded-3xl border border-gray-200 bg-gray-50 px-4 py-4"
+        >
+          <div className="animate-pulse grid gap-4 lg:grid-cols-[1.15fr_1.1fr_1fr_0.78fr_0.82fr_0.9fr_1fr_0.5fr] lg:items-start">
+            {Array.from({ length: 8 }).map((__, columnIndex) => (
+              <div key={columnIndex} className="space-y-2">
+                <div className="h-4 w-4/5 rounded-xl bg-gray-200" />
+                <div className="h-4 w-full rounded-xl bg-gray-200/80" />
+                <div className="h-4 w-2/3 rounded-xl bg-gray-200/70" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function OrdersPageClient() {
@@ -352,27 +383,19 @@ export default function OrdersPageClient() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card title="Total Orders" variant="info">
-          <p className="text-4xl font-bold tracking-tight">
-            {summary.totalOrders}
-          </p>
+          <SummaryValue loading={!hasLoadedOnce && loading} value={summary.totalOrders} />
         </Card>
 
         <Card title="Success" variant="success">
-          <p className="text-4xl font-bold tracking-tight">
-            {summary.successOrders}
-          </p>
+          <SummaryValue loading={!hasLoadedOnce && loading} value={summary.successOrders} />
         </Card>
 
         <Card title="Failed" variant="danger">
-          <p className="text-4xl font-bold tracking-tight">
-            {summary.failedOrders}
-          </p>
+          <SummaryValue loading={!hasLoadedOnce && loading} value={summary.failedOrders} />
         </Card>
 
         <Card title="Processing" variant="warning">
-          <p className="text-4xl font-bold tracking-tight">
-            {summary.processingOrders}
-          </p>
+          <SummaryValue loading={!hasLoadedOnce && loading} value={summary.processingOrders} />
         </Card>
       </div>
 
@@ -446,7 +469,7 @@ export default function OrdersPageClient() {
           </div>
 
           {!hasLoadedOnce && loading ? (
-            <p className="text-sm text-gray-500">Memuat data order...</p>
+            <OrdersTableSkeleton />
           ) : error && orders.length === 0 ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-600">
               {error}
@@ -659,12 +682,12 @@ export default function OrdersPageClient() {
         </div>
       </Card>
 
-      <OrderEditorDialog
-        open={Boolean(selectedOrder)}
-        order={selectedOrder}
-        onClose={() => setSelectedOrder(null)}
-        onOrderMutated={handleOrderMutated}
-      />
+        <LazyOrderEditorDialog
+          open={Boolean(selectedOrder)}
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onOrderMutated={handleOrderMutated}
+        />
     </div>
   );
 }

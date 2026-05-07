@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Card from "../../../../components/ui/Card";
 import SectionTitle from "../../../../components/ui/SectionTitle";
 import type { SyncLog } from "@/app/types/SyncLog";
+import useSyncLogsRealtime from "./useSyncLogsRealtime";
 
 function formatDate(value?: string) {
   if (!value) {
@@ -41,8 +42,11 @@ export default function BangjeffSyncLogsPage() {
   const [actionFilter, setActionFilter] = useState("ALL");
   const [lastUpdatedAt, setLastUpdatedAt] = useState("");
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (options?: { silent?: boolean }) => {
     try {
+      if (!options?.silent) {
+        setLoading(true);
+      }
       setError("");
       const response = await fetch("/api/sync-logs?provider=bangjeff", {
         cache: "no-store",
@@ -62,19 +66,20 @@ export default function BangjeffSyncLogsPage() {
           : "Gagal memuat sync logs"
       );
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     void fetchLogs();
-
-    const intervalId = window.setInterval(() => {
-      void fetchLogs();
-    }, 5000);
-
-    return () => window.clearInterval(intervalId);
   }, []);
+
+  const realtime = useSyncLogsRealtime({
+    enabled: true,
+    onRefresh: () => fetchLogs({ silent: true }),
+  });
 
   const actionOptions = Array.from(new Set(logs.map((log) => log.action)));
   const filteredLogs = logs.filter((log) => {
@@ -95,6 +100,13 @@ export default function BangjeffSyncLogsPage() {
     }),
     [logs]
   );
+
+  const realtimeMessage =
+    realtime.mode === "live"
+      ? "Realtime sync log aktif. Log akan bergerak saat proses sync berubah."
+      : realtime.mode === "connecting"
+        ? "Sedang menyambungkan realtime sync log..."
+        : "Realtime belum tersedia. Refresh cadangan tetap aktif setiap 5 detik.";
 
   return (
     <div className="space-y-6">
@@ -169,7 +181,7 @@ export default function BangjeffSyncLogsPage() {
 
       <Card title="Riwayat Sinkronisasi">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
-          <p>Halaman ini refresh otomatis tiap 5 detik.</p>
+          <p>{realtimeMessage}</p>
           <p>
             Terakhir diperbarui: {lastUpdatedAt ? formatDate(lastUpdatedAt) : "-"}
           </p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import usePublicRealtimeRefresh from "@/components/realtime/usePublicRealtimeRefresh";
 import type { RecentPublicOrder } from "@/lib/siteData";
 
 function formatDateTime(value?: string) {
@@ -86,29 +87,40 @@ export default function RecentTransactionsSection({
   const [orders, setOrders] = useState<RecentPublicOrder[]>(initialOrders);
 
   useEffect(() => {
-    const intervalId = window.setInterval(async () => {
-      if (document.visibilityState !== "visible") {
+    setOrders(initialOrders);
+  }, [initialOrders]);
+
+  const fetchRecentOrders = async () => {
+    try {
+      const response = await fetch("/api/orders/recent?limit=10", {
+        cache: "no-store",
+      });
+      const payload = await response.json().catch(() => ({ items: [] }));
+
+      if (!response.ok) {
         return;
       }
 
-      try {
-        const response = await fetch("/api/orders/recent?limit=10", {
-          cache: "no-store",
-        });
-        const payload = await response.json().catch(() => ({ items: [] }));
+      setOrders(Array.isArray(payload.items) ? payload.items : []);
+    } catch {
+      return;
+    }
+  };
 
-        if (!response.ok) {
-          return;
-        }
+  const realtime = usePublicRealtimeRefresh({
+    enabled: true,
+    subscribeType: "subscribe.public.recent-orders",
+    refreshMessageTypes: ["recent-orders.updated"],
+    onRefresh: fetchRecentOrders,
+    fallbackIntervalMs: 10000,
+  });
 
-        setOrders(Array.isArray(payload.items) ? payload.items : []);
-      } catch {
-        return;
-      }
-    }, 10000);
-
-    return () => window.clearInterval(intervalId);
-  }, []);
+  const realtimeMessage =
+    realtime.mode === "live"
+      ? "Status diperbarui realtime selama halaman terbuka."
+      : realtime.mode === "connecting"
+        ? "Sedang menyambungkan pantauan realtime transaksi..."
+        : "Realtime belum tersedia. Daftar transaksi dicek ulang otomatis.";
 
   return (
     <section className="rounded-[24px] border border-white/8 bg-[#1c1f26] shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
@@ -118,7 +130,7 @@ export default function RecentTransactionsSection({
             10 Transaksi Terbaru
           </h2>
           <p className="text-[11px] text-white/45">
-            Status diperbarui otomatis selama halaman terbuka.
+            {realtimeMessage}
           </p>
         </div>
       </div>

@@ -1,4 +1,5 @@
 const SyncLog = require("../models/SyncLog");
+const { broadcastSyncLogUpdate } = require("../realtime/realtimeServer");
 
 async function createSyncLog({
   provider,
@@ -13,7 +14,7 @@ async function createSyncLog({
   admin = null,
 }) {
   try {
-    return await SyncLog.create({
+    const syncLog = await SyncLog.create({
       provider,
       action,
       scope,
@@ -32,6 +33,8 @@ async function createSyncLog({
           }
         : undefined,
     });
+    broadcastSyncLogUpdate(syncLog, "sync-log-create");
+    return syncLog;
   } catch (error) {
     console.error("Failed to write sync log:", error.message);
     return null;
@@ -44,7 +47,7 @@ async function updateSyncLog(syncLogId, updates = {}) {
   }
 
   try {
-    return await SyncLog.findByIdAndUpdate(
+    const syncLog = await SyncLog.findByIdAndUpdate(
       syncLogId,
       {
         $set: {
@@ -53,6 +56,8 @@ async function updateSyncLog(syncLogId, updates = {}) {
       },
       { new: true }
     );
+    broadcastSyncLogUpdate(syncLog, "sync-log-update");
+    return syncLog;
   } catch (error) {
     console.error("Failed to update sync log:", error.message);
     return null;

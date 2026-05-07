@@ -86,6 +86,66 @@ function getTransactionLabel(transaction: CustomerBalanceTransaction) {
   return transaction.type === "CREDIT" ? "Saldo Masuk" : "Saldo Keluar";
 }
 
+function SummaryMetric({ loading, value }: { loading: boolean; value: string }) {
+  if (loading) {
+    return <div className="h-10 w-24 animate-pulse rounded-2xl bg-white/35" />;
+  }
+
+  return <p className="text-4xl font-bold tracking-tight">{value}</p>;
+}
+
+function CustomerListSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div
+          key={index}
+          className="rounded-2xl border border-gray-200 bg-gray-50 p-4"
+        >
+          <div className="animate-pulse space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="h-5 w-36 rounded-xl bg-gray-200" />
+              <div className="h-5 w-24 rounded-full bg-gray-200" />
+              <div className="h-5 w-20 rounded-full bg-gray-200" />
+            </div>
+            <div className="h-4 w-56 max-w-full rounded-xl bg-gray-200/80" />
+            <div className="h-4 w-44 rounded-xl bg-gray-200/70" />
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="h-12 rounded-2xl bg-white" />
+              <div className="h-12 rounded-2xl bg-white" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BalanceTransactionsSkeleton() {
+  return (
+    <div className="mt-4 space-y-3">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4"
+        >
+          <div className="animate-pulse space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="h-5 w-32 rounded-full bg-white" />
+              <div className="h-5 w-24 rounded-full bg-white" />
+            </div>
+            <div className="h-4 w-2/3 rounded-xl bg-gray-200" />
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="h-14 rounded-2xl bg-white" />
+              <div className="h-14 rounded-2xl bg-white" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CustomersPageClient() {
   const [customers, setCustomers] = useState<CustomerAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -370,18 +430,22 @@ export default function CustomersPageClient() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card title="Total User" variant="info">
-          <p className="text-4xl font-bold tracking-tight">{customers.length}</p>
+          <SummaryMetric loading={loading} value={String(customers.length)} />
         </Card>
 
         <Card title="User Aktif" variant="success">
-          <p className="text-4xl font-bold tracking-tight">{activeCustomers}</p>
+          <SummaryMetric loading={loading} value={String(activeCustomers)} />
           <p className="mt-2 text-sm text-white/78">{inactiveCustomers} user nonaktif</p>
         </Card>
 
         <Card title="Total Saldo KITAGG" variant="warning">
-          <p className="text-3xl font-bold tracking-tight">
-            {formatCurrency(totalBalance)}
-          </p>
+          {loading ? (
+            <div className="h-8 w-36 animate-pulse rounded-2xl bg-white/35" />
+          ) : (
+            <p className="text-3xl font-bold tracking-tight">
+              {formatCurrency(totalBalance)}
+            </p>
+          )}
         </Card>
       </div>
 
@@ -617,9 +681,7 @@ export default function CustomersPageClient() {
                 </div>
 
                 {balanceLoading ? (
-                  <div className="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
-                    Memuat histori saldo user...
-                  </div>
+                  <BalanceTransactionsSkeleton />
                 ) : balanceTransactions.length === 0 ? (
                   <div className="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
                     Belum ada mutasi saldo untuk user ini.
@@ -717,7 +779,7 @@ export default function CustomersPageClient() {
             </div>
 
             {loading ? (
-              <p className="text-sm text-gray-500">Memuat data user...</p>
+              <CustomerListSkeleton />
             ) : filteredCustomers.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
                 Belum ada user yang cocok dengan filter saat ini.

@@ -55,6 +55,43 @@ function getStatusTone(status?: string) {
   }
 }
 
+function SummaryCardValue({ loading, value }: { loading: boolean; value: string }) {
+  if (loading) {
+    return <div className="h-9 w-24 animate-pulse rounded-2xl bg-white/35" />;
+  }
+
+  return (
+    <p className="break-words text-2xl font-bold tracking-tight sm:text-3xl">
+      {value}
+    </p>
+  );
+}
+
+function RecentOrdersSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={index}
+          className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4"
+        >
+          <div className="animate-pulse space-y-3">
+            <div className="h-5 w-44 rounded-xl bg-gray-200" />
+            <div className="h-4 w-72 max-w-full rounded-xl bg-gray-200" />
+            <div className="grid gap-2 lg:grid-cols-[1fr_220px]">
+              <div className="h-4 w-40 rounded-xl bg-gray-200" />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="h-12 rounded-2xl bg-white" />
+                <div className="h-12 rounded-2xl bg-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardPageClient() {
   const [dashboard, setDashboard] = useState<OrderDashboardSummary>(emptyDashboard);
   const [loading, setLoading] = useState(true);
@@ -153,21 +190,19 @@ export default function DashboardPageClient() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        {summaryCards.map((item) => (
-          <Card key={item.title} title={item.title} variant={item.variant}>
-            <p className="break-words text-2xl font-bold tracking-tight sm:text-3xl">
-              {loading ? "-" : item.value}
-            </p>
-          </Card>
-        ))}
-      </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+          {summaryCards.map((item) => (
+            <Card key={item.title} title={item.title} variant={item.variant}>
+              <SummaryCardValue loading={loading} value={item.value} />
+            </Card>
+          ))}
+        </div>
 
-      <div className="grid gap-6">
-        <Card title="10 Order Terbaru">
-          <div className="space-y-3">
+        <div className="grid gap-6">
+          <Card title="10 Order Terbaru">
+            <div className="space-y-3">
             {loading ? (
-              <p className="text-sm text-gray-500">Memuat order terbaru...</p>
+              <RecentOrdersSkeleton />
             ) : dashboard.recentOrders.length === 0 ? (
               <p className="text-sm text-gray-500">
                 Belum ada order yang tersimpan.
