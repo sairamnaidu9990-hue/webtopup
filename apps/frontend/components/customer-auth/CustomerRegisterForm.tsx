@@ -3,6 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CustomerAuthLayout from "@/components/customer-auth/CustomerAuthLayout";
+import RecaptchaField, {
+  isRecaptchaEnabled,
+} from "@/components/customer-auth/RecaptchaField";
 import { useCustomerSession } from "@/components/customer-auth/CustomerSessionProvider";
 
 const defaultForm = {
@@ -21,6 +24,9 @@ export default function CustomerRegisterForm() {
   const [form, setForm] = useState(defaultForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [recaptchaToken, setRecaptchaToken] = useState("");
+  const [recaptchaError, setRecaptchaError] = useState("");
+  const [recaptchaResetNonce, setRecaptchaResetNonce] = useState(0);
 
   useEffect(() => {
     if (!loading && customer) {
@@ -38,6 +44,10 @@ export default function CustomerRegisterForm() {
         throw new Error("Konfirmasi password tidak cocok");
       }
 
+      if (isRecaptchaEnabled() && !recaptchaToken) {
+        throw new Error("Silakan selesaikan verifikasi reCAPTCHA terlebih dahulu");
+      }
+
       const response = await fetch("/api/customer-auth/register", {
         method: "POST",
         headers: {
@@ -50,6 +60,7 @@ export default function CustomerRegisterForm() {
           phoneCountryCode: form.phoneCountryCode,
           phoneNumber: form.phoneNumber,
           password: form.password,
+          recaptchaToken,
         }),
       });
       const payload = await response.json().catch(() => ({
@@ -64,11 +75,17 @@ export default function CustomerRegisterForm() {
       router.refresh();
       router.push("/");
     } catch (submitError) {
-      setError(
+      const message =
         submitError instanceof Error
           ? submitError.message
-          : "Pendaftaran gagal"
-      );
+          : "Pendaftaran gagal";
+      setError(message);
+      if (message.toLowerCase().includes("recaptcha")) {
+        setRecaptchaError(message);
+      }
+      if (isRecaptchaEnabled()) {
+        setRecaptchaResetNonce((current) => current + 1);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -214,6 +231,18 @@ export default function CustomerRegisterForm() {
             className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none transition placeholder:text-white/28 focus:border-red-400/40 focus:bg-white/[0.08]"
             autoComplete="new-password"
             required
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <RecaptchaField
+            value={recaptchaToken}
+            onChange={(token) => {
+              setRecaptchaToken(token);
+              setRecaptchaError("");
+            }}
+            error={recaptchaError}
+            resetNonce={recaptchaResetNonce}
           />
         </div>
 

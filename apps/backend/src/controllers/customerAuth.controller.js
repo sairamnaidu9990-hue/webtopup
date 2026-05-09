@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const Customer = require("../models/Customer");
 const generateCustomerToken = require("../utils/generateCustomerToken");
+const { verifyRecaptchaToken } = require("../utils/verifyRecaptcha");
 
 function normalizeEmail(email) {
   return String(email || "")
@@ -43,7 +44,18 @@ async function registerCustomer(req, res) {
       phoneCountryCode = "+62",
       phoneNumber,
       password,
+      recaptchaToken,
     } = req.body || {};
+
+    const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, {
+      remoteIp: req.ip,
+    });
+
+    if (!recaptchaResult.success) {
+      return res.status(recaptchaResult.statusCode || 400).json({
+        message: recaptchaResult.message || "Verifikasi reCAPTCHA gagal",
+      });
+    }
 
     if (!username || !name || !email || !phoneNumber || !password) {
       return res.status(400).json({
@@ -126,8 +138,18 @@ async function registerCustomer(req, res) {
 
 async function loginCustomer(req, res) {
   try {
-    const { login, password } = req.body || {};
+    const { login, password, recaptchaToken } = req.body || {};
     const normalizedLogin = String(login || "").trim().toLowerCase();
+
+    const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, {
+      remoteIp: req.ip,
+    });
+
+    if (!recaptchaResult.success) {
+      return res.status(recaptchaResult.statusCode || 400).json({
+        message: recaptchaResult.message || "Verifikasi reCAPTCHA gagal",
+      });
+    }
 
     if (!normalizedLogin || !password) {
       return res.status(400).json({

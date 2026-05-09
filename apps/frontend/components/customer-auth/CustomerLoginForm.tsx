@@ -2,6 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CustomerAuthLayout from "@/components/customer-auth/CustomerAuthLayout";
+import RecaptchaField, {
+  isRecaptchaEnabled,
+} from "@/components/customer-auth/RecaptchaField";
 import { useCustomerSession } from "@/components/customer-auth/CustomerSessionProvider";
 
 export default function CustomerLoginForm() {
@@ -11,6 +14,9 @@ export default function CustomerLoginForm() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [recaptchaToken, setRecaptchaToken] = useState("");
+  const [recaptchaError, setRecaptchaError] = useState("");
+  const [recaptchaResetNonce, setRecaptchaResetNonce] = useState(0);
 
   useEffect(() => {
     if (!loading && customer) {
@@ -24,6 +30,10 @@ export default function CustomerLoginForm() {
     setError("");
 
     try {
+      if (isRecaptchaEnabled() && !recaptchaToken) {
+        throw new Error("Silakan selesaikan verifikasi reCAPTCHA terlebih dahulu");
+      }
+
       const response = await fetch("/api/customer-auth/login", {
         method: "POST",
         headers: {
@@ -32,6 +42,7 @@ export default function CustomerLoginForm() {
         body: JSON.stringify({
           login,
           password,
+          recaptchaToken,
         }),
       });
       const payload = await response.json().catch(() => ({
@@ -46,9 +57,15 @@ export default function CustomerLoginForm() {
       router.refresh();
       router.push("/");
     } catch (submitError) {
-      setError(
-        submitError instanceof Error ? submitError.message : "Login gagal"
-      );
+      const message =
+        submitError instanceof Error ? submitError.message : "Login gagal";
+      setError(message);
+      if (message.toLowerCase().includes("recaptcha")) {
+        setRecaptchaError(message);
+      }
+      if (isRecaptchaEnabled()) {
+        setRecaptchaResetNonce((current) => current + 1);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -95,6 +112,16 @@ export default function CustomerLoginForm() {
             required
           />
         </div>
+
+        <RecaptchaField
+          value={recaptchaToken}
+          onChange={(token) => {
+            setRecaptchaToken(token);
+            setRecaptchaError("");
+          }}
+          error={recaptchaError}
+          resetNonce={recaptchaResetNonce}
+        />
 
         {error ? (
           <div className="rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-100">
