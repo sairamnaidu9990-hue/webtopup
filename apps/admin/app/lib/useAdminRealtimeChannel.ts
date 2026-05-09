@@ -6,6 +6,7 @@ import { getBackendWebSocketUrl } from "@/lib/realtime";
 
 const DEFAULT_RECONNECT_DELAY_MS = 4000;
 const DEFAULT_REFRESH_THROTTLE_MS = 1200;
+const DEFAULT_CONNECT_TIMEOUT_MS = 3500;
 
 type RealtimeMode = "connecting" | "live" | "fallback";
 
@@ -17,6 +18,7 @@ type UseAdminRealtimeChannelOptions = {
   onRefresh: () => void | Promise<void>;
   fallbackIntervalMs: number;
   reconnectDelayMs?: number;
+  connectTimeoutMs?: number;
 };
 
 export default function useAdminRealtimeChannel({
@@ -27,6 +29,7 @@ export default function useAdminRealtimeChannel({
   onRefresh,
   fallbackIntervalMs,
   reconnectDelayMs = DEFAULT_RECONNECT_DELAY_MS,
+  connectTimeoutMs = DEFAULT_CONNECT_TIMEOUT_MS,
 }: UseAdminRealtimeChannelOptions) {
   const [mode, setMode] = useState<RealtimeMode>(
     enabled ? "connecting" : "fallback"
@@ -52,12 +55,20 @@ export default function useAdminRealtimeChannel({
     let websocket: WebSocket | null = null;
     let reconnectTimer: number | undefined;
     let fallbackTimer: number | undefined;
+    let connectTimer: number | undefined;
     let tokenRequest: AbortController | null = null;
 
     const clearFallbackTimer = () => {
       if (fallbackTimer !== undefined) {
         window.clearInterval(fallbackTimer);
         fallbackTimer = undefined;
+      }
+    };
+
+    const clearConnectTimer = () => {
+      if (connectTimer !== undefined) {
+        window.clearTimeout(connectTimer);
+        connectTimer = undefined;
       }
     };
 
@@ -102,6 +113,8 @@ export default function useAdminRealtimeChannel({
     };
 
     const cleanupWebSocket = () => {
+      clearConnectTimer();
+
       if (!websocket) {
         return;
       }
@@ -122,7 +135,7 @@ export default function useAdminRealtimeChannel({
 
     const connect = async () => {
       clearFallbackTimer();
-      setMode("connecting");
+      setMode((current) => (current === "fallback" ? current : "connecting"));
       tokenRequest?.abort();
       tokenRequest = new AbortController();
 
@@ -143,6 +156,11 @@ export default function useAdminRealtimeChannel({
         }
 
         websocket = new WebSocket(getBackendWebSocketUrl());
+        connectTimer = window.setTimeout(() => {
+          cleanupWebSocket();
+          startFallback();
+          scheduleReconnect();
+        }, connectTimeoutMs);
 
         websocket.onopen = () => {
           websocket?.send(
@@ -164,6 +182,7 @@ export default function useAdminRealtimeChannel({
 
           if (message?.type === "auth.success") {
             clearFallbackTimer();
+            clearConnectTimer();
             setMode("live");
             websocket?.send(
               JSON.stringify({
@@ -232,6 +251,7 @@ export default function useAdminRealtimeChannel({
       cleanupWebSocket();
     };
   }, [
+    connectTimeoutMs,
     enabled,
     fallbackIntervalMs,
     reconnectDelayMs,

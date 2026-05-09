@@ -6,6 +6,7 @@ import { getBackendWebSocketUrl } from "@/lib/realtime";
 
 const DEFAULT_RECONNECT_DELAY_MS = 4000;
 const DEFAULT_REFRESH_THROTTLE_MS = 1200;
+const DEFAULT_CONNECT_TIMEOUT_MS = 3500;
 
 type RealtimeMode = "connecting" | "live" | "fallback";
 
@@ -16,6 +17,7 @@ type UsePublicRealtimeRefreshOptions = {
   onRefresh: () => void | Promise<void>;
   fallbackIntervalMs: number;
   reconnectDelayMs?: number;
+  connectTimeoutMs?: number;
 };
 
 export default function usePublicRealtimeRefresh({
@@ -25,6 +27,7 @@ export default function usePublicRealtimeRefresh({
   onRefresh,
   fallbackIntervalMs,
   reconnectDelayMs = DEFAULT_RECONNECT_DELAY_MS,
+  connectTimeoutMs = DEFAULT_CONNECT_TIMEOUT_MS,
 }: UsePublicRealtimeRefreshOptions) {
   const [mode, setMode] = useState<RealtimeMode>(
     enabled ? "connecting" : "fallback"
@@ -45,6 +48,7 @@ export default function usePublicRealtimeRefresh({
     let websocket: WebSocket | null = null;
     let reconnectTimer: number | undefined;
     let fallbackTimer: number | undefined;
+    let connectTimer: number | undefined;
 
     const runRefresh = () => {
       const now = Date.now();
@@ -61,6 +65,13 @@ export default function usePublicRealtimeRefresh({
       if (fallbackTimer !== undefined) {
         window.clearInterval(fallbackTimer);
         fallbackTimer = undefined;
+      }
+    };
+
+    const clearConnectTimer = () => {
+      if (connectTimer !== undefined) {
+        window.clearTimeout(connectTimer);
+        connectTimer = undefined;
       }
     };
 
@@ -90,6 +101,8 @@ export default function usePublicRealtimeRefresh({
     };
 
     const cleanupWebSocket = () => {
+      clearConnectTimer();
+
       if (!websocket) {
         return;
       }
@@ -110,12 +123,18 @@ export default function usePublicRealtimeRefresh({
 
     const connect = () => {
       clearFallbackTimer();
-      setMode("connecting");
+      setMode((current) => (current === "fallback" ? current : "connecting"));
 
       try {
         websocket = new WebSocket(getBackendWebSocketUrl());
+        connectTimer = window.setTimeout(() => {
+          cleanupWebSocket();
+          startFallback();
+          scheduleReconnect();
+        }, connectTimeoutMs);
 
         websocket.onopen = () => {
+          clearConnectTimer();
           setMode("live");
           websocket?.send(
             JSON.stringify({
@@ -172,7 +191,14 @@ export default function usePublicRealtimeRefresh({
 
       cleanupWebSocket();
     };
-  }, [enabled, fallbackIntervalMs, reconnectDelayMs, refreshMessageTypes, subscribeType]);
+  }, [
+    connectTimeoutMs,
+    enabled,
+    fallbackIntervalMs,
+    reconnectDelayMs,
+    refreshMessageTypes,
+    subscribeType,
+  ]);
 
   return {
     mode: enabled ? mode : "fallback",
