@@ -25,10 +25,12 @@ export default function RecaptchaField({
 }: RecaptchaFieldProps) {
   const widgetIdRef = useRef<number | null>(null);
   const onChangeRef = useRef(onChange);
+  const retryTimerRef = useRef<number | null>(null);
   const containerId = useId().replace(/:/g, "");
   const [apiReady, setApiReady] = useState(
     () => typeof window !== "undefined" && Boolean(window.grecaptcha?.render)
   );
+  const [widgetMounted, setWidgetMounted] = useState(false);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -53,14 +55,44 @@ export default function RecaptchaField({
 
     widgetIdRef.current = window.grecaptcha.render(container, {
       sitekey: RECAPTCHA_SITE_KEY,
-      callback: (token: string) => onChangeRef.current(token),
+      callback: (token: string) => {
+        setWidgetMounted(true);
+        onChangeRef.current(token);
+      },
       "expired-callback": () => onChangeRef.current(""),
       "error-callback": () => onChangeRef.current(""),
     });
+    setWidgetMounted(true);
   }, [apiReady, containerId]);
 
   useEffect(() => {
-    renderWidget();
+    if (!RECAPTCHA_SITE_KEY || widgetIdRef.current !== null) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const attemptRender = () => {
+      if (cancelled) {
+        return;
+      }
+
+      renderWidget();
+
+      if (widgetIdRef.current === null) {
+        retryTimerRef.current = window.setTimeout(attemptRender, 250);
+      }
+    };
+
+    attemptRender();
+
+    return () => {
+      cancelled = true;
+      if (retryTimerRef.current) {
+        window.clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    };
   }, [renderWidget]);
 
   useEffect(() => {
@@ -111,10 +143,17 @@ export default function RecaptchaField({
 
         <div className="flex justify-center">
           <div className="inline-flex w-full max-w-[334px] items-center justify-center overflow-hidden rounded-[20px] border border-black/8 bg-white/98 p-2 shadow-[0_16px_30px_rgba(0,0,0,0.12)]">
-            <div
-              id={containerId}
-              className="min-h-[78px] w-full origin-top scale-[0.94] overflow-hidden sm:scale-100"
-            />
+            <div className="w-full overflow-hidden">
+              <div
+                id={containerId}
+                className="mx-auto min-h-[78px] w-full max-w-[304px] overflow-hidden"
+              />
+              {!widgetMounted ? (
+                <div className="mt-2 text-center text-[11px] text-black/50">
+                  Menyiapkan reCAPTCHA...
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
