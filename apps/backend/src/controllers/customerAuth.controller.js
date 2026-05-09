@@ -84,6 +84,22 @@ async function registerCustomer(req, res) {
       });
     }
 
+    if (!normalizedPhoneNumber) {
+      return res.status(400).json({
+        message: "Nomor HP tidak valid",
+      });
+    }
+
+    const existingPhoneNumber = await Customer.findOne({
+      phoneNumber: normalizedPhoneNumber,
+    });
+
+    if (existingPhoneNumber) {
+      return res.status(409).json({
+        message: "Nomor HP sudah digunakan",
+      });
+    }
+
     const customer = await Customer.create({
       username: normalizedUsername,
       name: String(name).trim(),

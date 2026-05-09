@@ -110,7 +110,26 @@ async function updateCustomer(req, res) {
     }
 
     if (req.body.phoneNumber != null) {
-      customer.phoneNumber = normalizePhoneNumber(req.body.phoneNumber);
+      const phoneNumber = normalizePhoneNumber(req.body.phoneNumber);
+
+      if (!phoneNumber) {
+        return res.status(400).json({
+          message: "Nomor HP tidak valid",
+        });
+      }
+
+      const duplicate = await Customer.findOne({
+        phoneNumber,
+        _id: { $ne: customer._id },
+      });
+
+      if (duplicate) {
+        return res.status(409).json({
+          message: "Nomor HP sudah digunakan",
+        });
+      }
+
+      customer.phoneNumber = phoneNumber;
     }
 
     if (req.body.isActive != null) {
