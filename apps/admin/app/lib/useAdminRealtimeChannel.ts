@@ -35,12 +35,17 @@ export default function useAdminRealtimeChannel({
     enabled ? "connecting" : "fallback"
   );
   const refreshRef = useRef(onRefresh);
+  const refreshMessageTypesRef = useRef(refreshMessageTypes);
   const pausedRef = useRef(paused);
   const lastRefreshAtRef = useRef(0);
 
   useEffect(() => {
     refreshRef.current = onRefresh;
   }, [onRefresh]);
+
+  useEffect(() => {
+    refreshMessageTypesRef.current = refreshMessageTypes;
+  }, [refreshMessageTypes]);
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -192,7 +197,9 @@ export default function useAdminRealtimeChannel({
             return;
           }
 
-          if (refreshMessageTypes.includes(String(message?.type || ""))) {
+          if (
+            refreshMessageTypesRef.current.includes(String(message?.type || ""))
+          ) {
             runRefresh();
             return;
           }
@@ -255,7 +262,6 @@ export default function useAdminRealtimeChannel({
     enabled,
     fallbackIntervalMs,
     reconnectDelayMs,
-    refreshMessageTypes,
     subscribeType,
   ]);
 

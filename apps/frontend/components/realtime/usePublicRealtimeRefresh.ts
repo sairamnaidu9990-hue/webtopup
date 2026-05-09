@@ -33,11 +33,16 @@ export default function usePublicRealtimeRefresh({
     enabled ? "connecting" : "fallback"
   );
   const refreshRef = useRef(onRefresh);
+  const refreshMessageTypesRef = useRef(refreshMessageTypes);
   const lastRefreshAtRef = useRef(0);
 
   useEffect(() => {
     refreshRef.current = onRefresh;
   }, [onRefresh]);
+
+  useEffect(() => {
+    refreshMessageTypesRef.current = refreshMessageTypes;
+  }, [refreshMessageTypes]);
 
   useEffect(() => {
     if (!enabled) {
@@ -152,7 +157,9 @@ export default function usePublicRealtimeRefresh({
             return;
           }
 
-          if (refreshMessageTypes.includes(String(payload?.type || ""))) {
+          if (
+            refreshMessageTypesRef.current.includes(String(payload?.type || ""))
+          ) {
             runRefresh();
           }
         };
@@ -196,7 +203,6 @@ export default function usePublicRealtimeRefresh({
     enabled,
     fallbackIntervalMs,
     reconnectDelayMs,
-    refreshMessageTypes,
     subscribeType,
   ]);
 
