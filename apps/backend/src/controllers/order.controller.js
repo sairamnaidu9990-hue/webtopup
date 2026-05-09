@@ -298,6 +298,67 @@ async function saveOrderAndBroadcast(order, source = "system") {
   return order;
 }
 
+function resolveOrderCustomerId(order) {
+  return order?.customer || order?.customerAccountSnapshot?.customerId || null;
+}
+
+function hasRefundToBalance(order) {
+  return Boolean(order?.refundedToBalanceAt || order?.refundBalanceTransactionId);
+}
+
+function calculateOrderRefundToBalanceAmount(order) {
+  const subtotalAfterDiscount = Number(order?.price?.subtotalAfterDiscount || 0);
+
+  if (Number.isFinite(subtotalAfterDiscount) && subtotalAfterDiscount > 0) {
+    return Math.round(subtotalAfterDiscount);
+  }
+
+  const derivedFromTotal =
+    Number(order?.price?.totalAmount || 0) - Number(order?.price?.paymentFee || 0);
+
+  if (Number.isFinite(derivedFromTotal) && derivedFromTotal > 0) {
+    return Math.round(derivedFromTotal);
+  }
+
+  const derivedFromSellPrice =
+    Number(order?.price?.sellPrice || 0) - Number(order?.price?.promoDiscount || 0);
+
+  if (Number.isFinite(derivedFromSellPrice) && derivedFromSellPrice > 0) {
+    return Math.round(derivedFromSellPrice);
+  }
+
+  const sellPrice = Number(order?.price?.sellPrice || 0);
+
+  if (Number.isFinite(sellPrice) && sellPrice > 0) {
+    return Math.round(sellPrice);
+  }
+
+  return 0;
+}
+
+function canRefundOrderToBalance(order) {
+  if (normalizeOrderType(order?.orderType) !== "PURCHASE") {
+    return false;
+  }
+
+  if (normalizeCode(order?.paymentStatus) !== "PAID") {
+    return false;
+  }
+
+  if (hasRefundToBalance(order)) {
+    return false;
+  }
+
+  if (!resolveOrderCustomerId(order)) {
+    return false;
+  }
+
+  const orderStatus = normalizeCode(order?.status);
+  const providerStatus = normalizeCode(order?.providerStatus);
+
+  return orderStatus === "FAILED" || providerStatus === "FAILED";
+}
+
 async function finalizeBalanceTopupOrder(order, source = "balance-topup") {
   if (!isBalanceTopupOrder(order)) {
     return order;
@@ -1975,6 +2036,112 @@ async function markManualOrderAsPaid(req, res) {
   }
 }
 
+async function refundOrderToCustomerBalance(req, res) {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order tidak ditemukan",
+      });
+    }
+
+    if (normalizeOrderType(order.orderType) !== "PURCHASE") {
+      return res.status(400).json({
+        message: "Refund ke saldo KITAGG hanya tersedia untuk order pembelian produk",
+      });
+    }
+
+    const customerId = resolveOrderCustomerId(order);
+
+    if (!customerId) {
+      return res.status(400).json({
+        message: "Order ini tidak terhubung ke akun user login",
+      });
+    }
+
+    if (hasRefundToBalance(order)) {
+      return res.status(400).json({
+        message: "Order ini sudah pernah direfund ke saldo KITAGG",
+      });
+    }
+
+    if (normalizeCode(order.paymentStatus) !== "PAID") {
+      return res.status(400).json({
+        message: "Refund hanya bisa dilakukan untuk order yang sudah PAID",
+      });
+    }
+
+    if (
+      normalizeCode(order.status) !== "FAILED" &&
+      normalizeCode(order.providerStatus) !== "FAILED"
+    ) {
+      return res.status(400).json({
+        message: "Refund ke saldo KITAGG hanya tersedia untuk order yang gagal",
+      });
+    }
+
+    const refundAmount = calculateOrderRefundToBalanceAmount(order);
+
+    if (refundAmount <= 0) {
+      return res.status(400).json({
+        message: "Nominal refund tidak valid",
+      });
+    }
+
+    const creditResult = await creditCustomerBalance({
+      customerId,
+      amount: refundAmount,
+      currency: toStringValue(order.price?.currency || "IDR") || "IDR",
+      source: "ORDER_REFUND",
+      description: `Refund order gagal ${order.invoiceNumber} ke saldo KITAGG`,
+      orderId: order._id,
+      invoiceNumber: order.invoiceNumber,
+      createdByAdmin: req.admin?._id || null,
+    });
+
+    const now = new Date();
+    const refundNote = `Refund ke saldo KITAGG Rp${refundAmount.toLocaleString(
+      "id-ID"
+    )} oleh admin`;
+
+    order.paymentStatus = "REFUNDED";
+    order.status = "REFUNDED";
+    order.refundedToBalanceAt = now;
+    order.refundedToBalanceBy = req.admin?._id || null;
+    order.refundBalanceTransactionId = creditResult.transaction?._id || null;
+    order.refundAmount = refundAmount;
+    order.notes = [toStringValue(order.notes), refundNote].filter(Boolean).join("\n");
+
+    await saveOrderAndBroadcast(order, "admin-balance-refund");
+
+    return res.status(200).json({
+      message: `Saldo user berhasil direfund Rp${refundAmount.toLocaleString("id-ID")} tanpa fee payment`,
+      order,
+    });
+  } catch (error) {
+    res.locals.skipRequestLog = true;
+    logError({
+      source: "backend",
+      scope: "order",
+      message: "Error refund order ke saldo KITAGG",
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl || req.url || "",
+      statusCode: 500,
+      meta: {
+        orderId: req.params?.id,
+      },
+      error,
+    });
+
+    return res.status(500).json({
+      message: "Error refund order ke saldo KITAGG",
+      error: error.message,
+    });
+  }
+}
+
 async function resendOrderCallback(req, res) {
   try {
     const order = await Order.findById(req.params.id);
@@ -2386,6 +2553,7 @@ module.exports = {
   getPublicOrderByInvoice,
   getRecentPublicOrders,
   markManualOrderAsPaid,
+  refundOrderToCustomerBalance,
   resendOrderCallback,
   resendOrderToProvider,
   tokopayCallback,

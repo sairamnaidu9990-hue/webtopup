@@ -525,6 +525,24 @@ const orderSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    refundedToBalanceAt: {
+      type: Date,
+      default: null,
+    },
+    refundedToBalanceBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      default: null,
+    },
+    refundBalanceTransactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CustomerBalanceTransaction",
+      default: null,
+    },
+    refundAmount: {
+      type: Number,
+      default: 0,
+    },
     paidAt: {
       type: Date,
       default: null,

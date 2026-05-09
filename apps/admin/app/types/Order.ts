@@ -17,10 +17,12 @@ export type PaymentStatus =
 export type Order = {
   _id: string;
   invoiceNumber: string;
+  orderType?: "PURCHASE" | "BALANCE_TOPUP";
   provider?: string;
   providerInvoiceNumber?: string;
   providerReferenceNumber?: string;
   paymentReferenceNumber?: string;
+  customer?: string | null;
   quantity?: number;
   gameSnapshot?: {
     name?: string;
@@ -45,6 +47,14 @@ export type Order = {
   }>;
   customerDisplay?: string;
   contactDetail?: {
+    email?: string;
+    phoneCountryCode?: string;
+    phoneNumber?: string;
+  };
+  customerAccountSnapshot?: {
+    customerId?: string | null;
+    username?: string;
+    name?: string;
     email?: string;
     phoneCountryCode?: string;
     phoneNumber?: string;
@@ -117,6 +127,10 @@ export type Order = {
   status?: OrderStatus;
   providerMessage?: string;
   notes?: string;
+  refundedToBalanceAt?: string | null;
+  refundedToBalanceBy?: string | null;
+  refundBalanceTransactionId?: string | null;
+  refundAmount?: number;
   paidAt?: string | null;
   processingAt?: string | null;
   completedAt?: string | null;

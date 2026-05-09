@@ -181,6 +181,45 @@ function canResendProviderOrder({
   );
 }
 
+function canRefundOrderToBalance({
+  orderType,
+  customerId,
+  paymentStatus,
+  status,
+  providerStatus,
+  refundedToBalanceAt,
+  refundBalanceTransactionId,
+}: {
+  orderType?: string;
+  customerId?: string | null;
+  paymentStatus?: string;
+  status?: string;
+  providerStatus?: string;
+  refundedToBalanceAt?: string | null;
+  refundBalanceTransactionId?: string | null;
+}) {
+  const normalizedOrderType = String(orderType || "PURCHASE")
+    .trim()
+    .toUpperCase();
+  const normalizedPaymentStatus = String(paymentStatus || "")
+    .trim()
+    .toUpperCase();
+  const normalizedOrderStatus = String(status || "").trim().toUpperCase();
+  const normalizedProviderStatus = String(providerStatus || "")
+    .trim()
+    .toUpperCase();
+
+  return (
+    normalizedOrderType === "PURCHASE" &&
+    Boolean(String(customerId || "").trim()) &&
+    normalizedPaymentStatus === "PAID" &&
+    (normalizedOrderStatus === "FAILED" ||
+      normalizedProviderStatus === "FAILED") &&
+    !refundedToBalanceAt &&
+    !refundBalanceTransactionId
+  );
+}
+
 function ActionButton({
   label,
   onClick,
@@ -264,6 +303,8 @@ export default function OrderEditorDialog({
   const hasUnsavedChanges =
     JSON.stringify(serializeDraft(draft)) !==
     JSON.stringify(serializeDraft(buildDraft(order)));
+  const linkedCustomerId =
+    order.customer || order.customerAccountSnapshot?.customerId || "";
 
   const persistDraft = async (announceSuccess = true) => {
     const response = await fetch(`/api/orders/${order._id}`, {
@@ -814,6 +855,34 @@ export default function OrderEditorDialog({
                     />
 
                     <ActionButton
+                      label="Refund ke Saldo KITAGG"
+                      onClick={() =>
+                        runAction(
+                          "refund-balance",
+                          (orderId) =>
+                            fetch(`/api/orders/${orderId}/refund-balance`, {
+                              method: "POST",
+                            }),
+                          "Gagal refund order ke saldo KITAGG"
+                        )
+                      }
+                      disabled={
+                        !canRefundOrderToBalance({
+                          orderType: order.orderType,
+                          customerId: linkedCustomerId,
+                          paymentStatus: draft.paymentStatus,
+                          status: draft.status,
+                          providerStatus: draft.providerStatus,
+                          refundedToBalanceAt: order.refundedToBalanceAt,
+                          refundBalanceTransactionId:
+                            order.refundBalanceTransactionId,
+                        }) || saving
+                      }
+                      loading={actionKey === "refund-balance"}
+                      variant="success"
+                    />
+
+                    <ActionButton
                       label="Resend Callback"
                       onClick={() =>
                         runAction(
@@ -854,6 +923,11 @@ export default function OrderEditorDialog({
                   </div>
 
                   <div className="mt-4 space-y-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-xs leading-5 text-slate-500">
+                    <p>
+                      `Refund ke Saldo KITAGG` hanya aktif untuk order login
+                      yang `PAID + FAILED`. Refund akan mengembalikan nominal
+                      tanpa fee payment dan tidak mengirim ulang ke provider.
+                    </p>
                     <p>
                       `Simpan Perubahan` hanya menyimpan data dan status manual.
                       Tidak ada submit ulang ke provider dari aksi ini.
@@ -913,6 +987,12 @@ export default function OrderEditorDialog({
                       <span>Expired</span>
                       <span className="font-medium text-slate-900">
                         {formatDate(order.expiredAt)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span>Refunded</span>
+                      <span className="font-medium text-slate-900">
+                        {formatDate(order.refundedToBalanceAt)}
                       </span>
                     </div>
                   </div>
