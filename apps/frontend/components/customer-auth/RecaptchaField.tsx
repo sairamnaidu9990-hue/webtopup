@@ -82,17 +82,41 @@ export default function RecaptchaField({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <Script
         src="https://www.google.com/recaptcha/api.js?render=explicit"
         strategy="afterInteractive"
         onLoad={() => setApiReady(true)}
       />
-      <div className="rounded-[22px] border border-white/10 bg-white/5 p-3 sm:p-4">
-        <div
-          id={containerId}
-          className="min-h-[78px] overflow-hidden rounded-2xl bg-white p-2"
-        />
+      <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.03)_100%)] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.16)] sm:p-5">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-white">
+              Verifikasi Keamanan
+            </p>
+            <p className="text-xs text-white/55">
+              Selesaikan reCAPTCHA sebelum melanjutkan ke akunmu.
+            </p>
+          </div>
+          <span
+            className={`inline-flex min-w-[86px] items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+              value
+                ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
+                : "border-white/10 bg-white/5 text-white/50"
+            }`}
+          >
+            {value ? "Terverifikasi" : "Wajib"}
+          </span>
+        </div>
+
+        <div className="flex justify-center">
+          <div className="inline-flex w-full max-w-[334px] items-center justify-center overflow-hidden rounded-[20px] border border-black/8 bg-white/98 p-2 shadow-[0_16px_30px_rgba(0,0,0,0.12)]">
+            <div
+              id={containerId}
+              className="min-h-[78px] w-full origin-top scale-[0.94] overflow-hidden sm:scale-100"
+            />
+          </div>
+        </div>
       </div>
       {error ? (
         <p className="text-sm text-red-200">{error}</p>
