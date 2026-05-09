@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PublicSiteSetting } from "@/lib/siteData";
 
 function getActiveBanners(siteSetting: PublicSiteSetting) {
@@ -17,6 +17,8 @@ export default function SiteBannerCarousel({
 }) {
   const banners = getActiveBanners(siteSetting);
   const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchDeltaXRef = useRef(0);
   const resolvedActiveIndex =
     banners.length > 0 ? activeIndex % banners.length : 0;
 
@@ -28,6 +30,42 @@ export default function SiteBannerCarousel({
 
   const handleNext = () => {
     setActiveIndex((current) => (current + 1) % banners.length);
+  };
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (banners.length <= 1) {
+      return;
+    }
+
+    touchStartXRef.current = event.touches[0]?.clientX ?? null;
+    touchDeltaXRef.current = 0;
+  };
+
+  const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartXRef.current === null) {
+      return;
+    }
+
+    touchDeltaXRef.current =
+      (event.touches[0]?.clientX ?? touchStartXRef.current) -
+      touchStartXRef.current;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartXRef.current === null) {
+      return;
+    }
+
+    if (Math.abs(touchDeltaXRef.current) >= 48) {
+      if (touchDeltaXRef.current > 0) {
+        handlePrevious();
+      } else {
+        handleNext();
+      }
+    }
+
+    touchStartXRef.current = null;
+    touchDeltaXRef.current = 0;
   };
 
   useEffect(() => {
@@ -51,8 +89,12 @@ export default function SiteBannerCarousel({
       <div className="site-shell relative flex items-center justify-center py-2.5 sm:py-3 lg:py-4">
         <div className="relative w-full min-w-0 overflow-hidden rounded-[24px] bg-[linear-gradient(180deg,#11141b_0%,#0d1016_100%)] sm:rounded-[28px] lg:rounded-[32px]">
           <div
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
             className="flex transition-transform duration-700 ease-out"
-            style={{ transform: `translateX(-${resolvedActiveIndex * 100}%)` }}
+            style={{ touchAction: "pan-y", transform: `translateX(-${resolvedActiveIndex * 100}%)` }}
           >
             {banners.map((banner, index) => (
               <div
@@ -79,7 +121,7 @@ export default function SiteBannerCarousel({
                 type="button"
                 aria-label="Banner sebelumnya"
                 onClick={handlePrevious}
-                className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(12,13,18,0.24)] text-[15px] text-white shadow-[0_10px_20px_rgba(0,0,0,0.16)] backdrop-blur-sm transition hover:bg-[rgba(12,13,18,0.42)] sm:left-5 sm:h-11 sm:w-11 sm:text-lg lg:left-6 lg:h-12 lg:w-12"
+                className="absolute left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(12,13,18,0.24)] text-[15px] text-white shadow-[0_10px_20px_rgba(0,0,0,0.16)] backdrop-blur-sm transition hover:bg-[rgba(12,13,18,0.42)] sm:left-5 sm:flex sm:h-11 sm:w-11 sm:text-lg lg:left-6 lg:h-12 lg:w-12"
               >
                 &lt;
               </button>
@@ -87,7 +129,7 @@ export default function SiteBannerCarousel({
                 type="button"
                 aria-label="Banner berikutnya"
                 onClick={handleNext}
-                className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(12,13,18,0.24)] text-[15px] text-white shadow-[0_10px_20px_rgba(0,0,0,0.16)] backdrop-blur-sm transition hover:bg-[rgba(12,13,18,0.42)] sm:right-5 sm:h-11 sm:w-11 sm:text-lg lg:right-6 lg:h-12 lg:w-12"
+                className="absolute right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[rgba(12,13,18,0.24)] text-[15px] text-white shadow-[0_10px_20px_rgba(0,0,0,0.16)] backdrop-blur-sm transition hover:bg-[rgba(12,13,18,0.42)] sm:right-5 sm:flex sm:h-11 sm:w-11 sm:text-lg lg:right-6 lg:h-12 lg:w-12"
               >
                 &gt;
               </button>
