@@ -428,8 +428,8 @@ export function PaymentStepSection({
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto px-4 py-3">
-                <div className="flex min-w-max items-center justify-end gap-2">
+              <div className="px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                   {group.methods.map((paymentMethod) => (
                     <div
                       key={paymentMethod.code}
