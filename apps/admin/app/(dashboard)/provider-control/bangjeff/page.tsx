@@ -293,6 +293,7 @@ export default function BangjeffDashboardPage() {
         const payload = await parseJsonSafely<{
           message?: string;
           data?: BangjeffBalance;
+          logs?: BangjeffBalanceLog[];
           error?: string;
         }>(response);
 
@@ -304,17 +305,23 @@ export default function BangjeffDashboardPage() {
 
         const nextBalance = payload?.data || null;
         setBalance(nextBalance);
+        if (Array.isArray(payload?.logs)) {
+          setBalanceLogs(payload.logs);
+          setBalanceLogsError("");
+          setBalanceLogsLoading(false);
+        } else {
+          await fetchBalanceLogs();
+        }
 
         if (nextBalance) {
           writeSessionCache(BALANCE_CACHE_KEY, nextBalance);
           setLastBalanceUpdatedAt(Date.now());
         }
-
-        await fetchBalanceLogs();
       } catch (error) {
         setBalanceError(
           error instanceof Error ? error.message : "Saldo BangJeff gagal diambil"
         );
+        await fetchBalanceLogs();
       } finally {
         setBalanceLoading(false);
       }
@@ -364,8 +371,6 @@ export default function BangjeffDashboardPage() {
       });
     }
 
-    void fetchBalanceLogs();
-
     if (
       !hasCachedBalance ||
       !isSessionCacheFresh(cachedBalance.savedAt, BALANCE_CACHE_TTL_MS)
@@ -374,6 +379,8 @@ export default function BangjeffDashboardPage() {
         force: true,
         source: "dashboard_auto",
       });
+    } else {
+      void fetchBalanceLogs();
     }
   }, [fetchBalance, fetchBalanceLogs, fetchDashboardData, gamesCacheKey, variantsCacheKey]);
 
@@ -500,22 +507,46 @@ export default function BangjeffDashboardPage() {
       <BangjeffAutoSyncCard />
 
       <Card title="Log Saldo BangJeff" className="overflow-hidden">
+        <div className="mb-4 flex flex-col gap-3 rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">
+              Riwayat pergerakan saldo BangJeff
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Membantu pantau perubahan saldo setelah refresh manual, sync katalog, dan pengecekan dashboard.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void fetchBalance({ force: true, source: "manual_refresh" })}
+            disabled={balanceLoading || balanceLogsLoading}
+            className="inline-flex items-center justify-center gap-2 rounded-[18px] border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className={balanceLoading || balanceLogsLoading ? "animate-spin" : ""}>
+              <RefreshIcon />
+            </span>
+            Refresh Log
+          </button>
+        </div>
+
         {balanceLogsLoading ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+          <div className="rounded-[22px] border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
             Memuat riwayat saldo...
           </div>
         ) : balanceLogsError ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-600">
+          <div className="rounded-[22px] border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-600">
             {balanceLogsError}
           </div>
         ) : balanceLogs.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+          <div className="rounded-[22px] border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
             Belum ada log saldo BangJeff.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-hidden rounded-[22px] border border-slate-200">
+            <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-gray-200 text-xs uppercase tracking-[0.16em] text-gray-400">
+              <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-400">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Waktu</th>
                   <th className="px-4 py-3 font-semibold">Saldo</th>
@@ -535,12 +566,12 @@ export default function BangjeffDashboardPage() {
                   return (
                     <tr
                       key={item._id}
-                      className="border-b border-gray-100 last:border-b-0"
+                      className="border-b border-slate-100 bg-white last:border-b-0"
                     >
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-slate-600">
                         {formatDateTime(item.createdAt)}
                       </td>
-                      <td className="px-4 py-3 font-semibold text-gray-900">
+                      <td className="px-4 py-3 font-semibold text-slate-900">
                         {formatMoney(currency, item.balanceValue || 0)}
                       </td>
                       <td className="px-4 py-3">
@@ -552,15 +583,16 @@ export default function BangjeffDashboardPage() {
                           {formatDelta(currency, item.deltaValue || 0)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-slate-600">
                         {formatSourceLabel(item.source)}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{adminName}</td>
+                      <td className="px-4 py-3 text-slate-600">{adminName}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </Card>

@@ -152,6 +152,26 @@ function serializeProviderBalanceLog(item) {
   };
 }
 
+async function getRecentProviderBalanceLogs({
+  provider = "bangjeff",
+  region = DEFAULT_REGION,
+  limit = 12,
+}) {
+  const safeLimit = Math.min(toPositiveInteger(limit, 12), 50);
+  const items = await ProviderBalanceLog.find({
+    provider,
+    region,
+  })
+    .sort({ createdAt: -1 })
+    .limit(safeLimit);
+
+  return {
+    items: items.map(serializeProviderBalanceLog),
+    limit: safeLimit,
+    region,
+  };
+}
+
 function trimSyncErrors(errors, limit = 15) {
   return errors.slice(0, limit);
 }
@@ -834,6 +854,11 @@ async function getBalance(req, res) {
       source,
       admin: req.admin || null,
     });
+    const recentLogs = await getRecentProviderBalanceLogs({
+      provider: "bangjeff",
+      region: resolvedRegion,
+      limit: toPositiveInteger(req.query?.logLimit, 12),
+    });
 
     return res.status(200).json({
       message: "Saldo BangJeff berhasil diambil",
@@ -845,6 +870,11 @@ async function getBalance(req, res) {
           currency,
           value: balanceValue,
         },
+      },
+      logs: recentLogs.items,
+      logsMeta: {
+        limit: recentLogs.limit,
+        region: recentLogs.region,
       },
     });
   } catch (error) {
@@ -859,18 +889,16 @@ async function getBalance(req, res) {
 async function getBalanceLogs(req, res) {
   try {
     const region = getRegion(req);
-    const limit = Math.min(toPositiveInteger(req.query.limit, 20), 50);
-    const items = await ProviderBalanceLog.find({
+    const recentLogs = await getRecentProviderBalanceLogs({
       provider: "bangjeff",
       region,
-    })
-      .sort({ createdAt: -1 })
-      .limit(limit);
+      limit: req.query.limit,
+    });
 
     return res.status(200).json({
-      items: items.map(serializeProviderBalanceLog),
-      limit,
-      region,
+      items: recentLogs.items,
+      limit: recentLogs.limit,
+      region: recentLogs.region,
     });
   } catch (error) {
     return res.status(500).json({

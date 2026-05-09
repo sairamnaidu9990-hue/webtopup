@@ -185,15 +185,29 @@ export default function BangjeffAutoSyncCard() {
   };
 
   return (
-    <Card title="Auto Sync BangJeff" className="space-y-4">
-      <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-        Atur jam auto sync harian untuk katalog BangJeff. Scheduler mengikuti{" "}
-        <span className="font-semibold text-gray-900">WIB</span> dan akan jalan
-        sekali per hari untuk tiap aksi yang diaktifkan.
+    <Card
+      title="Auto Sync BangJeff"
+      className="space-y-5"
+      contentClassName="space-y-5"
+    >
+      <div className="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f8fafc_55%,#fff1f2_100%)] px-5 py-4 shadow-[0_16px_35px_rgba(15,23,42,0.05)] sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">
+            Jadwal sinkronisasi otomatis harian
+          </p>
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            Scheduler mengikuti <span className="font-semibold text-slate-700">WIB / Asia/Jakarta</span> dan akan
+            berjalan sekali per hari untuk tiap aksi yang diaktifkan.
+          </p>
+        </div>
+
+        <div className="rounded-full border border-red-200 bg-white/90 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-red-500">
+          Auto Scheduler
+        </div>
       </div>
 
       {loading ? (
-        <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+        <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
           Memuat pengaturan auto sync...
         </div>
       ) : form ? (
@@ -202,19 +216,19 @@ export default function BangjeffAutoSyncCard() {
             {form.actions.map((action) => (
               <div
                 key={action.key}
-                className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm"
+                className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition hover:-translate-y-[1px]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="text-base font-semibold text-slate-900">
                       {action.label}
                     </p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Jalankan otomatis setiap hari pada jam yang ditentukan.
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Jalankan otomatis setiap hari pada waktu yang sudah kamu tentukan.
                     </p>
                   </div>
 
-                  <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                     <input
                       type="checkbox"
                       checked={action.enabled}
@@ -223,14 +237,14 @@ export default function BangjeffAutoSyncCard() {
                           enabled: event.target.checked,
                         })
                       }
-                      className="h-4 w-4 rounded border-gray-300 text-red-500 focus:ring-red-400"
+                      className="h-4 w-4 rounded border-slate-300 text-red-500 focus:ring-red-400"
                     />
                     Aktif
                   </label>
                 </div>
 
-                <div className="mt-4">
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
+                <div className="mt-5">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                     Jam Sync
                   </label>
                   <input
@@ -241,11 +255,11 @@ export default function BangjeffAutoSyncCard() {
                         time: event.target.value,
                       })
                     }
-                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm outline-none transition focus:border-red-300 focus:ring-4 focus:ring-red-100"
+                    className="w-full rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 shadow-sm outline-none transition focus:border-red-300 focus:bg-white focus:ring-4 focus:ring-red-100"
                   />
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-2">
+                <div className="mt-5 flex flex-wrap items-center gap-2">
                   <span
                     className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${getStatusTone(
                       action.lastRunStatus
@@ -253,13 +267,13 @@ export default function BangjeffAutoSyncCard() {
                   >
                     {action.lastRunStatus || "IDLE"}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-slate-500">
                     Terakhir: {formatDateTime(action.lastRunAt)}
                   </span>
                 </div>
 
                 {action.lastError ? (
-                  <div className="mt-3 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-600">
+                  <div className="mt-3 rounded-[18px] border border-red-100 bg-red-50 px-3 py-2 text-xs leading-5 text-red-600">
                     {action.lastError}
                   </div>
                 ) : null}
@@ -267,17 +281,17 @@ export default function BangjeffAutoSyncCard() {
             ))}
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-gray-500">
+          <div className="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-500">
               Timezone scheduler:{" "}
-              <span className="font-semibold text-gray-700">{form.timezone}</span>
+              <span className="font-semibold text-slate-700">{form.timezone}</span>
             </p>
 
             <button
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center justify-center rounded-2xl bg-red-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(239,68,68,0.22)] transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-[20px] bg-red-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(239,68,68,0.22)] transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? "Menyimpan..." : "Simpan Auto Sync"}
             </button>
