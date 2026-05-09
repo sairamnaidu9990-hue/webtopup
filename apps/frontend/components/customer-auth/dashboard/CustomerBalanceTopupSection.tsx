@@ -4,6 +4,15 @@ import type { StorefrontPaymentMethod } from "@/lib/siteData";
 
 import { MAX_TOPUP_AMOUNT, MIN_TOPUP_AMOUNT, formatCurrency } from "./utils";
 
+function getPaymentMethodMeta(paymentMethod: StorefrontPaymentMethod) {
+  const categoryName = String(paymentMethod.category?.name || "").trim();
+  const type = String(paymentMethod.type || "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+  return categoryName || type || "Metode Pembayaran";
+}
+
 export default function CustomerBalanceTopupSection({
   balance,
   balanceLogoUrl,
@@ -78,21 +87,85 @@ export default function CustomerBalanceTopupSection({
 
         <label className="block space-y-2">
           <span className="text-sm font-medium text-white/84">Metode Pembayaran</span>
-          <select
-            value={topupPaymentMethodCode}
-            onChange={(event) => onTopupPaymentMethodChange(event.target.value)}
-            disabled={paymentMethodsLoading || paymentMethods.length === 0}
-            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-base text-white outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-glow)]"
-          >
-            {paymentMethods.length === 0 ? (
-              <option value="">Belum ada metode pembayaran aktif</option>
-            ) : null}
-            {paymentMethods.map((paymentMethod) => (
-              <option key={paymentMethod.code} value={paymentMethod.code}>
-                {paymentMethod.name}
-              </option>
-            ))}
-          </select>
+          {paymentMethodsLoading ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-[92px] animate-pulse rounded-[24px] border border-white/8 bg-white/[0.04]"
+                />
+              ))}
+            </div>
+          ) : paymentMethods.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.03] px-4 py-5 text-sm text-white/58">
+              Belum ada metode pembayaran aktif.
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {paymentMethods.map((paymentMethod) => {
+                const isSelected =
+                  paymentMethod.code === topupPaymentMethodCode;
+
+                return (
+                  <button
+                    key={paymentMethod.code}
+                    type="button"
+                    onClick={() => onTopupPaymentMethodChange(paymentMethod.code)}
+                    className={`group relative overflow-hidden rounded-[24px] border p-4 text-left transition ${
+                      isSelected
+                        ? "border-red-400/45 bg-[linear-gradient(135deg,rgba(210,53,53,0.16)_0%,rgba(255,255,255,0.04)_100%)] shadow-[0_18px_34px_rgba(211,59,59,0.16)]"
+                        : "border-white/10 bg-white/[0.04] hover:border-red-400/25 hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(245,245,245,0.92)_100%)] shadow-[0_12px_24px_rgba(0,0,0,0.16)]">
+                        {paymentMethod.logo ? (
+                          <Image
+                            src={paymentMethod.logo}
+                            alt={paymentMethod.name}
+                            width={48}
+                            height={48}
+                            sizes="56px"
+                            className="h-10 w-10 object-contain"
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-slate-800">
+                            {paymentMethod.name.slice(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">
+                              {paymentMethod.name}
+                            </p>
+                            <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/42">
+                              {getPaymentMethodMeta(paymentMethod)}
+                            </p>
+                          </div>
+                          <span
+                            className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                              isSelected
+                                ? "border-red-300/30 bg-red-400/12 text-red-100"
+                                : "border-white/10 bg-white/[0.05] text-white/55"
+                            }`}
+                          >
+                            {isSelected ? "Dipilih" : "Tersedia"}
+                          </span>
+                        </div>
+
+                        <p className="mt-4 text-sm text-white/72">
+                          Pembayaran otomatis
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </label>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/58">
