@@ -58,6 +58,12 @@ type TeamChatMessage = {
   updatedAt?: string | null;
 };
 
+type ChatImagePreview = {
+  attachment: TeamChatAttachment;
+  senderName: string;
+  sentAt?: string | null;
+};
+
 function formatTime(value?: string | null) {
   if (!value) {
     return "-";
@@ -150,6 +156,7 @@ export default function TeamChatPageClient() {
   >("connecting");
   const [error, setError] = useState("");
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [imagePreview, setImagePreview] = useState<ChatImagePreview | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const currentAdminRef = useRef<AdminProfile | null>(null);
@@ -160,6 +167,27 @@ export default function TeamChatPageClient() {
   useEffect(() => {
     currentAdminRef.current = currentAdmin;
   }, [currentAdmin]);
+
+  useEffect(() => {
+    if (!imagePreview) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setImagePreview(null);
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [imagePreview]);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -595,6 +623,18 @@ export default function TeamChatPageClient() {
     );
   };
 
+  const openImagePreview = (
+    attachment: TeamChatAttachment,
+    senderName: string,
+    sentAt?: string | null
+  ) => {
+    setImagePreview({
+      attachment,
+      senderName,
+      sentAt,
+    });
+  };
+
   const sendMessage = async () => {
     const nextMessage = messageText
       .replace(/\r\n/g, "\n")
@@ -719,6 +759,76 @@ export default function TeamChatPageClient() {
 
   return (
     <div className="space-y-6">
+      {imagePreview ? (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#06070b]/88 p-4 backdrop-blur-md sm:p-6">
+          <button
+            type="button"
+            aria-label="Tutup preview gambar"
+            onClick={() => setImagePreview(null)}
+            className="absolute inset-0 cursor-default"
+          />
+
+          <div className="relative z-[121] flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#12141b] text-white shadow-[0_30px_120px_rgba(0,0,0,0.45)]">
+            <div className="flex flex-col gap-4 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold sm:text-lg">
+                  {imagePreview.attachment.name}
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/65 sm:text-sm">
+                  <span>Dikirim oleh {imagePreview.senderName}</span>
+                  <span className="hidden h-1 w-1 rounded-full bg-white/30 sm:inline-flex" />
+                  <span>{formatFileSize(imagePreview.attachment.size)}</span>
+                  {imagePreview.sentAt ? (
+                    <>
+                      <span className="hidden h-1 w-1 rounded-full bg-white/30 sm:inline-flex" />
+                      <span>{formatDateTime(imagePreview.sentAt)}</span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={imagePreview.attachment.dataUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  Buka Tab Baru
+                </a>
+                <a
+                  href={imagePreview.attachment.dataUrl}
+                  download={imagePreview.attachment.name}
+                  className="inline-flex items-center justify-center rounded-2xl bg-[#d33b3b] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+                >
+                  Download
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setImagePreview(null)}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-lg text-white transition hover:bg-white/10"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="relative flex min-h-[320px] flex-1 items-center justify-center bg-[radial-gradient(circle_at_top,#2c3445_0%,#151922_55%,#0f1218_100%)] p-4 sm:min-h-[560px] sm:p-8">
+              <div className="relative h-full min-h-[280px] w-full overflow-hidden rounded-[24px] border border-white/10 bg-black/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:min-h-[520px]">
+                <Image
+                  src={imagePreview.attachment.dataUrl}
+                  alt={imagePreview.attachment.name}
+                  fill
+                  sizes="100vw"
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <SectionTitle
           title="Team Chat"
@@ -874,17 +984,23 @@ export default function TeamChatPageClient() {
                             >
                               {message.attachments.map((attachment) =>
                                 isImageAttachment(attachment) ? (
-                                  <a
+                                  <button
                                     key={attachment.id}
-                                    href={attachment.dataUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    download={attachment.name}
+                                    type="button"
+                                    onClick={() =>
+                                      openImagePreview(
+                                        attachment,
+                                        isMine
+                                          ? "Kamu"
+                                          : message.sender.name || message.sender.email,
+                                        message.createdAt
+                                      )
+                                    }
                                     className={`group overflow-hidden rounded-2xl border ${
                                       isMine
                                         ? "border-white/15 bg-white/8"
                                         : "border-gray-200 bg-gray-50"
-                                    }`}
+                                    } text-left transition hover:-translate-y-[1px] hover:shadow-lg`}
                                   >
                                     <div className="relative aspect-[4/3] w-full overflow-hidden">
                                       <Image
@@ -904,10 +1020,10 @@ export default function TeamChatPageClient() {
                                           isMine ? "text-red-100" : "text-gray-500"
                                         }`}
                                       >
-                                        {formatFileSize(attachment.size)}
+                                        Klik untuk lihat penuh
                                       </p>
                                     </div>
-                                  </a>
+                                  </button>
                                 ) : (
                                   <a
                                     key={attachment.id}
@@ -1012,15 +1128,21 @@ export default function TeamChatPageClient() {
                       className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50"
                     >
                       {isImageAttachment(attachment) ? (
-                        <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-gray-200">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openImagePreview(attachment, "Draft Lampiran", null)
+                          }
+                          className="relative block aspect-[4/3] w-full overflow-hidden border-b border-gray-200"
+                        >
                           <Image
                             src={attachment.dataUrl}
                             alt={attachment.name}
                             fill
                             sizes="260px"
-                            className="object-cover"
+                            className="object-cover transition duration-300 hover:scale-[1.02]"
                           />
-                        </div>
+                        </button>
                       ) : null}
 
                       <div className="flex items-start gap-3 px-3 py-3">
