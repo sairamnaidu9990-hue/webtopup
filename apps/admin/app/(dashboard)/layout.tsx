@@ -1,40 +1,35 @@
-"use client";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { useState } from "react";
-import Sidebar from "../components/layout/Sidebar";
-import Header from "../components/layout/Header";
-import AdminSessionManager from "../components/auth/AdminSessionManager";
+import {
+  ADMIN_LAST_ACTIVE_COOKIE_NAME,
+  ADMIN_TOKEN_COOKIE_NAME,
+  isAdminSessionIdle,
+} from "@/lib/adminSession";
+
+import DashboardShell from "./DashboardShell";
 
 type DashboardShellProps = {
   adminEmail?: string;
   children: React.ReactNode;
 };
 
-export default function DashboardShell({
+export default async function DashboardLayout({
   adminEmail,
   children,
 }: DashboardShellProps) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_TOKEN_COOKIE_NAME)?.value || "";
+  const lastActive =
+    cookieStore.get(ADMIN_LAST_ACTIVE_COOKIE_NAME)?.value || "";
 
-  return (
-    <div className="min-h-screen bg-[#eef2f6] text-[#0f172a]">
-      <AdminSessionManager />
-      <div className="flex min-h-screen items-stretch">
-        <Sidebar
-          mobileOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
+  if (!token) {
+    redirect("/login");
+  }
 
-        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-          <Header
-            adminEmail={adminEmail}
-            onMenuClick={() => setMobileOpen(true)}
-          />
-          <main className="flex-1 px-3 py-3 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
-            <div className="mx-auto max-w-7xl">{children}</div>
-          </main>
-        </div>
-      </div>
-    </div>
-  );
+  if (isAdminSessionIdle(lastActive)) {
+    redirect("/login?reason=session-expired");
+  }
+
+  return <DashboardShell adminEmail={adminEmail}>{children}</DashboardShell>;
 }

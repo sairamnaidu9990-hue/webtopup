@@ -14,17 +14,7 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const isAuthPage = pathname === "/login";
-  const isProtectedPage =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/admins") ||
-    pathname.startsWith("/monitoring") ||
-    pathname.startsWith("/payment-methods") ||
-    pathname.startsWith("/website-settings") ||
-    pathname.startsWith("/provider-control") ||
-    pathname.startsWith("/games") ||
-    pathname.startsWith("/products") ||
-    pathname.startsWith("/variants") ||
-    pathname.startsWith("/orders");
+  const isProtectedPage = !isAuthPage;
 
   if (!token && isProtectedPage) {
     return NextResponse.redirect(new URL("/login", req.url));
@@ -57,15 +47,19 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/login",
+    "/dashboard/:path*",
     "/admins/:path*",
     "/monitoring/:path*",
     "/payment-methods/:path*",
     "/website-settings/:path*",
-    "/dashboard/:path*",
     "/provider-control/:path*",
     "/games/:path*",
     "/products/:path*",
     "/variants/:path*",
     "/orders/:path*",
+    "/customers/:path*",
+    "/reviews/:path*",
+    "/promo-codes/:path*",
+    "/team-chat/:path*",
   ],
 };
