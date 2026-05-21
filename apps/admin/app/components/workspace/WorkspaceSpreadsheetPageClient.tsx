@@ -341,7 +341,7 @@ export default function WorkspaceSpreadsheetPageClient() {
     <div className="space-y-6">
       <SectionTitle
         title="Workspace Spreadsheet"
-        subtitle="Sheet kerja internal tim KITAGG untuk tracking sederhana, perencanaan mini, dan pencatatan operasional yang tidak perlu keluar dari admin."
+        subtitle="Sheet kerja KITAGG."
       />
 
       {feedback ? (

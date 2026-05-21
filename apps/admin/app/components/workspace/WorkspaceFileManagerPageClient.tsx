@@ -303,7 +303,7 @@ export default function WorkspaceFileManagerPageClient() {
     <div className="space-y-6">
       <SectionTitle
         title="Workspace File Manager"
-        subtitle="Pusat dokumen internal tim KITAGG untuk simpan gambar referensi, file kerja, dan dokumen pendukung operasional."
+        subtitle="Pusat dokumen."
       />
 
       {feedback ? (

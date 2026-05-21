@@ -275,7 +275,7 @@ export default function WorkspaceNotepadPageClient() {
     <div className="space-y-6">
       <SectionTitle
         title="Workspace Notepad"
-        subtitle="Ruang catatan internal tim KITAGG untuk briefing cepat, SOP mini, dan ide operasional harian."
+        subtitle="Ruang catatan KITAGG."
       />
 
       {feedback ? (
@@ -448,7 +448,7 @@ export default function WorkspaceNotepadPageClient() {
                     }))
                   }
                   rows={18}
-                  placeholder="Tulis poin briefing, panduan singkat, atau catatan operasional tim di sini."
+                  placeholder="Tulis di sini."
                   className="min-h-[360px] w-full rounded-2xl border border-gray-200 px-4 py-4 text-base leading-7 outline-none transition focus:border-black md:text-sm"
                 />
               </div>
