@@ -22,6 +22,7 @@ const reviewRoutes = require("./src/routes/review.routes");
 const siteSettingRoutes = require("./src/routes/siteSetting.routes");
 const syncLogRoutes = require("./src/routes/syncLog.routes");
 const variantRoutes = require("./src/routes/variant.routes");
+const workspaceRoutes = require("./src/routes/workspace.routes");
 const app = express();
 
 app.set("trust proxy", Number.parseInt(process.env.TRUST_PROXY || "1", 10) || 1);
@@ -72,7 +73,7 @@ app.use((req, res, next) => {
 app.use(requestContext);
 app.use(requestLogger);
 
-app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || "100kb" }));
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || "15mb" }));
 app.use(
   express.urlencoded({
     extended: true,
@@ -102,6 +103,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/site-settings", siteSettingRoutes);
 app.use("/api/sync-logs", syncLogRoutes);
 app.use("/api/variants", variantRoutes);
+app.use("/api/workspace", workspaceRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

@@ -76,6 +76,18 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
       return "Team Chat";
     }
 
+    if (pathname.startsWith("/workspace/notepad")) {
+      return "Workspace Notepad";
+    }
+
+    if (pathname.startsWith("/workspace/files")) {
+      return "Workspace File Manager";
+    }
+
+    if (pathname.startsWith("/workspace/spreadsheets")) {
+      return "Workspace Spreadsheets";
+    }
+
     if (pathname.startsWith("/promo-codes")) {
       return "Promo Codes";
     }

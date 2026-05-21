@@ -38,6 +38,11 @@ const providerGroups = [
 ];
 
 const primaryItems = [{ label: "Dashboard", href: "/dashboard" }];
+const workspaceItems = [
+  { label: "Notepad", href: "/workspace/notepad" },
+  { label: "File Manager", href: "/workspace/files" },
+  { label: "Spreadsheets", href: "/workspace/spreadsheets" },
+];
 
 const menuItems = [
   { label: "Orders", href: "/orders" },
@@ -66,6 +71,9 @@ type SidebarNavProps = {
   providerOpen: boolean;
   setProviderOpen: Dispatch<SetStateAction<boolean>>;
   isProviderRoute: boolean;
+  workspaceOpen: boolean;
+  setWorkspaceOpen: Dispatch<SetStateAction<boolean>>;
+  isWorkspaceRoute: boolean;
   providerGroupOpen: Record<string, boolean>;
   setProviderGroupOpen: Dispatch<SetStateAction<Record<string, boolean>>>;
 };
@@ -76,6 +84,9 @@ function SidebarNav({
   providerOpen,
   setProviderOpen,
   isProviderRoute,
+  workspaceOpen,
+  setWorkspaceOpen,
+  isWorkspaceRoute,
   providerGroupOpen,
   setProviderGroupOpen,
 }: SidebarNavProps) {
@@ -199,6 +210,46 @@ function SidebarNav({
             ) : null}
           </li>
 
+          <li>
+            <button
+              type="button"
+              onClick={() => setWorkspaceOpen((current) => !current)}
+              className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                isWorkspaceRoute || workspaceOpen
+                  ? "bg-[#2a2d37] text-white"
+                  : "text-gray-400 hover:bg-[#1a1d27] hover:text-white"
+              }`}
+            >
+              <span>Workspace</span>
+              <span className="text-xs text-gray-400">
+                {workspaceOpen ? "-" : "+"}
+              </span>
+            </button>
+
+            {workspaceOpen ? (
+              <div className="mt-2 space-y-1 pl-3">
+                {workspaceItems.map((item) => {
+                  const isActive = pathname === item.href;
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onNavigate}
+                      className={`flex items-center rounded-xl px-4 py-2.5 text-sm transition-all duration-200 ${
+                        isActive
+                          ? "bg-[#1f2330] text-white"
+                          : "text-gray-400 hover:bg-[#171a22] hover:text-white"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
+          </li>
+
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
 
@@ -231,11 +282,15 @@ export default function Sidebar({
   const pathname = usePathname();
   const isProviderRoute =
     pathname === "/provider-control" || pathname.startsWith("/provider-control/");
+  const isWorkspaceRoute =
+    pathname === "/workspace" || pathname.startsWith("/workspace/");
   const [providerManuallyOpen, setProviderManuallyOpen] = useState(false);
+  const [workspaceManuallyOpen, setWorkspaceManuallyOpen] = useState(false);
   const [providerGroupOpenState, setProviderGroupOpenState] = useState<
     Record<string, boolean>
   >({});
   const providerOpen = isProviderRoute || providerManuallyOpen;
+  const workspaceOpen = isWorkspaceRoute || workspaceManuallyOpen;
   const providerGroupOpen = useMemo(
     () =>
       providerGroups.reduce<Record<string, boolean>>((acc, group) => {
@@ -268,6 +323,9 @@ export default function Sidebar({
           providerOpen={providerOpen}
           setProviderOpen={setProviderManuallyOpen}
           isProviderRoute={isProviderRoute}
+          workspaceOpen={workspaceOpen}
+          setWorkspaceOpen={setWorkspaceManuallyOpen}
+          isWorkspaceRoute={isWorkspaceRoute}
           providerGroupOpen={providerGroupOpen}
           setProviderGroupOpen={setProviderGroupOpenState}
         />
@@ -282,6 +340,9 @@ export default function Sidebar({
           providerOpen={providerOpen}
           setProviderOpen={setProviderManuallyOpen}
           isProviderRoute={isProviderRoute}
+          workspaceOpen={workspaceOpen}
+          setWorkspaceOpen={setWorkspaceManuallyOpen}
+          isWorkspaceRoute={isWorkspaceRoute}
           providerGroupOpen={providerGroupOpen}
           setProviderGroupOpen={setProviderGroupOpenState}
         />

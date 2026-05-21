@@ -61,5 +61,6 @@ export const config = {
     "/reviews/:path*",
     "/promo-codes/:path*",
     "/team-chat/:path*",
+    "/workspace/:path*",
   ],
 };
