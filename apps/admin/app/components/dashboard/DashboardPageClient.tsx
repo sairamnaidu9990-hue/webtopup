@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Card from "@/app/components/ui/Card";
 import SectionTitle from "@/app/components/ui/SectionTitle";
 import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
+import type { VisitorAnalyticsSummary } from "@/app/types/Analytics";
 import type { Order, OrderDashboardSummary } from "@/app/types/Order";
 
 const emptyDashboard: OrderDashboardSummary = {
@@ -14,6 +15,16 @@ const emptyDashboard: OrderDashboardSummary = {
   totalPaymentFee: 0,
   totalProfit: 0,
   recentOrders: [],
+};
+
+const emptyAnalytics: VisitorAnalyticsSummary = {
+  todayVisitors: 0,
+  todayPageviews: 0,
+  last7DaysVisitors: 0,
+  last7DaysPageviews: 0,
+  topPages: [],
+  topReferrers: [],
+  topDevices: [],
 };
 
 function formatMoney(value = 0, currency = "IDR") {
@@ -94,6 +105,7 @@ function RecentOrdersSkeleton() {
 
 export default function DashboardPageClient() {
   const [dashboard, setDashboard] = useState<OrderDashboardSummary>(emptyDashboard);
+  const [analytics, setAnalytics] = useState<VisitorAnalyticsSummary>(emptyAnalytics);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -103,20 +115,38 @@ export default function DashboardPageClient() {
         setLoading(true);
         setError("");
 
-        const response = await fetch("/api/orders/dashboard", {
-          cache: "no-store",
-        });
-        const payload = await parseJsonSafely<OrderDashboardSummary & { message?: string }>(
-          response
-        );
+        const [dashboardResponse, analyticsResponse] = await Promise.all([
+          fetch("/api/orders/dashboard", {
+            cache: "no-store",
+          }),
+          fetch("/api/analytics/summary", {
+            cache: "no-store",
+          }),
+        ]);
+        const [dashboardPayload, analyticsPayload] = await Promise.all([
+          parseJsonSafely<OrderDashboardSummary & { message?: string }>(
+            dashboardResponse
+          ),
+          parseJsonSafely<VisitorAnalyticsSummary>(analyticsResponse),
+        ]);
 
-        if (!response.ok) {
+        if (!dashboardResponse.ok) {
           throw new Error(
-            getResponseMessage(payload, "Gagal ambil ringkasan dashboard")
+            getResponseMessage(dashboardPayload, "Gagal ambil ringkasan dashboard")
           );
         }
 
-        const safePayload = payload || emptyDashboard;
+        if (!analyticsResponse.ok) {
+          throw new Error(
+            getResponseMessage(
+              analyticsPayload,
+              "Gagal ambil analytics pengunjung website"
+            )
+          );
+        }
+
+        const safePayload = dashboardPayload || emptyDashboard;
+        const safeAnalytics = analyticsPayload || emptyAnalytics;
 
         setDashboard({
           totalOrders: Number(safePayload.totalOrders || 0),
@@ -129,8 +159,25 @@ export default function DashboardPageClient() {
             ? safePayload.recentOrders
             : [],
         });
+        setAnalytics({
+          todayVisitors: Number(safeAnalytics.todayVisitors || 0),
+          todayPageviews: Number(safeAnalytics.todayPageviews || 0),
+          last7DaysVisitors: Number(safeAnalytics.last7DaysVisitors || 0),
+          last7DaysPageviews: Number(safeAnalytics.last7DaysPageviews || 0),
+          topPages: Array.isArray(safeAnalytics.topPages)
+            ? safeAnalytics.topPages
+            : [],
+          topReferrers: Array.isArray(safeAnalytics.topReferrers)
+            ? safeAnalytics.topReferrers
+            : [],
+          topDevices: Array.isArray(safeAnalytics.topDevices)
+            ? safeAnalytics.topDevices
+            : [],
+          generatedAt: safeAnalytics.generatedAt,
+        });
       } catch (fetchError) {
         setDashboard(emptyDashboard);
+        setAnalytics(emptyAnalytics);
         setError(
           fetchError instanceof Error
             ? fetchError.message
@@ -177,6 +224,29 @@ export default function DashboardPageClient() {
     },
   ];
 
+  const analyticsCards = [
+    {
+      title: "Visitor Hari Ini",
+      value: String(analytics.todayVisitors),
+      variant: "success" as const,
+    },
+    {
+      title: "Pageview Hari Ini",
+      value: String(analytics.todayPageviews),
+      variant: "info" as const,
+    },
+    {
+      title: "Visitor 7 Hari",
+      value: String(analytics.last7DaysVisitors),
+      variant: "warning" as const,
+    },
+    {
+      title: "Pageview 7 Hari",
+      value: String(analytics.last7DaysPageviews),
+      variant: "danger" as const,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <SectionTitle
@@ -198,7 +268,98 @@ export default function DashboardPageClient() {
           ))}
         </div>
 
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {analyticsCards.map((item) => (
+            <Card key={item.title} title={item.title} variant={item.variant}>
+              <SummaryCardValue loading={loading} value={item.value} />
+            </Card>
+          ))}
+        </div>
+
         <div className="grid gap-6">
+          <div className="grid gap-6 xl:grid-cols-3">
+            <Card title="Halaman Terpopuler 7 Hari">
+              {loading ? (
+                <RecentOrdersSkeleton />
+              ) : analytics.topPages.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  Belum ada data halaman yang cukup untuk ditampilkan.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {analytics.topPages.map((item) => (
+                    <div
+                      key={item.path}
+                      className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3"
+                    >
+                      <p className="truncate text-sm font-semibold text-gray-900">
+                        {item.path}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
+                        <span>Pageview: {item.pageviews}</span>
+                        <span>Visitor: {item.uniqueVisitors}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <Card title="Referrer Teratas 7 Hari">
+              {loading ? (
+                <RecentOrdersSkeleton />
+              ) : analytics.topReferrers.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  Belum ada sumber kunjungan yang tercatat.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {analytics.topReferrers.map((item) => (
+                    <div
+                      key={item.source}
+                      className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3"
+                    >
+                      <p className="truncate text-sm font-semibold text-gray-900">
+                        {item.source}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
+                        <span>Kunjungan: {item.visits}</span>
+                        <span>Visitor: {item.uniqueVisitors}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <Card title="Perangkat Pengunjung 7 Hari">
+              {loading ? (
+                <RecentOrdersSkeleton />
+              ) : analytics.topDevices.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  Belum ada data perangkat pengunjung.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {analytics.topDevices.map((item) => (
+                    <div
+                      key={item.deviceType}
+                      className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3"
+                    >
+                      <p className="truncate text-sm font-semibold uppercase text-gray-900">
+                        {item.deviceType}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
+                        <span>Kunjungan: {item.visits}</span>
+                        <span>Visitor: {item.uniqueVisitors}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+
           <Card title="10 Order Terbaru">
             <div className="space-y-3">
             {loading ? (

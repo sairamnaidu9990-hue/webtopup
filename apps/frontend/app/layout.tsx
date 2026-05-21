@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import Script from "next/script";
 import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import FrontendMaintenanceScreen from "@/components/FrontendMaintenanceScreen";
+import StorefrontVisitorTracker from "@/components/StorefrontVisitorTracker";
 import LazyFloatingContactButton from "@/components/lazy/LazyFloatingContactButton";
 import LazyHomepagePopup from "@/components/lazy/LazyHomepagePopup";
 import { CustomerSessionProvider } from "@/components/customer-auth/CustomerSessionProvider";
@@ -157,6 +159,9 @@ async function FrontendShell({
   return (
     <div className="min-h-screen bg-[#111217] text-white">
       <CustomerSessionProvider>
+        <Suspense fallback={null}>
+          <StorefrontVisitorTracker />
+        </Suspense>
         <SiteHeader siteSetting={siteSetting} />
         <div className="pt-14 sm:pt-[76px]">{children}</div>
         <SiteFooter siteSetting={siteSetting} />

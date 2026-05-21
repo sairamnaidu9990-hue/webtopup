@@ -7,6 +7,7 @@ const { errorHandler } = require("./src/middleware/errorHandler");
 const appLogRoutes = require("./src/routes/appLog.routes");
 const authRoutes = require("./src/routes/authRoutes");
 const adminRoutes = require("./src/routes/admin.routes");
+const analyticsRoutes = require("./src/routes/analytics.routes");
 const customerAuthRoutes = require("./src/routes/customerAuth.routes");
 const customerBalanceRoutes = require("./src/routes/customerBalance.routes");
 const customerRoutes = require("./src/routes/customer.routes");
@@ -84,6 +85,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/analytics", analyticsRoutes);
 app.use("/api/customer-auth", customerAuthRoutes);
 app.use("/api/customer-balance", customerBalanceRoutes);
 app.use("/api/app-logs", appLogRoutes);
