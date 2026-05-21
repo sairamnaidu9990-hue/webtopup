@@ -9,7 +9,8 @@ import { parseJsonSafely } from "@/app/lib/http";
 import { getBackendWebSocketUrl } from "@/lib/realtime";
 
 const MAX_CHAT_ATTACHMENTS = 4;
-const MAX_CHAT_ATTACHMENT_SIZE_BYTES = 2 * 1024 * 1024;
+const MAX_CHAT_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_CHAT_TOTAL_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_CHAT_FILE_TYPES = [
   "image/png",
   "image/jpeg",
@@ -545,7 +546,7 @@ export default function TeamChatPageClient() {
           }
 
           if (file.size > MAX_CHAT_ATTACHMENT_SIZE_BYTES) {
-            throw new Error("Ukuran file maksimal 2 MB untuk setiap lampiran.");
+            throw new Error("Ukuran file maksimal 5 MB untuk setiap lampiran.");
           }
 
           return {
@@ -558,6 +559,21 @@ export default function TeamChatPageClient() {
           } satisfies TeamChatAttachment;
         })
       );
+
+      const currentTotalSize = draftAttachments.reduce(
+        (sum, attachment) => sum + Number(attachment.size || 0),
+        0
+      );
+      const nextTotalSize =
+        currentTotalSize +
+        attachments.reduce(
+          (sum, attachment) => sum + Number(attachment.size || 0),
+          0
+        );
+
+      if (nextTotalSize > MAX_CHAT_TOTAL_ATTACHMENT_SIZE_BYTES) {
+        throw new Error("Total ukuran lampiran maksimal 10 MB per pesan.");
+      }
 
       setDraftAttachments((current) => [...current, ...attachments]);
       forceScrollToBottomRef.current = false;
@@ -983,7 +999,7 @@ export default function TeamChatPageClient() {
                     {uploadingFiles ? "Memproses File..." : "Tambah File / Gambar"}
                   </button>
                   <span className="text-[11px] text-gray-500">
-                    Maks {MAX_CHAT_ATTACHMENTS} file, 2 MB per file
+                    Maks {MAX_CHAT_ATTACHMENTS} file, 5 MB per file, total 10 MB
                   </span>
                 </div>
               </div>

@@ -73,7 +73,7 @@ app.use((req, res, next) => {
 app.use(requestContext);
 app.use(requestLogger);
 
-app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || "15mb" }));
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || "20mb" }));
 app.use(
   express.urlencoded({
     extended: true,

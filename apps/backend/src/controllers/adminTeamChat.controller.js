@@ -9,8 +9,9 @@ const DEFAULT_ROOM_KEY = "global";
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 200;
 const MAX_ATTACHMENT_COUNT = 4;
-const MAX_ATTACHMENT_SIZE_BYTES = 2 * 1024 * 1024;
-const MAX_ATTACHMENT_DATA_URL_LENGTH = 3 * 1024 * 1024;
+const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_TOTAL_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENT_DATA_URL_LENGTH = 8 * 1024 * 1024;
 const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
   "image/png",
   "image/jpeg",
@@ -92,7 +93,7 @@ function normalizeAttachments(value) {
     return [];
   }
 
-  return value
+  const attachments = value
     .slice(0, MAX_ATTACHMENT_COUNT)
     .map((attachment, index) => {
       const mimeType = String(attachment?.mimeType || "")
@@ -118,7 +119,7 @@ function normalizeAttachments(value) {
         size > MAX_ATTACHMENT_SIZE_BYTES
       ) {
         throw new Error(
-          "Ukuran lampiran maksimal 2 MB untuk setiap file"
+          "Ukuran lampiran maksimal 5 MB untuk setiap file"
         );
       }
 
@@ -137,6 +138,19 @@ function normalizeAttachments(value) {
         dataUrl,
       };
     });
+
+  const totalAttachmentSize = attachments.reduce(
+    (sum, attachment) => sum + Number(attachment.size || 0),
+    0
+  );
+
+  if (totalAttachmentSize > MAX_TOTAL_ATTACHMENT_SIZE_BYTES) {
+    throw new Error(
+      "Total ukuran lampiran maksimal 10 MB untuk setiap pesan"
+    );
+  }
+
+  return attachments;
 }
 
 function hasSeenMessage(message, adminId) {

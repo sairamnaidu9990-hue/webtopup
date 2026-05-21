@@ -60,7 +60,7 @@ const attachmentSchema = new mongoose.Schema(
     dataUrl: {
       type: String,
       required: true,
-      maxlength: 4000000,
+      maxlength: 8000000,
     },
   },
   { _id: false }
