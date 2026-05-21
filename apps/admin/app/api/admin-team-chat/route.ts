@@ -22,3 +22,23 @@ export async function POST(req: NextRequest) {
     body,
   });
 }
+
+export async function PATCH(req: NextRequest) {
+  const body = await req.json();
+
+  return forwardAdminRequest(req, {
+    endpoint: "/api/admin-team-chat",
+    method: "PATCH",
+    body,
+  });
+}
+
+export async function DELETE(req: NextRequest) {
+  const body = await req.json().catch(() => ({}));
+
+  return forwardAdminRequest(req, {
+    endpoint: "/api/admin-team-chat",
+    method: "DELETE",
+    body,
+  });
+}

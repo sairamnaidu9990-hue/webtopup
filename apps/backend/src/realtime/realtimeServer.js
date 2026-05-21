@@ -129,6 +129,40 @@ function broadcastTeamChatMessage(message) {
   });
 }
 
+function broadcastTeamChatRead(payload) {
+  clients.forEach((client) => {
+    if (!client.isAdminAuthenticated) {
+      return;
+    }
+
+    if (!client.subscriptions.has(ADMIN_TEAM_CHAT_CHANNEL)) {
+      return;
+    }
+
+    safeSend(client.ws, {
+      type: "team-chat.read",
+      payload,
+    });
+  });
+}
+
+function broadcastTeamChatCleared(payload) {
+  clients.forEach((client) => {
+    if (!client.isAdminAuthenticated) {
+      return;
+    }
+
+    if (!client.subscriptions.has(ADMIN_TEAM_CHAT_CHANNEL)) {
+      return;
+    }
+
+    safeSend(client.ws, {
+      type: "team-chat.cleared",
+      payload,
+    });
+  });
+}
+
 function handleRealtimeMessage(client, rawMessage) {
   let payload = null;
 
@@ -432,7 +466,9 @@ module.exports = {
   PUBLIC_RECENT_ORDERS_CHANNEL,
   broadcastOrderUpdate,
   broadcastSyncLogUpdate,
+  broadcastTeamChatCleared,
   broadcastTeamChatMessage,
+  broadcastTeamChatRead,
   initRealtimeServer,
   shutdownRealtimeServer,
 };

@@ -1,10 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import Card from "@/app/components/ui/Card";
 import SectionTitle from "@/app/components/ui/SectionTitle";
 import { parseJsonSafely } from "@/app/lib/http";
 import { getBackendWebSocketUrl } from "@/lib/realtime";
+
+const MAX_CHAT_ATTACHMENTS = 4;
+const MAX_CHAT_ATTACHMENT_SIZE_BYTES = 2 * 1024 * 1024;
+const ACCEPTED_CHAT_FILE_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+  "text/plain",
+  "text/csv",
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
 
 type AdminProfile = {
   adminId: string;
@@ -13,12 +33,28 @@ type AdminProfile = {
   role: string;
 };
 
+type TeamChatAttachment = {
+  id: string;
+  kind: "image" | "file";
+  name: string;
+  mimeType: string;
+  size: number;
+  dataUrl: string;
+};
+
+type TeamChatSeenEntry = AdminProfile & {
+  seenAt?: string | null;
+};
+
 type TeamChatMessage = {
   _id: string;
   roomKey: string;
   text: string;
   sender: AdminProfile;
+  attachments: TeamChatAttachment[];
+  seenBy: TeamChatSeenEntry[];
   createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 function formatTime(value?: string | null) {
@@ -46,22 +82,225 @@ function formatDateTime(value?: string | null) {
   }).format(new Date(value));
 }
 
+function formatFileSize(value: number) {
+  if (value >= 1024 * 1024) {
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  if (value >= 1024) {
+    return `${Math.round(value / 1024)} KB`;
+  }
+
+  return `${value} B`;
+}
+
+function buildAttachmentId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function isImageAttachment(attachment: TeamChatAttachment) {
+  return attachment.kind === "image" || attachment.mimeType.startsWith("image/");
+}
+
+function hasMessageBeenSeenByOthers(
+  message: TeamChatMessage,
+  currentAdminId: string | null
+) {
+  return message.seenBy.some(
+    (entry) =>
+      entry.adminId &&
+      entry.adminId !== currentAdminId &&
+      entry.adminId !== message.sender.adminId
+  );
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Gagal membaca file lampiran"));
+      }
+    };
+
+    reader.onerror = () => reject(new Error("Gagal membaca file lampiran"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function TeamChatPageClient() {
   const [messages, setMessages] = useState<TeamChatMessage[]>([]);
   const [onlineAdmins, setOnlineAdmins] = useState<AdminProfile[]>([]);
   const [currentAdmin, setCurrentAdmin] = useState<AdminProfile | null>(null);
   const [messageText, setMessageText] = useState("");
+  const [draftAttachments, setDraftAttachments] = useState<TeamChatAttachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [connectionState, setConnectionState] = useState<
     "connecting" | "connected" | "fallback"
   >("connecting");
   const [error, setError] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const currentAdminRef = useRef<AdminProfile | null>(null);
+  const messagesRef = useRef<TeamChatMessage[]>([]);
+  const shouldStickToBottomRef = useRef(true);
+  const forceScrollToBottomRef = useRef(true);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ block: "end" });
+    currentAdminRef.current = currentAdmin;
+  }, [currentAdmin]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+
+    const container = messagesContainerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    if (!forceScrollToBottomRef.current && !shouldStickToBottomRef.current) {
+      return;
+    }
+
+    const scrollFrame = window.requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight;
+      forceScrollToBottomRef.current = false;
+    });
+
+    return () => {
+      window.cancelAnimationFrame(scrollFrame);
+    };
   }, [messages]);
+
+  const updateStickToBottomState = useCallback(() => {
+    const container = messagesContainerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+
+    shouldStickToBottomRef.current = distanceFromBottom <= 80;
+  }, []);
+
+  const getUnreadMessageIds = useCallback((sourceMessages?: TeamChatMessage[]) => {
+    const adminId = currentAdminRef.current?.adminId || "";
+
+    if (!adminId) {
+      return [];
+    }
+
+    return (sourceMessages || messagesRef.current)
+      .filter((message) => message.sender.adminId !== adminId)
+      .filter(
+        (message) =>
+          !message.seenBy.some((entry) => entry.adminId === adminId)
+      )
+      .map((message) => message._id);
+  }, []);
+
+  const applyReadReceiptLocally = useCallback(
+    (messageIds: string[], seenBy: TeamChatSeenEntry) => {
+      if (!seenBy?.adminId || messageIds.length === 0) {
+        return;
+      }
+
+      setMessages((current) =>
+        current.map((message) => {
+          if (!messageIds.includes(message._id)) {
+            return message;
+          }
+
+          if (message.seenBy.some((entry) => entry.adminId === seenBy.adminId)) {
+            return message;
+          }
+
+          return {
+            ...message,
+            seenBy: [...message.seenBy, seenBy],
+          };
+        })
+      );
+    },
+    []
+  );
+
+  const markMessagesSeen = useCallback(
+    async (messageIds?: string[]) => {
+      const admin = currentAdminRef.current;
+
+      if (!admin) {
+        return;
+      }
+
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
+
+      const targetIds = Array.from(new Set(messageIds || getUnreadMessageIds()));
+
+      if (targetIds.length === 0) {
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/admin-team-chat", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messageIds: targetIds,
+          }),
+        });
+
+        const payload = await parseJsonSafely<{
+          updatedIds?: string[];
+          message?: string;
+          error?: string;
+        }>(response);
+
+        if (!response.ok) {
+          throw new Error(
+            payload?.error ||
+              payload?.message ||
+              "Status baca chat gagal diperbarui"
+          );
+        }
+
+        const updatedIds = Array.isArray(payload?.updatedIds)
+          ? payload.updatedIds
+          : targetIds;
+
+        applyReadReceiptLocally(updatedIds, {
+          adminId: admin.adminId,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+          seenAt: new Date().toISOString(),
+        });
+      } catch {
+        // Silently ignore read receipt errors to keep chat responsive.
+      }
+    },
+    [applyReadReceiptLocally, getUnreadMessageIds]
+  );
 
   useEffect(() => {
     let active = true;
@@ -107,12 +346,15 @@ export default function TeamChatPageClient() {
           return;
         }
 
-        setCurrentAdmin({
+        const nextAdmin = {
           adminId: String(mePayload.admin.id || ""),
           name: String(mePayload.admin.name || "").trim(),
           email: String(mePayload.admin.email || "").trim(),
           role: String(mePayload.admin.role || "").trim(),
-        });
+        };
+
+        forceScrollToBottomRef.current = true;
+        setCurrentAdmin(nextAdmin);
         setMessages(Array.isArray(messagesPayload?.items) ? messagesPayload.items : []);
       } catch (bootstrapError) {
         if (active) {
@@ -135,6 +377,26 @@ export default function TeamChatPageClient() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!currentAdmin?.adminId) {
+      return;
+    }
+
+    const handleFocusRead = () => {
+      void markMessagesSeen();
+    };
+
+    void markMessagesSeen();
+
+    document.addEventListener("visibilitychange", handleFocusRead);
+    window.addEventListener("focus", handleFocusRead);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleFocusRead);
+      window.removeEventListener("focus", handleFocusRead);
+    };
+  }, [currentAdmin?.adminId, markMessagesSeen]);
 
   useEffect(() => {
     if (!currentAdmin?.adminId) {
@@ -184,15 +446,43 @@ export default function TeamChatPageClient() {
             }
 
             if (payload?.type === "team-chat.message" && payload?.message) {
+              const nextMessage = payload.message as TeamChatMessage;
+
               setMessages((current) => {
-                const exists = current.some((item) => item._id === payload.message._id);
-                return exists ? current : [...current, payload.message];
+                const exists = current.some((item) => item._id === nextMessage._id);
+                return exists ? current : [...current, nextMessage];
               });
+
+              if (nextMessage.sender.adminId === currentAdminRef.current?.adminId) {
+                forceScrollToBottomRef.current = true;
+              } else if (
+                typeof document !== "undefined" &&
+                document.visibilityState === "visible"
+              ) {
+                void markMessagesSeen([nextMessage._id]);
+              }
               return;
             }
 
             if (payload?.type === "team-chat.presence") {
               setOnlineAdmins(Array.isArray(payload.onlineAdmins) ? payload.onlineAdmins : []);
+              return;
+            }
+
+            if (payload?.type === "team-chat.read" && payload?.payload) {
+              applyReadReceiptLocally(
+                Array.isArray(payload.payload.messageIds)
+                  ? payload.payload.messageIds
+                  : [],
+                payload.payload.seenBy as TeamChatSeenEntry
+              );
+              return;
+            }
+
+            if (payload?.type === "team-chat.cleared") {
+              setMessages([]);
+              setDraftAttachments([]);
+              setMessageText("");
             }
           } catch {
             // Ignore malformed realtime payloads.
@@ -219,18 +509,92 @@ export default function TeamChatPageClient() {
       closedManually = true;
       socket?.close();
     };
-  }, [currentAdmin?.adminId]);
+  }, [applyReadReceiptLocally, currentAdmin?.adminId, markMessagesSeen]);
+
+  const handleFileSelection = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const nextFiles = Array.from(event.target.files || []);
+
+    if (nextFiles.length === 0) {
+      return;
+    }
+
+    if (draftAttachments.length + nextFiles.length > MAX_CHAT_ATTACHMENTS) {
+      setError(`Lampiran maksimal ${MAX_CHAT_ATTACHMENTS} file per pesan.`);
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      setUploadingFiles(true);
+      setError("");
+
+      const attachments = await Promise.all(
+        nextFiles.map(async (file) => {
+          const mimeType = String(file.type || "application/octet-stream")
+            .trim()
+            .toLowerCase();
+
+          if (!ACCEPTED_CHAT_FILE_TYPES.includes(mimeType) && !mimeType.startsWith("image/")) {
+            throw new Error("Jenis file ini belum didukung untuk chat tim.");
+          }
+
+          if (mimeType === "image/svg+xml") {
+            throw new Error("Format SVG belum didukung untuk keamanan chat.");
+          }
+
+          if (file.size > MAX_CHAT_ATTACHMENT_SIZE_BYTES) {
+            throw new Error("Ukuran file maksimal 2 MB untuk setiap lampiran.");
+          }
+
+          return {
+            id: buildAttachmentId(),
+            kind: mimeType.startsWith("image/") ? "image" : "file",
+            name: file.name,
+            mimeType,
+            size: file.size,
+            dataUrl: await readFileAsDataUrl(file),
+          } satisfies TeamChatAttachment;
+        })
+      );
+
+      setDraftAttachments((current) => [...current, ...attachments]);
+      forceScrollToBottomRef.current = false;
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Lampiran chat gagal diproses"
+      );
+    } finally {
+      setUploadingFiles(false);
+      event.target.value = "";
+    }
+  };
+
+  const removeDraftAttachment = (attachmentId: string) => {
+    setDraftAttachments((current) =>
+      current.filter((attachment) => attachment.id !== attachmentId)
+    );
+  };
 
   const sendMessage = async () => {
-    const nextMessage = messageText.replace(/\s+/g, " ").trim();
+    const nextMessage = messageText
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .map((line) => line.replace(/[ \t]+/g, " ").trimEnd())
+      .join("\n")
+      .trim();
 
-    if (!nextMessage) {
+    if (!nextMessage && draftAttachments.length === 0) {
       return;
     }
 
     try {
       setSending(true);
       setError("");
+      forceScrollToBottomRef.current = true;
 
       const response = await fetch("/api/admin-team-chat", {
         method: "POST",
@@ -239,6 +603,7 @@ export default function TeamChatPageClient() {
         },
         body: JSON.stringify({
           text: nextMessage,
+          attachments: draftAttachments,
         }),
       });
       const payload = await parseJsonSafely<{
@@ -263,12 +628,62 @@ export default function TeamChatPageClient() {
       }
 
       setMessageText("");
+      setDraftAttachments([]);
     } catch (sendError) {
       setError(
         sendError instanceof Error ? sendError.message : "Pesan chat gagal dikirim"
       );
     } finally {
       setSending(false);
+    }
+  };
+
+  const clearAllMessages = async () => {
+    if (messages.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Yakin ingin menghapus seluruh chat tim? Tindakan ini tidak bisa dibatalkan."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setClearing(true);
+      setError("");
+
+      const response = await fetch("/api/admin-team-chat", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ roomKey: "global" }),
+      });
+      const payload = await parseJsonSafely<{
+        message?: string;
+        error?: string;
+      }>(response);
+
+      if (!response.ok) {
+        throw new Error(
+          payload?.error || payload?.message || "Chat tim gagal dibersihkan"
+        );
+      }
+
+      setMessages([]);
+      setDraftAttachments([]);
+      setMessageText("");
+    } catch (clearError) {
+      setError(
+        clearError instanceof Error
+          ? clearError.message
+          : "Chat tim gagal dibersihkan"
+      );
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -358,7 +773,32 @@ export default function TeamChatPageClient() {
 
         <Card title="Ruang Chat Tim" className="overflow-hidden">
           <div className="flex flex-col gap-4">
-            <div className="h-[52vh] min-h-[420px] overflow-y-auto rounded-3xl border border-gray-200 bg-[#f8fafc] p-4">
+            <div className="flex flex-col gap-3 rounded-3xl border border-gray-200 bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  Koordinasi realtime untuk semua admin
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Pesan, file, dan gambar akan dikirim ke semua admin yang sedang
+                  online di ruangan ini.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void clearAllMessages()}
+                disabled={clearing || loading || messages.length === 0}
+                className="inline-flex items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {clearing ? "Membersihkan..." : "Clear Chat Semua"}
+              </button>
+            </div>
+
+            <div
+              ref={messagesContainerRef}
+              onScroll={updateStickToBottomState}
+              className="h-[52vh] min-h-[420px] overflow-y-auto rounded-3xl border border-gray-200 bg-[#f8fafc] p-4"
+            >
               {loading ? (
                 <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-5 text-sm text-gray-500">
                   Memuat pesan chat tim...
@@ -371,6 +811,10 @@ export default function TeamChatPageClient() {
                 <div className="space-y-4">
                   {messages.map((message) => {
                     const isMine = message.sender.adminId === currentAdmin?.adminId;
+                    const seenByOthers = hasMessageBeenSeenByOthers(
+                      message,
+                      currentAdmin?.adminId || null
+                    );
 
                     return (
                       <div
@@ -378,15 +822,17 @@ export default function TeamChatPageClient() {
                         className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                       >
                         <div
-                          className={`max-w-[85%] rounded-3xl px-4 py-3 shadow-sm ${
+                          className={`max-w-[88%] rounded-3xl px-4 py-3 shadow-sm ${
                             isMine
                               ? "bg-red-500 text-white"
                               : "border border-gray-200 bg-white text-gray-900"
                           }`}
                         >
-                          <div className="mb-1 flex items-center gap-2">
+                          <div className="mb-2 flex items-center gap-2">
                             <p className="text-xs font-semibold">
-                              {isMine ? "Kamu" : message.sender.name || message.sender.email}
+                              {isMine
+                                ? "Kamu"
+                                : message.sender.name || message.sender.email}
                             </p>
                             <span
                               className={`text-[11px] ${
@@ -396,19 +842,199 @@ export default function TeamChatPageClient() {
                               {formatTime(message.createdAt)}
                             </span>
                           </div>
-                          <p className="whitespace-pre-wrap text-sm leading-6">
-                            {message.text}
-                          </p>
+
+                          {message.text ? (
+                            <p className="whitespace-pre-wrap text-sm leading-6">
+                              {message.text}
+                            </p>
+                          ) : null}
+
+                          {message.attachments.length > 0 ? (
+                            <div
+                              className={`mt-3 grid gap-3 ${
+                                message.attachments.length > 1
+                                  ? "sm:grid-cols-2"
+                                  : ""
+                              }`}
+                            >
+                              {message.attachments.map((attachment) =>
+                                isImageAttachment(attachment) ? (
+                                  <a
+                                    key={attachment.id}
+                                    href={attachment.dataUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    download={attachment.name}
+                                    className={`group overflow-hidden rounded-2xl border ${
+                                      isMine
+                                        ? "border-white/15 bg-white/8"
+                                        : "border-gray-200 bg-gray-50"
+                                    }`}
+                                  >
+                                    <div className="relative aspect-[4/3] w-full overflow-hidden">
+                                      <Image
+                                        src={attachment.dataUrl}
+                                        alt={attachment.name}
+                                        fill
+                                        sizes="280px"
+                                        className="object-cover transition duration-300 group-hover:scale-[1.03]"
+                                      />
+                                    </div>
+                                    <div className="px-3 py-2 text-xs">
+                                      <p className="truncate font-semibold">
+                                        {attachment.name}
+                                      </p>
+                                      <p
+                                        className={`mt-1 ${
+                                          isMine ? "text-red-100" : "text-gray-500"
+                                        }`}
+                                      >
+                                        {formatFileSize(attachment.size)}
+                                      </p>
+                                    </div>
+                                  </a>
+                                ) : (
+                                  <a
+                                    key={attachment.id}
+                                    href={attachment.dataUrl}
+                                    download={attachment.name}
+                                    className={`flex items-start gap-3 rounded-2xl border px-3 py-3 ${
+                                      isMine
+                                        ? "border-white/15 bg-white/8"
+                                        : "border-gray-200 bg-gray-50"
+                                    }`}
+                                  >
+                                    <div
+                                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
+                                        isMine
+                                          ? "bg-white/12 text-white"
+                                          : "bg-white text-red-500"
+                                      }`}
+                                    >
+                                      ⤓
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm font-semibold">
+                                        {attachment.name}
+                                      </p>
+                                      <p
+                                        className={`mt-1 text-xs ${
+                                          isMine ? "text-red-100" : "text-gray-500"
+                                        }`}
+                                      >
+                                        {formatFileSize(attachment.size)}
+                                      </p>
+                                    </div>
+                                  </a>
+                                )
+                              )}
+                            </div>
+                          ) : null}
+
+                          {isMine ? (
+                            <div className="mt-3 flex items-center justify-end gap-2">
+                              <span className="text-[11px] text-red-100/85">
+                                {seenByOthers ? "Dilihat" : "Terkirim"}
+                              </span>
+                              <span
+                                className={`text-sm font-semibold ${
+                                  seenByOthers ? "text-sky-200" : "text-red-100/90"
+                                }`}
+                              >
+                                {seenByOthers ? "✓✓" : "✓"}
+                              </span>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     );
                   })}
-                  <div ref={messagesEndRef} />
                 </div>
               )}
             </div>
 
             <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex flex-col gap-3 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
+                    Lampiran
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Kirim gambar atau file kerja kecil langsung di obrolan tim.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.txt,.csv,.zip,.doc,.docx,.xls,.xlsx"
+                    onChange={handleFileSelection}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={
+                      uploadingFiles ||
+                      draftAttachments.length >= MAX_CHAT_ATTACHMENTS
+                    }
+                    className="inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {uploadingFiles ? "Memproses File..." : "Tambah File / Gambar"}
+                  </button>
+                  <span className="text-[11px] text-gray-500">
+                    Maks {MAX_CHAT_ATTACHMENTS} file, 2 MB per file
+                  </span>
+                </div>
+              </div>
+
+              {draftAttachments.length > 0 ? (
+                <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                  {draftAttachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50"
+                    >
+                      {isImageAttachment(attachment) ? (
+                        <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-gray-200">
+                          <Image
+                            src={attachment.dataUrl}
+                            alt={attachment.name}
+                            fill
+                            sizes="260px"
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : null}
+
+                      <div className="flex items-start gap-3 px-3 py-3">
+                        {!isImageAttachment(attachment) ? (
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-red-500 shadow-sm">
+                            ⤓
+                          </div>
+                        ) : null}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-gray-900">
+                            {attachment.name}
+                          </p>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {formatFileSize(attachment.size)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeDraftAttachment(attachment.id)}
+                          className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-500 transition hover:border-red-200 hover:text-red-500"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">
                 Tulis pesan ke tim
               </label>
@@ -429,13 +1055,17 @@ export default function TeamChatPageClient() {
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-xs text-gray-500">
                   Tekan <span className="font-semibold">Enter</span> untuk kirim,
-                  <span className="font-semibold"> Shift + Enter</span> untuk baris baru.
+                  <span className="font-semibold"> Shift + Enter</span> untuk baris
+                  baru.
                 </div>
 
                 <button
                   type="button"
                   onClick={() => void sendMessage()}
-                  disabled={sending || !messageText.trim()}
+                  disabled={
+                    sending ||
+                    (!messageText.trim() && draftAttachments.length === 0)
+                  }
                   className="inline-flex items-center justify-center rounded-2xl bg-red-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(239,68,68,0.22)] transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {sending ? "Mengirim..." : "Kirim Pesan"}
@@ -450,9 +1080,12 @@ export default function TeamChatPageClient() {
             ) : null}
 
             <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-500">
-              Histori menampilkan pesan terbaru tim. Pesan dikirim realtime ke semua
-              admin yang sedang membuka halaman ini.
-              {messages.length > 0 ? ` Update terakhir: ${formatDateTime(messages[messages.length - 1]?.createdAt)}.` : ""}
+              Histori menampilkan pesan terbaru tim. Pesan, lampiran, dan status
+              baca akan dikirim realtime ke semua admin yang sedang membuka halaman
+              ini.
+              {messages.length > 0
+                ? ` Update terakhir: ${formatDateTime(messages[messages.length - 1]?.createdAt)}.`
+                : ""}
             </div>
           </div>
         </Card>
