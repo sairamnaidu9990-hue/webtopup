@@ -706,7 +706,7 @@ export default function TeamChatPageClient() {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <SectionTitle
           title="Team Chat"
-          subtitle="Ruang obrolan realtime internal untuk seluruh admin KITAGG."
+          subtitle="Ruang obrolan admin KITAGG."
         />
 
         <div className="inline-flex w-full max-w-xs items-center justify-between rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm shadow-sm">
@@ -776,11 +776,10 @@ export default function TeamChatPageClient() {
             <div className="flex flex-col gap-3 rounded-3xl border border-gray-200 bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-gray-900">
-                  Koordinasi realtime untuk semua admin
+                  Chat realtime untuk semua admin
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
-                  Pesan, file, dan gambar akan dikirim ke semua admin yang sedang
-                  online di ruangan ini.
+                  Pesan, file, dan gambar akan dikirim ke semua admin.
                 </p>
               </div>
 
@@ -960,7 +959,7 @@ export default function TeamChatPageClient() {
                     Lampiran
                   </p>
                   <p className="mt-1 text-xs text-gray-500">
-                    Kirim gambar atau file kerja kecil langsung di obrolan tim.
+                    Kirim gambar atau file langsung di obrolan tim.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1048,7 +1047,7 @@ export default function TeamChatPageClient() {
                   }
                 }}
                 rows={4}
-                placeholder="Ketik update, reminder, atau koordinasi cepat untuk tim..."
+                placeholder="Halo"
                 className="min-h-[120px] w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base text-gray-900 shadow-sm outline-none transition focus:border-red-300 focus:ring-4 focus:ring-red-100 md:text-sm"
               />
 
@@ -1080,9 +1079,6 @@ export default function TeamChatPageClient() {
             ) : null}
 
             <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-500">
-              Histori menampilkan pesan terbaru tim. Pesan, lampiran, dan status
-              baca akan dikirim realtime ke semua admin yang sedang membuka halaman
-              ini.
               {messages.length > 0
                 ? ` Update terakhir: ${formatDateTime(messages[messages.length - 1]?.createdAt)}.`
                 : ""}

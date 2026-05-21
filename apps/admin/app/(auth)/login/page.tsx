@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             Admin Login
           </h1>
           <p className="mt-2 text-sm text-gray-400">
-            Masuk ke dashboard WebTopup
+            Masuk ke dashboard KITAGG
           </p>
         </div>
 

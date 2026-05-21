@@ -7,7 +7,7 @@ const TeamChatPageClient = dynamic(
   {
     loading: () => (
       <AdminPageSkeleton
-        title="Memuat chat tim"
+        title="Memuat chat "
         subtitle="Pesan internal dan presence admin sedang disiapkan."
         statsCount={2}
         showSidebar
