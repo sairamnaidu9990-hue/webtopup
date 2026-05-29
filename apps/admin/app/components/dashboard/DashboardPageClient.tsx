@@ -49,6 +49,32 @@ function formatDate(value?: string) {
   }).format(new Date(value));
 }
 
+function formatAnalyticsPath(path?: string) {
+  const rawPath = String(path || "").trim();
+
+  if (!rawPath) {
+    return "/";
+  }
+
+  let pathname = rawPath;
+
+  try {
+    pathname = decodeURIComponent(
+      new URL(rawPath, "https://kitagg.com").pathname || rawPath
+    );
+  } catch {
+    pathname = rawPath;
+  }
+
+  const compactPath = pathname.replace(/\/+/g, "/");
+
+  if (compactPath.length <= 52) {
+    return compactPath;
+  }
+
+  return `${compactPath.slice(0, 49)}...`;
+}
+
 function getStatusTone(status?: string) {
   switch (status) {
     case "SUCCESS":
@@ -292,8 +318,11 @@ export default function DashboardPageClient() {
                       key={item.path}
                       className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3"
                     >
-                      <p className="truncate text-sm font-semibold text-gray-900">
-                        {item.path}
+                      <p
+                        title={item.path}
+                        className="w-full max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold text-gray-900"
+                      >
+                        {formatAnalyticsPath(item.path)}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
                         <span>Pageview: {item.pageviews}</span>
