@@ -24,18 +24,22 @@ function getPositiveNumber(value: string | undefined, fallback: number) {
 }
 
 function getCookieOptions(httpOnly: boolean) {
+  const maxAge = ADMIN_SESSION_COOKIE_MAX_AGE_SECONDS;
+
   return {
     httpOnly,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict" as const,
+    sameSite: "lax" as const,
     path: "/",
+    maxAge,
+    expires: new Date(Date.now() + maxAge * 1000),
   };
 }
 
 export function setAdminTokenCookie(response: NextResponse, token: string) {
   response.cookies.set(ADMIN_TOKEN_COOKIE_NAME, token, {
     ...getCookieOptions(true),
-    maxAge: ADMIN_SESSION_COOKIE_MAX_AGE_SECONDS,
+    priority: "high",
   });
 }
 
@@ -45,7 +49,7 @@ export function touchAdminLastActiveCookie(
 ) {
   response.cookies.set(ADMIN_LAST_ACTIVE_COOKIE_NAME, String(value), {
     ...getCookieOptions(false),
-    maxAge: ADMIN_SESSION_COOKIE_MAX_AGE_SECONDS,
+    priority: "high",
   });
 }
 
@@ -53,10 +57,12 @@ export function clearAdminSessionCookies(response: NextResponse) {
   response.cookies.set(ADMIN_TOKEN_COOKIE_NAME, "", {
     ...getCookieOptions(true),
     maxAge: 0,
+    expires: new Date(0),
   });
   response.cookies.set(ADMIN_LAST_ACTIVE_COOKIE_NAME, "", {
     ...getCookieOptions(false),
     maxAge: 0,
+    expires: new Date(0),
   });
 }
 

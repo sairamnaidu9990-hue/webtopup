@@ -32,10 +32,13 @@ function writeLastActiveCookie(at: number) {
   }
 
   const secure = window.location.protocol === "https:" ? "; secure" : "";
+  const expiresAt = new Date(
+    Date.now() + ADMIN_SESSION_COOKIE_MAX_AGE_SECONDS * 1000
+  ).toUTCString();
 
   document.cookie = `${ADMIN_LAST_ACTIVE_COOKIE_NAME}=${encodeURIComponent(
     String(at)
-  )}; path=/; max-age=${ADMIN_SESSION_COOKIE_MAX_AGE_SECONDS}; samesite=strict${secure}`;
+  )}; path=/; expires=${expiresAt}; max-age=${ADMIN_SESSION_COOKIE_MAX_AGE_SECONDS}; samesite=lax${secure}`;
 }
 
 export default function AdminSessionManager() {

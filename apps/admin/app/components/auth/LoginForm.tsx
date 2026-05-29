@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { broadcastAdminActivity } from "@/lib/adminSession";
 
 type LoginFormProps = {
@@ -11,8 +10,6 @@ type LoginFormProps = {
 export default function LoginForm({
   sessionExpired = false,
 }: LoginFormProps) {
-  const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,9 +24,11 @@ export default function LoginForm({
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
+        cache: "no-store",
         body: JSON.stringify({ email, password }),
       });
 
@@ -40,8 +39,7 @@ export default function LoginForm({
       }
 
       broadcastAdminActivity();
-      router.push("/dashboard");
-      router.refresh();
+      window.location.replace("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
