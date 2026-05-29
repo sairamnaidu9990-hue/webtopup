@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import ArticleRichContent from "@/components/ArticleRichContent";
 import { getPublicArticleBySlug, getPublicArticles, getPublicSiteSetting } from "@/lib/siteData";
+import { getAbsoluteSiteUrl, getMetadataBase } from "@/lib/seo";
 
 type ArticleDetailPageProps = {
   params: Promise<{
@@ -37,17 +38,34 @@ export async function generateMetadata({
     return {
       title: "Artikel Tidak Ditemukan | KITAGG",
       description: "Artikel yang kamu cari tidak tersedia.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
   const title = `${article.title} | ${siteSetting.siteName}`;
+  const canonicalPath = `/artikel/${article.slug}`;
+  const canonicalUrl = getAbsoluteSiteUrl(siteSetting.siteDomain, canonicalPath);
+  const metadataBase = getMetadataBase(siteSetting.siteDomain);
 
   return {
     title,
     description: article.excerpt,
+    alternates: metadataBase
+      ? {
+          canonical: canonicalPath,
+        }
+      : undefined,
     openGraph: {
       title,
       description: article.excerpt,
+      type: "article",
+      ...(canonicalUrl ? { url: canonicalUrl } : {}),
+      ...(article.publishedAt ? { publishedTime: article.publishedAt } : {}),
+      ...(article.updatedAt ? { modifiedTime: article.updatedAt } : {}),
+      ...(article.createdBy?.name ? { authors: [article.createdBy.name] } : {}),
       images: article.coverImageUrl
         ? [
             {
@@ -70,9 +88,10 @@ export default async function ArticleDetailPage({
   params,
 }: ArticleDetailPageProps) {
   const { slug } = await params;
-  const [article, relatedArticles] = await Promise.all([
+  const [article, relatedArticles, siteSetting] = await Promise.all([
     getPublicArticleBySlug(slug),
     getPublicArticles({ limit: 3 }),
+    getPublicSiteSetting(),
   ]);
 
   if (!article) {
@@ -83,9 +102,73 @@ export default async function ArticleDetailPage({
   const nextRelatedArticles = relatedArticles.items.filter(
     (item) => item.slug !== article.slug
   );
+  const articleUrl = getAbsoluteSiteUrl(siteSetting.siteDomain, `/artikel/${article.slug}`);
+  const articleImageUrl = article.coverImageUrl || siteSetting.siteLogoUrl || undefined;
+  const articleStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.excerpt,
+    image: articleImageUrl ? [articleImageUrl] : undefined,
+    datePublished: article.publishedAt || article.createdAt || undefined,
+    dateModified: article.updatedAt || article.publishedAt || article.createdAt || undefined,
+    mainEntityOfPage: articleUrl,
+    author: {
+      "@type": "Organization",
+      name: siteSetting.siteName,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: siteSetting.siteName,
+      logo: siteSetting.siteLogoUrl
+        ? {
+            "@type": "ImageObject",
+            url: siteSetting.siteLogoUrl,
+          }
+        : undefined,
+    },
+  };
+  const breadcrumbStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: getAbsoluteSiteUrl(siteSetting.siteDomain, "/"),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Artikel",
+        item: getAbsoluteSiteUrl(siteSetting.siteDomain, "/artikel"),
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: article.title,
+        item: articleUrl,
+      },
+    ],
+  };
 
   return (
     <main className="site-shell pb-10 pt-6 sm:pb-12 sm:pt-8">
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(articleStructuredData),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbStructuredData),
+        }}
+      />
       <article className="overflow-hidden rounded-[30px] border border-white/8 bg-[#171922] shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
         <div className="relative aspect-[16/8] overflow-hidden bg-[#111217]">
           {article.coverImageUrl ? (

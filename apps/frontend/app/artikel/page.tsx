@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import ArticleCard from "@/components/ArticleCard";
-import { getPublicArticles } from "@/lib/siteData";
+import { getPublicArticles, getPublicSiteSetting } from "@/lib/siteData";
+import { getAbsoluteSiteUrl, getMetadataBase } from "@/lib/seo";
 
 type ArticlesListingPageProps = {
   searchParams?: Promise<{
@@ -9,18 +11,56 @@ type ArticlesListingPageProps = {
   }>;
 };
 
-export const metadata = {
-  title: "Artikel & Berita Game | KITAGG",
-  description:
-    "Baca artikel terbaru, berita game, panduan top up, dan update promo dari KITAGG.",
-};
+function resolvePageValue(rawPage?: string) {
+  const requestedPage = Number.parseInt(String(rawPage || "1"), 10);
+  return Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+}
+
+export async function generateMetadata({
+  searchParams,
+}: ArticlesListingPageProps): Promise<Metadata> {
+  const [siteSetting, resolvedSearchParams] = await Promise.all([
+    getPublicSiteSetting(),
+    searchParams,
+  ]);
+  const page = resolvePageValue(resolvedSearchParams?.page);
+  const title =
+    page > 1
+      ? `Artikel & Berita Game - Halaman ${page} | ${siteSetting.siteName}`
+      : `Artikel & Berita Game | ${siteSetting.siteName}`;
+  const description =
+    "Baca artikel terbaru, berita game, panduan top up, dan update promo dari KITAGG.";
+  const metadataBase = getMetadataBase(siteSetting.siteDomain);
+  const canonicalPath = page > 1 ? `/artikel?page=${page}` : "/artikel";
+  const canonicalUrl = getAbsoluteSiteUrl(siteSetting.siteDomain, canonicalPath);
+
+  return {
+    title,
+    description,
+    alternates: metadataBase
+      ? {
+          canonical: canonicalPath,
+        }
+      : undefined,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      ...(canonicalUrl ? { url: canonicalUrl } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
 
 export default async function ArticlesListingPage({
   searchParams,
 }: ArticlesListingPageProps) {
   const resolvedSearchParams = (await searchParams) || {};
-  const requestedPage = Number.parseInt(String(resolvedSearchParams.page || "1"), 10);
-  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const page = resolvePageValue(resolvedSearchParams.page);
   const result = await getPublicArticles({
     page,
     limit: 9,

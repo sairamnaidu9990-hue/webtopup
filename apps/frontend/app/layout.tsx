@@ -11,6 +11,7 @@ import LazyFloatingContactButton from "@/components/lazy/LazyFloatingContactButt
 import LazyHomepagePopup from "@/components/lazy/LazyHomepagePopup";
 import { CustomerSessionProvider } from "@/components/customer-auth/CustomerSessionProvider";
 import { getPublicSiteSetting } from "@/lib/siteData";
+import { getMetadataBase } from "@/lib/seo";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -21,18 +22,6 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
-
-function getMetadataBase(siteDomain: string) {
-  if (!siteDomain) {
-    return undefined;
-  }
-
-  try {
-    return new URL(siteDomain);
-  } catch {
-    return undefined;
-  }
-}
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteSetting = await getPublicSiteSetting();
