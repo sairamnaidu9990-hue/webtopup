@@ -94,11 +94,11 @@ export function isNavigationItemActive(pathname: string, href: string) {
 }
 
 export function SearchIcon() {
-  return <Search className="h-[18px] w-[18px]" strokeWidth={1.9} aria-hidden="true" />;
+  return <Search className="h-[19px] w-[19px]" strokeWidth={2.1} aria-hidden="true" />;
 }
 
 export function HamburgerIcon() {
-  return <Menu className="h-[18px] w-[18px]" strokeWidth={1.9} aria-hidden="true" />;
+  return <Menu className="h-[19px] w-[19px]" strokeWidth={2.1} aria-hidden="true" />;
 }
 
 export function HeaderIconButton({
@@ -117,10 +117,10 @@ export function HeaderIconButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-full border transition ${
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-full border transition sm:h-11 sm:w-11 ${
         active
-          ? "border-[var(--accent)] bg-[rgba(211,59,59,0.12)] text-white"
-          : "border-white/10 bg-[#23262d] text-white/82 hover:border-white/18 hover:text-white"
+          ? "border-[var(--accent)] bg-[rgba(211,59,59,0.14)] text-white shadow-[0_10px_26px_rgba(211,59,59,0.16)]"
+          : "border-white/10 bg-[#23262d] text-white/82 hover:border-[#d33b3b]/35 hover:bg-[#2a2d34] hover:text-white"
       }`}
     >
       {children}

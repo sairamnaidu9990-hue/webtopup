@@ -175,17 +175,17 @@ export default function SiteHeader({
               className="relative hidden min-w-0 flex-1 md:block"
             >
               <div className="relative">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/42">
+                  <SearchIcon />
+                </span>
                 <input
                   type="text"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   onFocus={() => setDesktopSearchOpen(true)}
                   placeholder="Cari game atau voucher"
-                  className="h-10 w-full rounded-full border border-white/10 bg-[#2a2d34] px-4 pr-11 text-base text-white outline-none transition placeholder:text-white/35 focus:border-[#d33b3b]/45 focus:bg-[#30333b] focus:shadow-[0_0_0_3px_rgba(211,59,59,0.12)] lg:h-11 lg:px-5 lg:text-[15px]"
+                  className="h-10 w-full rounded-full border border-white/10 bg-[#2a2d34] pl-12 pr-4 text-base text-white outline-none transition placeholder:text-white/35 focus:border-[#d33b3b]/45 focus:bg-[#30333b] focus:shadow-[0_0_0_3px_rgba(211,59,59,0.12)] lg:h-11 lg:text-[15px]"
                 />
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-white/45">
-                  <SearchIcon />
-                </span>
               </div>
 
               {desktopSearchOpen ? (
@@ -236,17 +236,17 @@ export default function SiteHeader({
             >
               <div className="rounded-[24px] border border-white/10 bg-[#171a21] p-3 shadow-[0_22px_60px_rgba(0,0,0,0.34)]">
                 <div className="relative">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/42">
+                    <SearchIcon />
+                  </span>
                   <input
                     ref={mobileInputRef}
                     type="text"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="Cari game atau voucher"
-                    className="h-11 w-full rounded-2xl border border-white/10 bg-[#2a2d34] px-4 pr-11 text-base text-white outline-none transition placeholder:text-white/35 focus:border-[#d33b3b]/45 focus:bg-[#30333b] focus:shadow-[0_0_0_3px_rgba(211,59,59,0.12)]"
+                    className="h-11 w-full rounded-2xl border border-white/10 bg-[#2a2d34] pl-12 pr-4 text-base text-white outline-none transition placeholder:text-white/35 focus:border-[#d33b3b]/45 focus:bg-[#30333b] focus:shadow-[0_0_0_3px_rgba(211,59,59,0.12)]"
                   />
-                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-white/45">
-                    <SearchIcon />
-                  </span>
                 </div>
 
                 <div className="mt-3">
