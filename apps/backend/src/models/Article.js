@@ -27,6 +27,43 @@ const adminSnapshotSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const relatedGameSnapshotSchema = new mongoose.Schema(
+  {
+    gameId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Game",
+      default: null,
+    },
+    name: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    code: {
+      type: String,
+      default: "",
+      trim: true,
+      uppercase: true,
+    },
+    logo: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    provider: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    category: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
 const articleSchema = new mongoose.Schema(
   {
     title: {
@@ -67,6 +104,16 @@ const articleSchema = new mongoose.Schema(
       default: "DRAFT",
       index: true,
     },
+    category: {
+      type: String,
+      enum: ["GAME", "EVENT", "PROMO", "TOPUP_GUIDE"],
+      default: "GAME",
+      index: true,
+    },
+    relatedGame: {
+      type: relatedGameSnapshotSchema,
+      default: null,
+    },
     isFeatured: {
       type: Boolean,
       default: false,
@@ -96,10 +143,17 @@ const articleSchema = new mongoose.Schema(
 
 articleSchema.index({
   status: 1,
+  category: 1,
   isFeatured: -1,
   sortOrder: 1,
   publishedAt: -1,
   createdAt: -1,
+});
+articleSchema.index({
+  status: 1,
+  category: 1,
+  "relatedGame.code": 1,
+  publishedAt: -1,
 });
 
 module.exports = mongoose.model("Article", articleSchema);

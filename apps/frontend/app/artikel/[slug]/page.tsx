@@ -7,6 +7,13 @@ import ArticleRichContent from "@/components/ArticleRichContent";
 import { getPublicArticleBySlug, getPublicArticles, getPublicSiteSetting } from "@/lib/siteData";
 import { getAbsoluteSiteUrl, getMetadataBase } from "@/lib/seo";
 
+const ARTICLE_CATEGORY_LABELS: Record<string, string> = {
+  GAME: "Artikel Game",
+  EVENT: "Jadwal Event",
+  PROMO: "Promo",
+  TOPUP_GUIDE: "Cara Topup",
+};
+
 type ArticleDetailPageProps = {
   params: Promise<{
     slug: string;
@@ -88,15 +95,20 @@ export default async function ArticleDetailPage({
   params,
 }: ArticleDetailPageProps) {
   const { slug } = await params;
-  const [article, relatedArticles, siteSetting] = await Promise.all([
+  const [article, siteSetting] = await Promise.all([
     getPublicArticleBySlug(slug),
-    getPublicArticles({ limit: 3 }),
     getPublicSiteSetting(),
   ]);
 
   if (!article) {
     notFound();
   }
+
+  const relatedArticles = await getPublicArticles({
+    limit: 4,
+    category: article.category,
+    game: article.relatedGame?.code,
+  });
 
   const publishedLabel = formatDate(article.publishedAt || article.createdAt);
   const nextRelatedArticles = relatedArticles.items.filter(
@@ -191,6 +203,17 @@ export default async function ArticleDetailPage({
             <Link href="/artikel" className="transition hover:text-white/80">
               Artikel
             </Link>
+            <span className="rounded-full border border-[#d33b3b]/35 bg-[#d33b3b]/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-[#ffb3b3]">
+              {ARTICLE_CATEGORY_LABELS[article.category] || "Artikel"}
+            </span>
+            {article.relatedGame?.name ? (
+              <Link
+                href={`/artikel?category=GAME&game=${encodeURIComponent(article.relatedGame.code)}`}
+                className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white/70 transition hover:border-[#d33b3b]/50 hover:text-white"
+              >
+                {article.relatedGame.name}
+              </Link>
+            ) : null}
             {publishedLabel ? <span>{publishedLabel}</span> : null}
             <span>{article.readingMinutes} Menit Baca</span>
             {article.isFeatured ? <span>Featured</span> : null}

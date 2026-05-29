@@ -1,11 +1,17 @@
 const Article = require("../models/Article");
+const Game = require("../models/Game");
 
 const DEFAULT_PUBLIC_LIMIT = 6;
 const DEFAULT_ADMIN_LIMIT = 20;
 const MAX_ADMIN_LIMIT = 100;
+const ARTICLE_CATEGORY_VALUES = ["GAME", "EVENT", "PROMO", "TOPUP_GUIDE"];
 
 function toStringValue(value) {
   return String(value || "").trim();
+}
+
+function normalizeCode(value) {
+  return toStringValue(value).toUpperCase();
 }
 
 function toPositiveInteger(value, fallback) {
@@ -93,6 +99,26 @@ function estimateReadingMinutes(content) {
   return Math.max(1, Math.ceil(words / 180));
 }
 
+function normalizeArticleCategory(value) {
+  const normalized = toStringValue(value).toUpperCase();
+  return ARTICLE_CATEGORY_VALUES.includes(normalized) ? normalized : "GAME";
+}
+
+function serializeRelatedGame(game) {
+  if (!game || typeof game !== "object") {
+    return null;
+  }
+
+  return {
+    gameId: String(game.gameId || ""),
+    name: toStringValue(game.name),
+    code: normalizeCode(game.code),
+    logo: toStringValue(game.logo),
+    provider: toStringValue(game.provider),
+    category: toStringValue(game.category),
+  };
+}
+
 function serializeArticle(article) {
   return {
     _id: String(article?._id || ""),
@@ -102,6 +128,8 @@ function serializeArticle(article) {
     content: String(article?.content || ""),
     coverImageUrl: toStringValue(article?.coverImageUrl),
     status: toStringValue(article?.status || "DRAFT"),
+    category: normalizeArticleCategory(article?.category),
+    relatedGame: serializeRelatedGame(article?.relatedGame),
     isFeatured: Boolean(article?.isFeatured),
     sortOrder: Number(article?.sortOrder ?? 9999),
     readingMinutes: estimateReadingMinutes(article?.content),
@@ -141,6 +169,7 @@ async function normalizeArticlePayload(body, options = {}) {
   const excerpt = buildExcerpt(title, body?.excerpt, content);
   const coverImageUrl = toStringValue(body?.coverImageUrl).slice(0, 1200);
   const status = toStringValue(body?.status || "DRAFT").toUpperCase();
+  const category = normalizeArticleCategory(body?.category);
   const isFeatured = Boolean(body?.isFeatured);
   const sortOrder = Number.isFinite(Number(body?.sortOrder))
     ? Number(body?.sortOrder)
@@ -162,6 +191,32 @@ async function normalizeArticlePayload(body, options = {}) {
     rawSlug || title,
     options.excludeId || null
   );
+  let relatedGame = null;
+
+  if (category === "GAME") {
+    const relatedGameId = toStringValue(body?.relatedGameId);
+
+    if (!relatedGameId) {
+      throw new Error("Pilih game untuk artikel kategori game");
+    }
+
+    const matchedGame = await Game.findById(relatedGameId)
+      .select("_id name code logo provider category")
+      .lean();
+
+    if (!matchedGame) {
+      throw new Error("Game artikel tidak ditemukan");
+    }
+
+    relatedGame = {
+      gameId: matchedGame._id,
+      name: toStringValue(matchedGame.name),
+      code: normalizeCode(matchedGame.code),
+      logo: toStringValue(matchedGame.logo),
+      provider: toStringValue(matchedGame.provider),
+      category: toStringValue(matchedGame.category),
+    };
+  }
 
   const normalized = {
     title,
@@ -170,6 +225,8 @@ async function normalizeArticlePayload(body, options = {}) {
     content: content.slice(0, 50000),
     coverImageUrl,
     status,
+    category,
+    relatedGame,
     isFeatured,
     sortOrder,
   };
@@ -186,6 +243,43 @@ async function normalizeArticlePayload(body, options = {}) {
   return normalized;
 }
 
+async function getPublishedArticleGames() {
+  const results = await Article.aggregate([
+    {
+      $match: {
+        status: "PUBLISHED",
+        category: "GAME",
+        "relatedGame.code": { $exists: true, $ne: "" },
+      },
+    },
+    {
+      $group: {
+        _id: "$relatedGame.code",
+        gameId: { $first: "$relatedGame.gameId" },
+        name: { $first: "$relatedGame.name" },
+        code: { $first: "$relatedGame.code" },
+        logo: { $first: "$relatedGame.logo" },
+        provider: { $first: "$relatedGame.provider" },
+        articleCount: { $sum: 1 },
+      },
+    },
+    {
+      $sort: {
+        name: 1,
+      },
+    },
+  ]);
+
+  return results.map((item) => ({
+    gameId: String(item.gameId || ""),
+    name: toStringValue(item.name),
+    code: normalizeCode(item.code),
+    logo: toStringValue(item.logo),
+    provider: toStringValue(item.provider),
+    articleCount: Number(item.articleCount || 0),
+  }));
+}
+
 async function getPublicArticles(req, res) {
   try {
     const page = toPositiveInteger(req.query.page, 1);
@@ -195,32 +289,51 @@ async function getPublicArticles(req, res) {
     );
     const skip = (page - 1) * limit;
     const search = toStringValue(req.query.search);
+    const category = normalizeArticleCategory(req.query.category || "GAME");
+    const hasCategoryFilter = req.query.category != null;
+    const gameCode = normalizeCode(req.query.game);
 
     const query = {
       status: "PUBLISHED",
     };
+
+    if (hasCategoryFilter) {
+      query.category = category;
+    }
+
+    if (gameCode) {
+      query.category = "GAME";
+      query["relatedGame.code"] = gameCode;
+    }
 
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: "i" } },
         { excerpt: { $regex: search, $options: "i" } },
         { content: { $regex: search, $options: "i" } },
+        { "relatedGame.name": { $regex: search, $options: "i" } },
       ];
     }
 
-    const [items, totalItems] = await Promise.all([
+    const [items, totalItems, availableGames] = await Promise.all([
       Article.find(query)
         .sort({ isFeatured: -1, sortOrder: 1, publishedAt: -1, createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
       Article.countDocuments(query),
+      getPublishedArticleGames(),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
     return res.status(200).json({
       items: items.map(serializeArticleSummary),
+      availableGames,
+      filters: {
+        category: gameCode ? "GAME" : hasCategoryFilter ? category : "",
+        game: gameCode,
+      },
       page,
       limit,
       totalItems,
@@ -278,6 +391,8 @@ async function getAdminArticles(req, res) {
     const skip = (page - 1) * limit;
     const search = toStringValue(req.query.search);
     const status = toStringValue(req.query.status).toUpperCase();
+    const rawCategory = toStringValue(req.query.category);
+    const category = rawCategory ? normalizeArticleCategory(rawCategory) : "";
 
     const query = {};
 
@@ -291,6 +406,10 @@ async function getAdminArticles(req, res) {
 
     if (["DRAFT", "PUBLISHED"].includes(status)) {
       query.status = status;
+    }
+
+    if (category) {
+      query.category = category;
     }
 
     const [items, totalItems] = await Promise.all([
@@ -395,6 +514,7 @@ async function deleteArticle(req, res) {
 }
 
 module.exports = {
+  ARTICLE_CATEGORY_VALUES,
   createArticle,
   deleteArticle,
   getAdminArticles,

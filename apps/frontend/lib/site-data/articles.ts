@@ -12,6 +12,8 @@ export const getPublicArticles = cache(
     page?: number;
     limit?: number;
     search?: string;
+    category?: string;
+    game?: string;
   }): Promise<PublicArticleListPage> => {
     try {
       const params = new URLSearchParams();
@@ -26,6 +28,14 @@ export const getPublicArticles = cache(
 
       if (options?.search?.trim()) {
         params.set("search", options.search.trim());
+      }
+
+      if (options?.category?.trim()) {
+        params.set("category", options.category.trim());
+      }
+
+      if (options?.game?.trim()) {
+        params.set("game", options.game.trim());
       }
 
       const queryString = params.toString();
@@ -46,6 +56,11 @@ export const getPublicArticles = cache(
     } catch {
       return {
         items: [],
+        availableGames: [],
+        filters: {
+          category: options?.category || "",
+          game: options?.game || "",
+        },
         page: options?.page || 1,
         limit: options?.limit || 6,
         totalItems: 0,

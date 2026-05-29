@@ -24,6 +24,21 @@ export type SiteGameFaq = {
   answer: string;
 };
 
+export type PublicArticleCategory =
+  | "GAME"
+  | "EVENT"
+  | "PROMO"
+  | "TOPUP_GUIDE";
+
+export type PublicArticleGameReference = {
+  gameId: string;
+  name: string;
+  code: string;
+  logo: string;
+  provider: string;
+  category: string;
+};
+
 export type PublicArticle = {
   _id: string;
   title: string;
@@ -32,6 +47,8 @@ export type PublicArticle = {
   content: string;
   coverImageUrl: string;
   status: "DRAFT" | "PUBLISHED";
+  category: PublicArticleCategory;
+  relatedGame?: PublicArticleGameReference | null;
   isFeatured: boolean;
   sortOrder: number;
   readingMinutes: number;
@@ -52,8 +69,22 @@ export type PublicArticle = {
   } | null;
 };
 
+export type PublicArticleGameFilter = {
+  gameId: string;
+  name: string;
+  code: string;
+  logo: string;
+  provider: string;
+  articleCount: number;
+};
+
 export type PublicArticleListPage = {
   items: PublicArticle[];
+  availableGames: PublicArticleGameFilter[];
+  filters: {
+    category: string;
+    game: string;
+  };
   page: number;
   limit: number;
   totalItems: number;

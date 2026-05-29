@@ -3,6 +3,13 @@ import Link from "next/link";
 
 import type { PublicArticle } from "@/lib/siteData";
 
+const ARTICLE_CATEGORY_LABELS: Record<string, string> = {
+  GAME: "Game",
+  EVENT: "Jadwal Event",
+  PROMO: "Promo",
+  TOPUP_GUIDE: "Cara Topup",
+};
+
 function formatDate(value?: string | null) {
   if (!value) {
     return null;
@@ -23,6 +30,8 @@ export default function ArticleCard({
   priority?: boolean;
 }) {
   const publishedLabel = formatDate(article.publishedAt || article.createdAt);
+  const categoryLabel =
+    ARTICLE_CATEGORY_LABELS[article.category] || "Artikel";
 
   return (
     <Link
@@ -52,6 +61,14 @@ export default function ArticleCard({
 
       <div className="space-y-3 px-5 py-5 sm:px-6">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.18em] text-white/45">
+          <span className="rounded-full border border-[#d33b3b]/35 bg-[#d33b3b]/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-[#ffb3b3]">
+            {categoryLabel}
+          </span>
+          {article.relatedGame?.name ? (
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-white/70">
+              {article.relatedGame.name}
+            </span>
+          ) : null}
           {publishedLabel ? <span>{publishedLabel}</span> : null}
           <span>{article.readingMinutes} Menit Baca</span>
         </div>

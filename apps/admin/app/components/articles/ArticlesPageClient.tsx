@@ -7,12 +7,31 @@ import { getResponseMessage, parseJsonSafely } from "@/app/lib/http";
 import type { AdminArticle } from "@/app/types/Article";
 
 const PAGE_LIMIT = 20;
+const ARTICLE_CATEGORY_OPTIONS = [
+  { value: "GAME", label: "Artikel Game" },
+  { value: "EVENT", label: "Jadwal Event" },
+  { value: "PROMO", label: "Promo" },
+  { value: "TOPUP_GUIDE", label: "Cara Topup" },
+] as const;
+
+type ArticleCategory = (typeof ARTICLE_CATEGORY_OPTIONS)[number]["value"];
+
+type AdminGameOption = {
+  _id: string;
+  name: string;
+  code: string;
+  category?: string;
+  provider?: string;
+};
+
 const emptyForm = {
   title: "",
   slug: "",
   excerpt: "",
   content: "",
   coverImageUrl: "",
+  category: "GAME" as ArticleCategory,
+  relatedGameId: "",
   status: "DRAFT" as "DRAFT" | "PUBLISHED",
   isFeatured: false,
   sortOrder: "9999",
@@ -35,8 +54,16 @@ function buildStatusTone(status: string) {
     : "bg-amber-50 text-amber-700";
 }
 
+function buildCategoryLabel(category: string) {
+  return (
+    ARTICLE_CATEGORY_OPTIONS.find((item) => item.value === category)?.label ||
+    "Artikel"
+  );
+}
+
 export default function ArticlesPageClient() {
   const [articles, setArticles] = useState<AdminArticle[]>([]);
+  const [gameOptions, setGameOptions] = useState<AdminGameOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formOpen, setFormOpen] = useState(true);
@@ -45,6 +72,7 @@ export default function ArticlesPageClient() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -56,6 +84,26 @@ export default function ArticlesPageClient() {
     setEditingId(null);
     setForm(emptyForm);
   };
+
+  const fetchGames = useCallback(async () => {
+    try {
+      const response = await fetch("/api/games?status=ACTIVE&limit=500", {
+        cache: "no-store",
+      });
+      const payload = await parseJsonSafely<{
+        items?: AdminGameOption[];
+        message?: string;
+      }>(response);
+
+      if (!response.ok) {
+        throw new Error(getResponseMessage(payload, "Gagal mengambil daftar game"));
+      }
+
+      setGameOptions(Array.isArray(payload?.items) ? payload.items : []);
+    } catch {
+      setGameOptions([]);
+    }
+  }, []);
 
   const fetchArticles = useCallback(async () => {
     try {
@@ -73,6 +121,10 @@ export default function ArticlesPageClient() {
 
       if (statusFilter !== "ALL") {
         params.set("status", statusFilter);
+      }
+
+      if (categoryFilter !== "ALL") {
+        params.set("category", categoryFilter);
       }
 
       const response = await fetch(`/api/articles?${params.toString()}`, {
@@ -104,11 +156,15 @@ export default function ArticlesPageClient() {
     } finally {
       setLoading(false);
     }
-  }, [page, deferredSearch, statusFilter]);
+  }, [page, deferredSearch, statusFilter, categoryFilter]);
 
   useEffect(() => {
     void fetchArticles();
   }, [fetchArticles]);
+
+  useEffect(() => {
+    void fetchGames();
+  }, [fetchGames]);
 
   const publishedCount = useMemo(
     () => articles.filter((item) => item.status === "PUBLISHED").length,
@@ -127,6 +183,8 @@ export default function ArticlesPageClient() {
       excerpt: article.excerpt || "",
       content: article.content || "",
       coverImageUrl: article.coverImageUrl || "",
+      category: article.category || "GAME",
+      relatedGameId: article.relatedGame?.gameId || "",
       status: article.status || "DRAFT",
       isFeatured: Boolean(article.isFeatured),
       sortOrder: String(article.sortOrder ?? 9999),
@@ -180,6 +238,7 @@ export default function ArticlesPageClient() {
         body: JSON.stringify({
           ...form,
           sortOrder: Number(form.sortOrder || 9999),
+          relatedGameId: form.category === "GAME" ? form.relatedGameId : "",
         }),
       });
       const payload = await parseJsonSafely<{ message?: string }>(response);
@@ -303,6 +362,58 @@ export default function ArticlesPageClient() {
                 placeholder="https://..."
                 className="w-full rounded-2xl border border-[#f1d6d6] px-4 py-3 text-base outline-none transition focus:border-[#d33b3b] md:text-sm"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#241c1c]">Kategori Artikel</label>
+              <select
+                value={form.category}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    category: event.target.value as ArticleCategory,
+                    relatedGameId:
+                      event.target.value === "GAME" ? current.relatedGameId : "",
+                  }))
+                }
+                className="w-full rounded-2xl border border-[#f1d6d6] px-4 py-3 text-base outline-none transition focus:border-[#d33b3b] md:text-sm"
+              >
+                {ARTICLE_CATEGORY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#241c1c]">Game Terkait</label>
+              <select
+                value={form.relatedGameId}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    relatedGameId: event.target.value,
+                  }))
+                }
+                disabled={form.category !== "GAME"}
+                className="w-full rounded-2xl border border-[#f1d6d6] px-4 py-3 text-base outline-none transition focus:border-[#d33b3b] disabled:cursor-not-allowed disabled:bg-[#faf1f1] md:text-sm"
+              >
+                <option value="">
+                  {form.category === "GAME"
+                    ? "Pilih game"
+                    : "Hanya dipakai untuk kategori game"}
+                </option>
+                {gameOptions.map((game) => (
+                  <option key={game._id} value={game._id}>
+                    {game.name} • {game.provider || game.category || game.code}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-[#9b7f7f]">
+                Saat kategori artikel adalah game, artikel ini akan muncul di menu
+                dropdown game sesuai pilihan di atas.
+              </p>
             </div>
 
             <div className="space-y-2 lg:col-span-2">
@@ -438,6 +549,21 @@ export default function ArticlesPageClient() {
             <option value="PUBLISHED">Published</option>
             <option value="DRAFT">Draft</option>
           </select>
+          <select
+            value={categoryFilter}
+            onChange={(event) => {
+              setCategoryFilter(event.target.value);
+              setPage(1);
+            }}
+            className="w-full rounded-2xl border border-[#f1d6d6] px-4 py-3 text-base outline-none transition focus:border-[#d33b3b] md:max-w-[220px] md:text-sm"
+          >
+            <option value="ALL">Semua kategori</option>
+            {ARTICLE_CATEGORY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {loading ? (
@@ -465,6 +591,9 @@ export default function ArticlesPageClient() {
                       <h3 className="truncate text-lg font-semibold text-[#241c1c]">
                         {article.title}
                       </h3>
+                      <span className="rounded-full bg-[#fff2f2] px-2.5 py-1 text-[11px] font-semibold text-[#b73333]">
+                        {buildCategoryLabel(article.category)}
+                      </span>
                       <span
                         className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${buildStatusTone(
                           article.status
@@ -483,6 +612,9 @@ export default function ArticlesPageClient() {
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#9b7f7f]">
                       <span>Slug: /artikel/{article.slug}</span>
+                      {article.relatedGame?.name ? (
+                        <span>Game: {article.relatedGame.name}</span>
+                      ) : null}
                       <span>{article.readingMinutes} menit baca</span>
                       <span>Urutan: {article.sortOrder}</span>
                       <span>
