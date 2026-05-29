@@ -14,6 +14,7 @@ const defaultForm = {
   email: "",
   phoneCountryCode: "+62",
   phoneNumber: "",
+  referralCode: "",
   password: "",
   confirmPassword: "",
 };
@@ -59,6 +60,7 @@ export default function CustomerRegisterForm() {
           email: form.email,
           phoneCountryCode: form.phoneCountryCode,
           phoneNumber: form.phoneNumber,
+          referralCode: form.referralCode,
           password: form.password,
           recaptchaToken,
         }),
@@ -191,6 +193,25 @@ export default function CustomerRegisterForm() {
             className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-base text-white outline-none transition placeholder:text-white/28 focus:border-red-400/40 focus:bg-white/[0.08]"
             autoComplete="tel"
             required
+          />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <label className="block text-sm font-medium text-white/84">
+            Kode Referral
+          </label>
+          <input
+            type="text"
+            value={form.referralCode}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                referralCode: event.target.value.toUpperCase(),
+              }))
+            }
+            placeholder="Opsional, isi jika kamu punya kode referral"
+            className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-base uppercase tracking-[0.08em] text-white outline-none transition placeholder:normal-case placeholder:tracking-normal placeholder:text-white/28 focus:border-red-400/40 focus:bg-white/[0.08]"
+            autoComplete="off"
           />
         </div>
 

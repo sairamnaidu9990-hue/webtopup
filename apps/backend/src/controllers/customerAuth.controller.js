@@ -2,6 +2,10 @@ const bcrypt = require("bcryptjs");
 const Customer = require("../models/Customer");
 const generateCustomerToken = require("../utils/generateCustomerToken");
 const { verifyRecaptchaToken } = require("../utils/verifyRecaptcha");
+const {
+  generateUniqueReferralCode,
+  normalizeReferralCode,
+} = require("../utils/customerRewards");
 
 function normalizeEmail(email) {
   return String(email || "")
@@ -20,6 +24,19 @@ function normalizePhoneNumber(value) {
   return String(value || "").replace(/[^0-9]/g, "");
 }
 
+async function ensureCustomerReferralCode(customer) {
+  if (!customer || String(customer.referralCode || "").trim()) {
+    return customer;
+  }
+
+  customer.referralCode = await generateUniqueReferralCode(
+    customer.username || customer.name || customer.email
+  );
+  await customer.save();
+
+  return customer;
+}
+
 function serializeCustomer(customer) {
   return {
     id: customer._id,
@@ -29,6 +46,14 @@ function serializeCustomer(customer) {
     phoneCountryCode: customer.phoneCountryCode || "+62",
     phoneNumber: customer.phoneNumber || "",
     balance: Number(customer.balance || 0),
+    referralCode: String(customer.referralCode || "").trim(),
+    referredBy: customer.referredBy
+      ? String(customer.referredBy._id || customer.referredBy)
+      : "",
+    loyaltyPoints: Number(customer.loyaltyPoints || 0),
+    totalLoyaltyPointsEarned: Number(customer.totalLoyaltyPointsEarned || 0),
+    totalLoyaltyPointsRedeemed: Number(customer.totalLoyaltyPointsRedeemed || 0),
+    referralBonusGrantedAt: customer.referralBonusGrantedAt || null,
     isActive: Boolean(customer.isActive),
     createdAt: customer.createdAt,
     updatedAt: customer.updatedAt,
@@ -44,6 +69,7 @@ async function registerCustomer(req, res) {
       phoneCountryCode = "+62",
       phoneNumber,
       password,
+      referralCode,
       recaptchaToken,
     } = req.body || {};
 
@@ -72,6 +98,7 @@ async function registerCustomer(req, res) {
     const normalizedUsername = normalizeUsername(username);
     const normalizedEmail = normalizeEmail(email);
     const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+    const normalizedReferralCode = normalizeReferralCode(referralCode);
 
     if (!normalizedUsername) {
       return res.status(400).json({
@@ -112,12 +139,31 @@ async function registerCustomer(req, res) {
       });
     }
 
+    let referredByCustomer = null;
+
+    if (normalizedReferralCode) {
+      referredByCustomer = await Customer.findOne({
+        referralCode: normalizedReferralCode,
+        isActive: true,
+      }).select("_id");
+
+      if (!referredByCustomer) {
+        return res.status(404).json({
+          message: "Kode referral tidak ditemukan atau sudah tidak aktif",
+        });
+      }
+    }
+
+    const generatedReferralCode = await generateUniqueReferralCode(normalizedUsername);
+
     const customer = await Customer.create({
       username: normalizedUsername,
       name: String(name).trim(),
       email: normalizedEmail,
       phoneCountryCode: String(phoneCountryCode || "+62").trim() || "+62",
       phoneNumber: normalizedPhoneNumber,
+      referralCode: generatedReferralCode,
+      referredBy: referredByCustomer?._id || null,
       password: await bcrypt.hash(String(password), 10),
     });
 
@@ -181,6 +227,8 @@ async function loginCustomer(req, res) {
       });
     }
 
+    await ensureCustomerReferralCode(customer);
+
     const token = generateCustomerToken(customer);
 
     return res.status(200).json({
@@ -198,6 +246,8 @@ async function loginCustomer(req, res) {
 
 async function getCurrentCustomer(req, res) {
   try {
+    await ensureCustomerReferralCode(req.customer);
+
     return res.status(200).json({
       customer: serializeCustomer(req.customer),
     });

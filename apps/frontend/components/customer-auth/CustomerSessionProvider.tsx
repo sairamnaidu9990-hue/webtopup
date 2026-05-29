@@ -17,6 +17,12 @@ export type StorefrontCustomer = {
   phoneCountryCode: string;
   phoneNumber: string;
   balance: number;
+  referralCode: string;
+  referredBy: string;
+  loyaltyPoints: number;
+  totalLoyaltyPointsEarned: number;
+  totalLoyaltyPointsRedeemed: number;
+  referralBonusGrantedAt?: string | null;
   isActive: boolean;
 };
 

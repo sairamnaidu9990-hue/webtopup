@@ -33,6 +33,7 @@ const {
   debitCustomerBalance,
 } = require("../utils/customerBalance");
 const { validatePromoForOrder } = require("../utils/promoCode");
+const { syncCustomerRewardsForSuccessfulOrder } = require("../utils/customerRewards");
 const { serializeOrderReviewState } = require("./review.controller");
 
 const DEFAULT_LIMIT = 20;
@@ -295,6 +296,19 @@ function isManualPaymentMethod(paymentMethod) {
 async function saveOrderAndBroadcast(order, source = "system") {
   await order.save();
   broadcastOrderUpdate(order, source);
+  await syncCustomerRewardsForSuccessfulOrder(order).catch((error) => {
+    logError({
+      source: "backend",
+      scope: "customer-rewards",
+      message: "Gagal sinkronisasi referral dan loyalty order",
+      meta: {
+        invoiceNumber: order?.invoiceNumber,
+        orderId: order?._id,
+        source,
+      },
+      error,
+    });
+  });
   return order;
 }
 
@@ -1178,12 +1192,17 @@ function serializeCustomerOrder(order) {
     _id: order._id,
     invoiceNumber: order.invoiceNumber,
     orderType: normalizeOrderType(order.orderType),
+    gameCode: toStringValue(order.gameSnapshot?.code),
+    variantId: order.variant ? String(order.variant) : "",
     status: order.status,
     paymentStatus: order.paymentStatus,
     providerStatus: order.providerStatus,
     quantity: normalizeOrderQuantity(order.quantity, DEFAULT_ORDER_QUANTITY),
     gameSnapshot: order.gameSnapshot,
     variantSnapshot: order.variantSnapshot,
+    customerInputs: Array.isArray(order.customerInputs) ? order.customerInputs : [],
+    contactDetail: order.contactDetail || {},
+    paymentMethodCode: order.paymentMethodCode,
     paymentMethodName: order.paymentMethodName,
     price: order.price,
     providerMessage: order.providerMessage,
@@ -1429,6 +1448,7 @@ async function getPublicOrderByInvoice(req, res) {
     await syncTokopayPaymentStatus(order);
     await finalizeBalanceTopupOrder(order, "balance-topup-public");
     await syncBangjeffOrderStatus(order);
+    await syncCustomerRewardsForSuccessfulOrder(order);
     const review = await Review.findOne({ order: order._id }).lean();
 
     return res.status(200).json({
@@ -1506,6 +1526,7 @@ async function getCurrentCustomerOrders(req, res) {
         await finalizeBalanceTopupOrder(order, "balance-topup-customer");
         await maybeProcessBangjeffAfterPaid(order);
         await syncBangjeffOrderStatus(order);
+        await syncCustomerRewardsForSuccessfulOrder(order);
       })
     );
 
@@ -1690,6 +1711,7 @@ async function createOrderDraft(req, res) {
         gameId: String(game._id || ""),
         category: toStringValue(game.category),
         subtotal: sellPrice,
+        customerId: req.customer?._id || null,
       });
 
       if (!promoValidationResult.ok) {

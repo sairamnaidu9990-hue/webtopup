@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useCustomerSession } from "@/components/customer-auth/CustomerSessionProvider";
 import type {
   StorefrontBalanceTransaction,
+  StorefrontCustomerPointTransaction,
+  StorefrontCustomerRewardSummary,
   StorefrontPaymentMethod,
 } from "@/lib/siteData";
 
@@ -13,6 +15,7 @@ import CustomerBalanceTopupSection from "@/components/customer-auth/dashboard/Cu
 import CustomerBalanceTransactionsSection from "@/components/customer-auth/dashboard/CustomerBalanceTransactionsSection";
 import CustomerDashboardAuthPrompt from "@/components/customer-auth/dashboard/CustomerDashboardAuthPrompt";
 import CustomerDashboardHero from "@/components/customer-auth/dashboard/CustomerDashboardHero";
+import CustomerRewardsSection from "@/components/customer-auth/dashboard/CustomerRewardsSection";
 import CustomerDashboardSkeleton from "@/components/customer-auth/dashboard/CustomerDashboardSkeleton";
 import CustomerOrdersSection from "@/components/customer-auth/dashboard/CustomerOrdersSection";
 import type { CustomerOrder } from "@/components/customer-auth/dashboard/types";
@@ -29,15 +32,28 @@ export default function CustomerDashboardClient() {
     StorefrontBalanceTransaction[]
   >([]);
   const [paymentMethods, setPaymentMethods] = useState<StorefrontPaymentMethod[]>([]);
+  const [rewardSummary, setRewardSummary] =
+    useState<StorefrontCustomerRewardSummary | null>(null);
+  const [pointTransactions, setPointTransactions] = useState<
+    StorefrontCustomerPointTransaction[]
+  >([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(true);
+  const [rewardsLoading, setRewardsLoading] = useState(true);
   const [error, setError] = useState("");
   const [topupFeedback, setTopupFeedback] = useState("");
+  const [rewardFeedback, setRewardFeedback] = useState("");
   const [balanceLogoUrl, setBalanceLogoUrl] = useState("");
   const [topupAmount, setTopupAmount] = useState(String(MIN_TOPUP_AMOUNT));
   const [topupPaymentMethodCode, setTopupPaymentMethodCode] = useState("");
   const [topupSubmitting, setTopupSubmitting] = useState(false);
+  const [redeemBalancePoints, setRedeemBalancePoints] = useState("100");
+  const [redeemPromoPoints, setRedeemPromoPoints] = useState("100");
+  const [redeemSubmitting, setRedeemSubmitting] = useState<
+    "balance" | "promo" | null
+  >(null);
+  const [dashboardReloadNonce, setDashboardReloadNonce] = useState(0);
 
   useEffect(() => {
     if (!customer?.id) {
@@ -56,10 +72,13 @@ export default function CustomerDashboardClient() {
       setOrders([]);
       setBalanceTransactions([]);
       setPaymentMethods([]);
+      setRewardSummary(null);
+      setPointTransactions([]);
       setTopupPaymentMethodCode("");
       setOrdersLoading(false);
       setBalanceLoading(false);
       setPaymentMethodsLoading(false);
+      setRewardsLoading(false);
       return;
     }
 
@@ -70,6 +89,7 @@ export default function CustomerDashboardClient() {
         setOrdersLoading(true);
         setBalanceLoading(true);
         setPaymentMethodsLoading(true);
+        setRewardsLoading(true);
         setError("");
 
         const [
@@ -77,6 +97,7 @@ export default function CustomerDashboardClient() {
           balanceResponse,
           paymentMethodsResponse,
           siteSettingResponse,
+          rewardsResponse,
         ] = await Promise.all([
           fetch("/api/customer-orders/me?limit=20", {
             cache: "no-store",
@@ -94,6 +115,10 @@ export default function CustomerDashboardClient() {
             cache: "no-store",
             signal: controller.signal,
           }),
+          fetch("/api/customer-rewards/me?limit=20", {
+            cache: "no-store",
+            signal: controller.signal,
+          }),
         ]);
 
         const [
@@ -101,6 +126,7 @@ export default function CustomerDashboardClient() {
           balancePayload,
           paymentMethodsPayload,
           siteSettingPayload,
+          rewardsPayload,
         ] = await Promise.all([
           ordersResponse.json().catch(() => ({
             items: [],
@@ -116,6 +142,11 @@ export default function CustomerDashboardClient() {
           })),
           siteSettingResponse.json().catch(() => ({
             siteSetting: null,
+          })),
+          rewardsResponse.json().catch(() => ({
+            summary: null,
+            pointTransactions: [],
+            message: "Respons rewards tidak valid",
           })),
         ]);
 
@@ -134,6 +165,12 @@ export default function CustomerDashboardClient() {
         if (!paymentMethodsResponse.ok) {
           throw new Error(
             paymentMethodsPayload.message || "Gagal mengambil metode pembayaran"
+          );
+        }
+
+        if (!rewardsResponse.ok) {
+          throw new Error(
+            rewardsPayload.message || "Gagal mengambil data referral dan loyalty"
           );
         }
 
@@ -157,6 +194,12 @@ export default function CustomerDashboardClient() {
           ).trim()
         );
         setPaymentMethods(nextPaymentMethods);
+        setRewardSummary(rewardsPayload.summary || null);
+        setPointTransactions(
+          Array.isArray(rewardsPayload.pointTransactions)
+            ? rewardsPayload.pointTransactions
+            : []
+        );
         setTopupPaymentMethodCode((current) => {
           if (
             current &&
@@ -183,6 +226,7 @@ export default function CustomerDashboardClient() {
           setOrdersLoading(false);
           setBalanceLoading(false);
           setPaymentMethodsLoading(false);
+          setRewardsLoading(false);
         }
       }
     };
@@ -190,7 +234,7 @@ export default function CustomerDashboardClient() {
     void fetchDashboardData();
 
     return () => controller.abort();
-  }, [customer, loading]);
+  }, [customer, dashboardReloadNonce, loading]);
 
   const purchaseOrders = useMemo(
     () => orders.filter((order) => order.orderType !== "BALANCE_TOPUP"),
@@ -219,6 +263,64 @@ export default function CustomerDashboardClient() {
         .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0),
     [balanceTransactions]
   );
+
+  const handleRedeemRewards = async (mode: "balance" | "promo") => {
+    const rawPoints = mode === "balance" ? redeemBalancePoints : redeemPromoPoints;
+    const points = Math.round(Number(rawPoints || 0));
+    const minimumRedeemPoints = Number(rewardSummary?.minimumRedeemPoints || 100);
+
+    if (!Number.isFinite(points) || points < minimumRedeemPoints) {
+      setError(
+        `Minimal tukar poin adalah ${minimumRedeemPoints.toLocaleString("id-ID")} poin`
+      );
+      return;
+    }
+
+    try {
+      setRedeemSubmitting(mode);
+      setRewardFeedback("");
+      setError("");
+
+      const response = await fetch(`/api/customer-rewards/redeem-${mode}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ points }),
+      });
+      const payload = await response.json().catch(() => ({
+        message: "Respons rewards tidak valid",
+      }));
+
+      if (!response.ok) {
+        throw new Error(payload.message || "Gagal menukar poin member");
+      }
+
+      setRewardFeedback(
+        payload?.promoCode?.code
+          ? `${payload.message || "Poin berhasil ditukar"}. Kode promo: ${
+              payload.promoCode.code
+            }`
+          : payload.message || "Poin berhasil ditukar"
+      );
+      if (mode === "balance") {
+        setRedeemBalancePoints(String(minimumRedeemPoints));
+      } else {
+        setRedeemPromoPoints(String(minimumRedeemPoints));
+      }
+      await refresh();
+      setDashboardReloadNonce((current) => current + 1);
+      router.refresh();
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Gagal menukar poin member"
+      );
+    } finally {
+      setRedeemSubmitting(null);
+    }
+  };
 
   const handleTopupSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -310,6 +412,7 @@ export default function CustomerDashboardClient() {
           successfulOrders={successfulOrders}
           totalSpent={totalSpent}
           totalTopupCredits={totalTopupCredits}
+          referredCustomersCount={Number(rewardSummary?.referredCustomersCount || 0)}
         />
 
         {topupFeedback ? (
@@ -321,6 +424,12 @@ export default function CustomerDashboardClient() {
         {error ? (
           <div className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
             {error}
+          </div>
+        ) : null}
+
+        {rewardFeedback ? (
+          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+            {rewardFeedback}
           </div>
         ) : null}
 
@@ -343,6 +452,19 @@ export default function CustomerDashboardClient() {
             balanceLoading={balanceLoading}
           />
         </section>
+
+        <CustomerRewardsSection
+          summary={rewardSummary}
+          pointTransactions={pointTransactions}
+          loading={rewardsLoading}
+          redeemBalancePoints={redeemBalancePoints}
+          redeemPromoPoints={redeemPromoPoints}
+          redeemSubmitting={redeemSubmitting}
+          onRedeemBalancePointsChange={setRedeemBalancePoints}
+          onRedeemPromoPointsChange={setRedeemPromoPoints}
+          onRedeemBalance={() => void handleRedeemRewards("balance")}
+          onRedeemPromo={() => void handleRedeemRewards("promo")}
+        />
 
         <CustomerOrdersSection orders={orders} ordersLoading={ordersLoading} />
       </div>

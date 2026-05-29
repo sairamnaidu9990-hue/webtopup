@@ -72,5 +72,17 @@ export function getTransactionLabel(transaction: StorefrontBalanceTransaction) {
     return "Pengurangan Saldo Admin";
   }
 
+  if (source === "REFERRAL_WELCOME_BONUS") {
+    return "Bonus Referral User Baru";
+  }
+
+  if (source === "REFERRAL_REFERRER_BONUS") {
+    return "Bonus Referral Pengajak";
+  }
+
+  if (source === "LOYALTY_REDEEM_BALANCE") {
+    return "Tukar Poin ke Saldo";
+  }
+
   return transaction.type === "CREDIT" ? "Saldo Masuk" : "Saldo Keluar";
 }

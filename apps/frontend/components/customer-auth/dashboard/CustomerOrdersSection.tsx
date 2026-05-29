@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import type { CustomerOrder } from "./types";
 import { formatCurrency, formatDate, getStatusTone } from "./utils";
@@ -37,6 +40,38 @@ export default function CustomerOrdersSection({
   orders: CustomerOrder[];
   ordersLoading: boolean;
 }) {
+  const router = useRouter();
+
+  const handleRepeatOrder = (order: CustomerOrder) => {
+    const gameCode = String(order.gameCode || order.gameSnapshot?.code || "").trim();
+    const variantId = String(order.variantId || "").trim();
+
+    if (!gameCode || !variantId) {
+      return;
+    }
+
+    const repeatKey = String(order.invoiceNumber || "").trim();
+
+    window.sessionStorage.setItem(
+      `kitagg-repeat-order:${repeatKey}`,
+      JSON.stringify({
+        invoiceNumber: repeatKey,
+        gameCode,
+        variantId,
+        quantity: Math.max(Number(order.quantity || 1), 1),
+        paymentMethodCode: order.paymentMethodCode || "",
+        customerInputs: Array.isArray(order.customerInputs) ? order.customerInputs : [],
+        contactDetail: order.contactDetail || {},
+      })
+    );
+
+    router.push(
+      `/games/${encodeURIComponent(gameCode)}?repeatOrder=${encodeURIComponent(
+        repeatKey
+      )}`
+    );
+  };
+
   return (
     <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.24)] sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -64,9 +99,8 @@ export default function CustomerOrdersSection({
       ) : (
         <div className="mt-5 space-y-3">
           {orders.map((order) => (
-            <Link
+            <div
               key={order._id}
-              href={`/invoice/${order.invoiceNumber}`}
               className="block rounded-3xl border border-white/10 bg-white/[0.03] px-4 py-4 transition hover:border-red-400/25 hover:bg-white/[0.05]"
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -135,7 +169,28 @@ export default function CustomerOrdersSection({
                   </div>
                 </div>
               </div>
-            </Link>
+
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href={`/invoice/${order.invoiceNumber}`}
+                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-white/10 px-4 text-sm font-semibold text-white/80 transition hover:bg-white/5 hover:text-white"
+                >
+                  Lihat Invoice
+                </Link>
+
+                {order.orderType !== "BALANCE_TOPUP" &&
+                String(order.gameCode || order.gameSnapshot?.code || "").trim() &&
+                String(order.variantId || "").trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => handleRepeatOrder(order)}
+                    className="inline-flex h-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(211,59,59,0.22)] transition hover:brightness-110"
+                  >
+                    Beli Lagi
+                  </button>
+                ) : null}
+              </div>
+            </div>
           ))}
         </div>
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import type { AppliedPromoCode } from "@/components/PromoCodeSection";
@@ -33,6 +33,7 @@ export default function useGameTopupFlow({
   paymentMethods: StorefrontPaymentMethod[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { customer, refresh } = useCustomerSession();
   const resolvedInputs = useMemo(() => getBangjeffInputs(game), [game]);
   const isVoucherCategory =
@@ -71,6 +72,7 @@ export default function useGameTopupFlow({
   const [openPaymentGroups, setOpenPaymentGroups] = useState<
     Record<string, boolean>
   >({});
+  const [repeatOrderApplied, setRepeatOrderApplied] = useState(false);
   const [highlightedStep, setHighlightedStep] = useState<
     "account" | "variant" | "quantity" | "payment" | "contact" | null
   >(null);
@@ -191,6 +193,115 @@ export default function useGameTopupFlow({
   useEffect(() => {
     setMobileCheckoutMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (customer?.email && !contactEmail) {
+      setContactEmail(customer.email);
+    }
+
+    if (customer?.phoneNumber && !contactPhoneNumber) {
+      setContactPhoneNumber(customer.phoneNumber);
+    }
+  }, [contactEmail, contactPhoneNumber, customer]);
+
+  useEffect(() => {
+    const repeatOrderKey = String(searchParams.get("repeatOrder") || "").trim();
+
+    if (!repeatOrderKey || repeatOrderApplied) {
+      return;
+    }
+
+    const rawDraft = window.sessionStorage.getItem(
+      `kitagg-repeat-order:${repeatOrderKey}`
+    );
+
+    if (!rawDraft) {
+      setRepeatOrderApplied(true);
+      return;
+    }
+
+    try {
+      const draft = JSON.parse(rawDraft) as {
+        gameCode?: string;
+        variantId?: string;
+        quantity?: number;
+        paymentMethodCode?: string;
+        customerInputs?: Array<{
+          name?: string;
+          title?: string;
+          value?: string;
+        }>;
+        contactDetail?: {
+          email?: string;
+          phoneNumber?: string;
+        };
+      };
+
+      if (
+        String(draft.gameCode || "").trim().toUpperCase() !==
+        String(game.code || "").trim().toUpperCase()
+      ) {
+        setRepeatOrderApplied(true);
+        return;
+      }
+
+      const nextVariantId = String(draft.variantId || "").trim();
+
+      if (nextVariantId && variants.some((variant) => variant._id === nextVariantId)) {
+        setSelectedVariantId(nextVariantId);
+      }
+
+      setQuantity(Math.min(Math.max(Number(draft.quantity || 1), 1), 10));
+      setContactEmail(String(draft.contactDetail?.email || customer?.email || "").trim());
+      setContactPhoneNumber(
+        String(draft.contactDetail?.phoneNumber || customer?.phoneNumber || "").trim()
+      );
+
+      const nextPaymentMethodCode = String(draft.paymentMethodCode || "").trim();
+
+      if (
+        nextPaymentMethodCode &&
+        paymentMethods.some((paymentMethod) => paymentMethod.code === nextPaymentMethodCode)
+      ) {
+        setPaymentMethodCode(nextPaymentMethodCode);
+      }
+
+      if (Array.isArray(draft.customerInputs)) {
+        setAccountValues((current) => {
+          const nextValues = { ...current };
+
+          draft.customerInputs?.forEach((item) => {
+            const key = String(item?.name || item?.title || "").trim();
+
+            if (key) {
+              nextValues[key] = String(item?.value || "");
+            }
+          });
+
+          return nextValues;
+        });
+      }
+
+      setSuccessToast({
+        id: Date.now(),
+        message:
+          "Pesanan sebelumnya berhasil dimuat. Cek kembali detailnya lalu lanjutkan checkout.",
+      });
+    } catch {
+      // Ignore invalid repeat-order drafts.
+    } finally {
+      window.sessionStorage.removeItem(`kitagg-repeat-order:${repeatOrderKey}`);
+      setRepeatOrderApplied(true);
+    }
+  }, [
+    customer?.email,
+    customer?.phoneNumber,
+    game.code,
+    paymentMethods,
+    repeatOrderApplied,
+    searchParams,
+    variants,
+  ]);
 
   useEffect(() => {
     setOpenPaymentGroups((current) => {

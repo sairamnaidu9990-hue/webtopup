@@ -1,5 +1,6 @@
 const Customer = require("../models/Customer");
 const { serializeCustomer } = require("./customerAuth.controller");
+const { generateUniqueReferralCode } = require("../utils/customerRewards");
 
 function normalizeEmail(email) {
   return String(email || "")
@@ -39,6 +40,19 @@ async function getCustomers(req, res) {
     const customers = await Customer.find()
       .select("-password")
       .sort({ createdAt: -1, name: 1 });
+
+    await Promise.all(
+      customers.map(async (customer) => {
+        if (String(customer.referralCode || "").trim()) {
+          return;
+        }
+
+        customer.referralCode = await generateUniqueReferralCode(
+          customer.username || customer.name || customer.email
+        );
+        await customer.save();
+      })
+    );
 
     return res.status(200).json({
       customers: customers.map(serializeCustomer),

@@ -83,6 +83,18 @@ function getTransactionLabel(transaction: CustomerBalanceTransaction) {
     return "Pengurangan Saldo";
   }
 
+  if (source === "REFERRAL_WELCOME_BONUS") {
+    return "Bonus Referral User Baru";
+  }
+
+  if (source === "REFERRAL_REFERRER_BONUS") {
+    return "Bonus Referral Pengajak";
+  }
+
+  if (source === "LOYALTY_REDEEM_BALANCE") {
+    return "Tukar Poin ke Saldo";
+  }
+
   return transaction.type === "CREDIT" ? "Saldo Masuk" : "Saldo Keluar";
 }
 
@@ -467,14 +479,29 @@ export default function CustomersPageClient() {
                     <p className="mt-2 text-sm font-medium text-gray-700">
                       {selectedCustomer.id}
                     </p>
+                    <p className="mt-2 text-xs text-gray-500">
+                      Referral: {selectedCustomer.referralCode || "-"}
+                    </p>
                   </div>
-                  <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-right">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-red-400">
-                      Saldo Saat Ini
-                    </p>
-                    <p className="mt-2 text-base font-semibold text-gray-900">
-                      {formatCurrency(Number(selectedCustomer.balance || 0))}
-                    </p>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-right">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-red-400">
+                        Saldo Saat Ini
+                      </p>
+                      <p className="mt-2 text-base font-semibold text-gray-900">
+                        {formatCurrency(Number(selectedCustomer.balance || 0))}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-right">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-500">
+                        Loyalty Points
+                      </p>
+                      <p className="mt-2 text-base font-semibold text-gray-900">
+                        {Number(selectedCustomer.loyaltyPoints || 0).toLocaleString(
+                          "id-ID"
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -818,6 +845,10 @@ export default function CustomersPageClient() {
                         <p className="mt-1 text-sm text-gray-500">
                           {(customer.phoneCountryCode || "+62").trim()}{" "}
                           {(customer.phoneNumber || "-").trim()}
+                        </p>
+                        <p className="mt-2 text-xs text-gray-500">
+                          Referral: {customer.referralCode || "-"} • Poin:{" "}
+                          {Number(customer.loyaltyPoints || 0).toLocaleString("id-ID")}
                         </p>
                         <p className="mt-2 text-xs text-gray-400">
                           ID: {customer.id}

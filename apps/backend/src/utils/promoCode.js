@@ -23,6 +23,16 @@ function normalizeGameId(value) {
   return mongoose.isValidObjectId(normalized) ? normalized : "";
 }
 
+function normalizeCustomerId(value) {
+  const normalized = String(value || "").trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  return mongoose.isValidObjectId(normalized) ? normalized : "";
+}
+
 function escapeRegex(value) {
   return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -203,11 +213,25 @@ async function getPromoDailyUsageCount(promoCode) {
   });
 }
 
+async function getPromoTotalUsageCount(promoCode) {
+  if (!promoCode?._id) {
+    return 0;
+  }
+
+  return Order.countDocuments({
+    "promoSnapshot.promoId": promoCode._id,
+    status: {
+      $nin: EXCLUDED_USAGE_STATUSES,
+    },
+  });
+}
+
 async function validatePromoForOrder({
   code,
   gameId,
   category,
   subtotal,
+  customerId,
   requireActive = true,
 }) {
   const normalizedCode = normalizePromoCode(code);
@@ -239,6 +263,18 @@ async function validatePromoForOrder({
     };
   }
 
+  const ownerCustomerId = normalizeCustomerId(promoCode?.ownedByCustomer);
+  const normalizedCustomerId = normalizeCustomerId(customerId);
+
+  if (ownerCustomerId && ownerCustomerId !== normalizedCustomerId) {
+    return {
+      ok: false,
+      status: 403,
+      message: "Kode promo ini hanya bisa dipakai oleh akun yang memilikinya",
+      promoCode,
+    };
+  }
+
   if (!isPromoScopeAllowed({ promoCode, gameId, category })) {
     return {
       ok: false,
@@ -264,7 +300,9 @@ async function validatePromoForOrder({
   }
 
   const dailyUsageCount = await getPromoDailyUsageCount(promoCode);
+  const totalUsageCount = await getPromoTotalUsageCount(promoCode);
   const maxDailyUses = toPositiveInteger(promoCode.maxDailyUses, 0);
+  const maxTotalUses = toPositiveInteger(promoCode.maxTotalUses, 0);
 
   if (maxDailyUses > 0 && dailyUsageCount >= maxDailyUses) {
     return {
@@ -274,6 +312,20 @@ async function validatePromoForOrder({
       promoCode,
       dailyUsageCount,
       remainingDailyUses: 0,
+    };
+  }
+
+  if (maxTotalUses > 0 && totalUsageCount >= maxTotalUses) {
+    return {
+      ok: false,
+      status: 400,
+      message: "Kode promo ini sudah habis digunakan",
+      promoCode,
+      dailyUsageCount,
+      totalUsageCount,
+      remainingDailyUses:
+        maxDailyUses > 0 ? Math.max(maxDailyUses - dailyUsageCount, 0) : null,
+      remainingTotalUses: 0,
     };
   }
 
@@ -300,8 +352,11 @@ async function validatePromoForOrder({
     promoCode,
     discountAmount,
     dailyUsageCount,
+    totalUsageCount,
     remainingDailyUses:
       maxDailyUses > 0 ? Math.max(maxDailyUses - dailyUsageCount, 0) : null,
+    remainingTotalUses:
+      maxTotalUses > 0 ? Math.max(maxTotalUses - totalUsageCount, 0) : null,
   };
 }
 
@@ -310,7 +365,11 @@ function serializePromoCode(promoCode, options = {}) {
   const gameId = normalizeGameId(options.gameId);
   const category = normalizeCategory(options.category);
   const dailyUsageCount = toNonNegativeNumber(options.dailyUsageCount, 0);
+  const totalUsageCount = toNonNegativeNumber(options.totalUsageCount, 0);
   const maxDailyUses = toPositiveInteger(promoCode?.maxDailyUses, 0);
+  const maxTotalUses = toPositiveInteger(promoCode?.maxTotalUses, 0);
+  const customerId = normalizeCustomerId(options.customerId);
+  const ownerCustomerId = normalizeCustomerId(promoCode?.ownedByCustomer);
   const minimumOrderAmount = toNonNegativeNumber(
     promoCode?.minimumOrderAmount,
     0
@@ -320,14 +379,18 @@ function serializePromoCode(promoCode, options = {}) {
     gameId,
     category,
   });
+  const ownerAllowed = !ownerCustomerId || ownerCustomerId === customerId;
   const reachedDailyLimit = maxDailyUses > 0 && dailyUsageCount >= maxDailyUses;
+  const reachedTotalLimit = maxTotalUses > 0 && totalUsageCount >= maxTotalUses;
   const reachedMinimumOrder = subtotal >= minimumOrderAmount;
   const discountAmount = calculatePromoDiscountAmount(subtotal, promoCode);
   const isAvailable =
     Boolean(promoCode?.isActive) &&
+    ownerAllowed &&
     allowedForScope &&
     reachedMinimumOrder &&
     !reachedDailyLimit &&
+    !reachedTotalLimit &&
     (subtotal <= 0 || discountAmount > 0);
 
   return {
@@ -339,25 +402,34 @@ function serializePromoCode(promoCode, options = {}) {
     discountValue: toNonNegativeNumber(promoCode?.discountValue, 0),
     minimumOrderAmount,
     maxDailyUses,
+    maxTotalUses,
     applicableGameIds: normalizeApplicableGameIds(promoCode?.applicableGameIds),
     applicableCategories: normalizeApplicableCategories(
       promoCode?.applicableCategories
     ),
     isActive: Boolean(promoCode?.isActive),
     order: toNumber(promoCode?.order, 9999),
+    ownedByCustomer: ownerCustomerId,
     dailyUsageCount,
+    totalUsageCount,
     remainingDailyUses:
       maxDailyUses > 0 ? Math.max(maxDailyUses - dailyUsageCount, 0) : null,
+    remainingTotalUses:
+      maxTotalUses > 0 ? Math.max(maxTotalUses - totalUsageCount, 0) : null,
     discountAmount,
     isAvailable,
     availabilityReason: !promoCode?.isActive
       ? "Promo sedang tidak aktif"
+      : !ownerAllowed
+      ? "Promo ini hanya milik akun tertentu"
       : !allowedForScope
       ? "Promo tidak berlaku untuk game ini"
       : !reachedMinimumOrder
       ? "Minimal pembelian belum tercapai"
       : reachedDailyLimit
       ? "Kuota promo hari ini habis"
+      : reachedTotalLimit
+      ? "Promo ini sudah habis digunakan"
       : "",
     createdAt: promoCode?.createdAt || null,
     updatedAt: promoCode?.updatedAt || null,
@@ -368,9 +440,11 @@ module.exports = {
   calculatePromoDiscountAmount,
   escapeRegex,
   getPromoDailyUsageCount,
+  getPromoTotalUsageCount,
   isPromoGameAllowed,
   isPromoCategoryAllowed,
   isPromoScopeAllowed,
+  normalizeCustomerId,
   normalizeApplicableCategories,
   normalizeApplicableGameIds,
   normalizeDiscountType,

@@ -3,8 +3,10 @@ const Game = require("../models/Game");
 const {
   escapeRegex,
   getPromoDailyUsageCount,
+  getPromoTotalUsageCount,
   normalizeApplicableCategories,
   normalizeApplicableGameIds,
+  normalizeCustomerId,
   normalizeDiscountType,
   normalizeGameId,
   normalizePromoCode,
@@ -137,11 +139,15 @@ exports.getPromoCodes = async (req, res) => {
     const serializeAdminItems = async (items) =>
       Promise.all(
         items.map(async (promoCode) => {
-          const dailyUsageCount = await getPromoDailyUsageCount(promoCode);
+          const [dailyUsageCount, totalUsageCount] = await Promise.all([
+            getPromoDailyUsageCount(promoCode),
+            getPromoTotalUsageCount(promoCode),
+          ]);
 
           return {
             ...serializePromoCode(promoCode, {
               dailyUsageCount,
+              totalUsageCount,
             }),
             applicableGames: serializeApplicableGames(promoCode.applicableGameIds),
           };
@@ -184,27 +190,48 @@ exports.getPublicPromoCodes = async (req, res) => {
     const gameId = req.query.gameId;
     const category = String(req.query.category || "").trim();
     const subtotal = toNonNegativeNumber(req.query.subtotal, 0);
-    const filter = {
-      isActive: true,
-    };
+    const customerId = normalizeCustomerId(req.customer?._id);
+    const queryParts = [{ isActive: true }];
     const applicabilityFilter = buildApplicabilityFilter({
       gameId,
       category,
     });
 
     if (applicabilityFilter) {
-      Object.assign(filter, applicabilityFilter);
+      queryParts.push(applicabilityFilter);
     }
 
+    if (customerId) {
+      queryParts.push({
+        $or: [
+          {
+            ownedByCustomer: null,
+          },
+          {
+            ownedByCustomer: customerId,
+          },
+        ],
+      });
+    } else {
+      queryParts.push({ ownedByCustomer: null });
+    }
+
+    const filter =
+      queryParts.length === 1 ? queryParts[0] : { $and: queryParts };
     const items = await PromoCode.find(filter).sort({ order: 1, createdAt: -1 });
     const serialized = await Promise.all(
       items.map(async (promoCode) => {
-        const dailyUsageCount = await getPromoDailyUsageCount(promoCode);
+        const [dailyUsageCount, totalUsageCount] = await Promise.all([
+          getPromoDailyUsageCount(promoCode),
+          getPromoTotalUsageCount(promoCode),
+        ]);
         return serializePromoCode(promoCode, {
           gameId,
           category,
           subtotal,
+          customerId,
           dailyUsageCount,
+          totalUsageCount,
         });
       })
     );
@@ -226,11 +253,13 @@ exports.validatePublicPromoCode = async (req, res) => {
     const gameId = req.body?.gameId;
     const category = req.body?.category;
     const subtotal = req.body?.subtotal;
+    const customerId = req.customer?._id;
     const result = await validatePromoForOrder({
       code: promoCode,
       gameId,
       category,
       subtotal,
+      customerId,
       requireActive: true,
     });
 
@@ -245,7 +274,9 @@ exports.validatePublicPromoCode = async (req, res) => {
         gameId,
         category,
         subtotal,
+        customerId,
         dailyUsageCount: result.dailyUsageCount,
+        totalUsageCount: result.totalUsageCount,
       }),
       discountAmount: result.discountAmount,
       message: "Kode promo berhasil diterapkan",
@@ -268,9 +299,11 @@ exports.createPromoCode = async (req, res) => {
       discountValue = 0,
       minimumOrderAmount = 0,
       maxDailyUses = 0,
+      maxTotalUses = 0,
       applicableGameIds = [],
       applicableCategories = [],
       isActive = true,
+      ownedByCustomer = null,
       order = 9999,
     } = req.body || {};
 
@@ -311,9 +344,11 @@ exports.createPromoCode = async (req, res) => {
       discountValue: toNonNegativeNumber(discountValue, 0),
       minimumOrderAmount: toNonNegativeNumber(minimumOrderAmount, 0),
       maxDailyUses: toPositiveInteger(maxDailyUses, 0),
+      maxTotalUses: toPositiveInteger(maxTotalUses, 0),
       applicableGameIds: normalizedApplicableGameIds,
       applicableCategories: normalizedApplicableCategories,
       isActive: Boolean(isActive),
+      ownedByCustomer: normalizeCustomerId(ownedByCustomer) || null,
       order: toNonNegativeNumber(order, 9999),
     });
 
@@ -400,6 +435,13 @@ exports.updatePromoCode = async (req, res) => {
       );
     }
 
+    if (Object.prototype.hasOwnProperty.call(req.body, "maxTotalUses")) {
+      updatePayload.maxTotalUses = toPositiveInteger(
+        req.body.maxTotalUses,
+        0
+      );
+    }
+
     if (Object.prototype.hasOwnProperty.call(req.body, "applicableGameIds")) {
       const normalizedApplicableGameIds = normalizeApplicableGameIds(
         req.body.applicableGameIds
@@ -420,6 +462,11 @@ exports.updatePromoCode = async (req, res) => {
 
     if (Object.prototype.hasOwnProperty.call(req.body, "isActive")) {
       updatePayload.isActive = Boolean(req.body.isActive);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "ownedByCustomer")) {
+      updatePayload.ownedByCustomer =
+        normalizeCustomerId(req.body.ownedByCustomer) || null;
     }
 
     if (Object.prototype.hasOwnProperty.call(req.body, "order")) {

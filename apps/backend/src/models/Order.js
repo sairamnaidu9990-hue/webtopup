@@ -525,6 +525,41 @@ const orderSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    loyaltyPointsGranted: {
+      type: Number,
+      default: 0,
+    },
+    loyaltyPointsGrantedAt: {
+      type: Date,
+      default: null,
+    },
+    loyaltyPointsTransactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CustomerPointTransaction",
+      default: null,
+    },
+    referralRewardsProcessedAt: {
+      type: Date,
+      default: null,
+    },
+    referralWelcomeBonusAmount: {
+      type: Number,
+      default: 0,
+    },
+    referralReferrerBonusAmount: {
+      type: Number,
+      default: 0,
+    },
+    referralWelcomeBalanceTransactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CustomerBalanceTransaction",
+      default: null,
+    },
+    referralReferrerBalanceTransactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CustomerBalanceTransaction",
+      default: null,
+    },
     refundedToBalanceAt: {
       type: Date,
       default: null,

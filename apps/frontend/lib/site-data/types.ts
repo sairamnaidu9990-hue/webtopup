@@ -293,15 +293,53 @@ export type StorefrontPromoCode = {
   discountValue: number;
   minimumOrderAmount: number;
   maxDailyUses: number;
+  maxTotalUses: number;
   applicableGameIds: string[];
   applicableCategories: string[];
   isActive: boolean;
   order: number;
+  ownedByCustomer?: string;
   dailyUsageCount: number;
+  totalUsageCount: number;
   remainingDailyUses: number | null;
+  remainingTotalUses: number | null;
   discountAmount: number;
   isAvailable: boolean;
   availabilityReason: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export type StorefrontCustomerRewardSummary = {
+  referralCode: string;
+  referredCustomersCount: number;
+  loyaltyPoints: number;
+  totalLoyaltyPointsEarned: number;
+  totalLoyaltyPointsRedeemed: number;
+  referralBonusGrantedAt?: string | null;
+  referralQualifiedOrder: string;
+  referredBy: {
+    id: string;
+    name: string;
+    username: string;
+    referralCode: string;
+  } | null;
+  loyaltyRedeemValuePerPoint: number;
+  minimumRedeemPoints: number;
+};
+
+export type StorefrontCustomerPointTransaction = {
+  id: string;
+  type: string;
+  source: string;
+  points: number;
+  pointsBefore: number;
+  pointsAfter: number;
+  description: string;
+  invoiceNumber: string;
+  orderId: string;
+  promoCodeId: string;
+  balanceTransactionId: string;
   createdAt?: string | null;
   updatedAt?: string | null;
 };

@@ -43,6 +43,43 @@ const customerSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    referralCode: {
+      type: String,
+      default: "",
+      trim: true,
+      uppercase: true,
+      index: true,
+    },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      default: null,
+      index: true,
+    },
+    referralBonusGrantedAt: {
+      type: Date,
+      default: null,
+    },
+    referralQualifiedOrder: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      default: null,
+    },
+    loyaltyPoints: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalLoyaltyPointsEarned: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalLoyaltyPointsRedeemed: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     isActive: {
       type: Boolean,
       default: true,

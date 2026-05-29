@@ -42,6 +42,11 @@ const promoCodeSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    maxTotalUses: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     applicableGameIds: {
       type: [
         {
@@ -60,6 +65,12 @@ const promoCodeSchema = new mongoose.Schema(
       default: true,
       index: true,
     },
+    ownedByCustomer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      default: null,
+      index: true,
+    },
     order: {
       type: Number,
       default: 9999,
@@ -71,5 +82,6 @@ const promoCodeSchema = new mongoose.Schema(
 promoCodeSchema.index({ isActive: 1, order: 1, createdAt: -1 });
 promoCodeSchema.index({ applicableGameIds: 1, isActive: 1 });
 promoCodeSchema.index({ applicableCategories: 1, isActive: 1 });
+promoCodeSchema.index({ ownedByCustomer: 1, isActive: 1, createdAt: -1 });
 
 module.exports = mongoose.model("PromoCode", promoCodeSchema);

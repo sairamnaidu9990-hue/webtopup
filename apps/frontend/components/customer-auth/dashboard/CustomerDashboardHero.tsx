@@ -10,12 +10,14 @@ export default function CustomerDashboardHero({
   successfulOrders,
   totalSpent,
   totalTopupCredits,
+  referredCustomersCount,
 }: {
   customer: StorefrontCustomer;
   balanceLogoUrl: string;
   successfulOrders: number;
   totalSpent: number;
   totalTopupCredits: number;
+  referredCustomersCount: number;
 }) {
   return (
     <section className="overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,rgba(211,59,59,0.18)_0%,rgba(17,18,23,0.96)_24%,rgba(17,18,23,0.98)_100%)] shadow-[0_28px_90px_rgba(0,0,0,0.34)]">
@@ -31,7 +33,7 @@ export default function CustomerDashboardHero({
             Selamat datang di dashboard user KITAGG!
           </p>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-4">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/42">
                 Username
@@ -74,6 +76,22 @@ export default function CustomerDashboardHero({
                 {formatCurrency(totalSpent)}
               </p>
             </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/42">
+                Loyalty Points
+              </p>
+              <p className="mt-3 text-lg font-semibold text-white">
+                {Number(customer.loyaltyPoints || 0).toLocaleString("id-ID")} poin
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/42">
+                Kode Referral
+              </p>
+              <p className="mt-3 text-lg font-semibold tracking-[0.12em] text-white">
+                {customer.referralCode || "-"}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -100,6 +118,12 @@ export default function CustomerDashboardHero({
               <p className="text-white/42">Total Saldo Masuk</p>
               <p className="mt-2 font-medium text-red-100">
                 {formatCurrency(totalTopupCredits)}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4">
+              <p className="text-white/42">Referral Aktif</p>
+              <p className="mt-2 font-medium text-white">
+                {Number(referredCustomersCount || 0).toLocaleString("id-ID")} user
               </p>
             </div>
           </div>
