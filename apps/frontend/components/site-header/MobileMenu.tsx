@@ -6,13 +6,11 @@ import { usePathname } from "next/navigation";
 
 import CustomerAuthActions from "@/components/customer-auth/CustomerAuthActions";
 import type { PublicSiteSetting } from "@/lib/siteData";
-import { getInitials } from "@/components/site-header/shared";
-
-const navigationItems = [
-  { href: "/", label: "Home" },
-  { href: "/reviews", label: "Ulasan" },
-  { href: "/cek-transaksi", label: "Cek Transaksi" },
-];
+import {
+  getInitials,
+  isNavigationItemActive,
+  navigationItems,
+} from "@/components/site-header/shared";
 
 export default function MobileMenu({
   open,
@@ -70,27 +68,22 @@ export default function MobileMenu({
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navigationItems.map((item) => {
             const normalizedPathname = String(pathname || "");
-            const isActive =
-              item.href === "/"
-                ? normalizedPathname === "/"
-                : item.href === "/cek-transaksi"
-                  ? normalizedPathname === item.href ||
-                    normalizedPathname.startsWith("/invoice/")
-                : normalizedPathname === item.href ||
-                  normalizedPathname.startsWith(`${item.href}/`);
+            const isActive = isNavigationItemActive(normalizedPathname, item.href);
+            const Icon = item.icon;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`block rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                   isActive
                     ? "bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] text-white shadow-[0_14px_28px_rgba(211,59,59,0.2)]"
                     : "text-white/88 hover:bg-[rgba(211,59,59,0.12)] hover:text-white"
                 }`}
               >
-                {item.label}
+                <Icon className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden="true" />
+                <span>{item.label}</span>
               </Link>
             );
           })}

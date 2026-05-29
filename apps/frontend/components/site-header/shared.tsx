@@ -1,6 +1,15 @@
 "use client";
 
 import type { ReactNode } from "react";
+import {
+  House,
+  Menu,
+  Newspaper,
+  ReceiptText,
+  Search,
+  Star,
+  type LucideIcon,
+} from "lucide-react";
 
 export type SearchGameItem = {
   _id: string;
@@ -10,6 +19,19 @@ export type SearchGameItem = {
   provider?: string;
   category?: string;
 };
+
+export type NavigationItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+export const navigationItems: NavigationItem[] = [
+  { href: "/", label: "Home", icon: House },
+  { href: "/artikel", label: "Artikel", icon: Newspaper },
+  { href: "/reviews", label: "Ulasan", icon: Star },
+  { href: "/cek-transaksi", label: "Cek Transaksi", icon: ReceiptText },
+];
 
 export function getInitials(value: string) {
   return value
@@ -52,62 +74,31 @@ export function renderHighlightedText(value: string, query: string) {
   });
 }
 
-export function SearchIcon() {
+export function isNavigationItemActive(pathname: string, href: string) {
+  const normalizedPathname = String(pathname || "");
+
+  if (href === "/") {
+    return normalizedPathname === "/";
+  }
+
+  if (href === "/cek-transaksi") {
+    return (
+      normalizedPathname === href || normalizedPathname.startsWith("/invoice/")
+    );
+  }
+
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-[18px] w-[18px]"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
+    normalizedPathname === href ||
+    normalizedPathname.startsWith(`${href}/`)
   );
+}
+
+export function SearchIcon() {
+  return <Search className="h-[18px] w-[18px]" strokeWidth={1.9} aria-hidden="true" />;
 }
 
 export function HamburgerIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-[18px] w-[18px]"
-      aria-hidden="true"
-    >
-      <path d="M4 7h16" />
-      <path d="M4 12h16" />
-      <path d="M4 17h16" />
-    </svg>
-  );
-}
-
-export function ReceiptSearchIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-[18px] w-[18px]"
-      aria-hidden="true"
-    >
-      <path d="M7 3h10a2 2 0 0 1 2 2v16l-2.5-1.5L14 21l-2.5-1.5L9 21l-2.5-1.5L4 21V5a2 2 0 0 1 2-2Z" />
-      <path d="M8 8h8" />
-      <path d="M8 12h5" />
-      <circle cx="17.5" cy="16.5" r="2.5" />
-      <path d="m20 19 1.2 1.2" />
-    </svg>
-  );
+  return <Menu className="h-[18px] w-[18px]" strokeWidth={1.9} aria-hidden="true" />;
 }
 
 export function HeaderIconButton({

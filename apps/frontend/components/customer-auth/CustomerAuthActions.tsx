@@ -2,6 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  UserPlus,
+} from "lucide-react";
 import { useCustomerSession } from "./CustomerSessionProvider";
 
 function formatCurrency(value: number) {
@@ -48,15 +54,17 @@ export default function CustomerAuthActions({
           <Link
             href="/masuk"
             onClick={onNavigate}
-            className="block rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-white/88 transition hover:bg-white/5 hover:text-white"
+            className="flex items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-white/88 transition hover:bg-white/5 hover:text-white"
           >
+            <LogIn className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden="true" />
             Masuk
           </Link>
           <Link
             href="/daftar"
             onClick={onNavigate}
-            className="block rounded-2xl bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(211,59,59,0.2)] transition hover:brightness-110"
+            className="flex items-center gap-3 rounded-2xl bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(211,59,59,0.2)] transition hover:brightness-110"
           >
+            <UserPlus className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden="true" />
             Daftar
           </Link>
         </div>
@@ -67,14 +75,16 @@ export default function CustomerAuthActions({
       <div className="flex items-center gap-2">
         <Link
           href="/masuk"
-          className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5 hover:text-white"
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5 hover:text-white"
         >
+          <LogIn className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
           Masuk
         </Link>
         <Link
           href="/daftar"
-          className="rounded-full bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(211,59,59,0.2)] transition hover:brightness-110"
+          className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(211,59,59,0.2)] transition hover:brightness-110"
         >
+          <UserPlus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
           Daftar
         </Link>
       </div>
@@ -96,15 +106,21 @@ export default function CustomerAuthActions({
           <Link
             href="/dashboard"
             onClick={onNavigate}
-            className="block rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-white/88 transition hover:bg-white/5 hover:text-white"
+            className="flex items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-white/88 transition hover:bg-white/5 hover:text-white"
           >
+            <LayoutDashboard
+              className="h-[18px] w-[18px]"
+              strokeWidth={2}
+              aria-hidden="true"
+            />
             Dashboard
           </Link>
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="block w-full rounded-2xl bg-[#2a2d34] px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-[#343842]"
+            className="flex w-full items-center gap-3 rounded-2xl bg-[#2a2d34] px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-[#343842]"
           >
+            <LogOut className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden="true" />
             Logout
           </button>
         </div>
@@ -116,16 +132,18 @@ export default function CustomerAuthActions({
     <div className="flex items-center gap-3">
       <Link
         href="/dashboard"
-        className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90 transition hover:bg-white/10"
+        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90 transition hover:bg-white/10"
       >
+        <LayoutDashboard className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
         <span className="font-semibold">{customer.name}</span>
         <span className="ml-2 text-white/55">Saldo {formatCurrency(customer.balance)}</span>
       </Link>
       <button
         type="button"
         onClick={() => void handleLogout()}
-        className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5 hover:text-white"
+        className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/5 hover:text-white"
       >
+        <LogOut className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
         Logout
       </button>
     </div>

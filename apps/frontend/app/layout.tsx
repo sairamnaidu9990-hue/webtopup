@@ -152,7 +152,7 @@ async function FrontendShell({
           <StorefrontVisitorTracker />
         </Suspense>
         <SiteHeader siteSetting={siteSetting} />
-        <div className="pt-14 sm:pt-[76px]">{children}</div>
+        <div className="pt-14 sm:pt-[76px] md:pt-[118px]">{children}</div>
         <SiteFooter siteSetting={siteSetting} />
         <LazyHomepagePopup siteSetting={siteSetting} />
         <LazyFloatingContactButton siteSetting={siteSetting} />

@@ -9,18 +9,14 @@ import CustomerAuthActions from "@/components/customer-auth/CustomerAuthActions"
 import MobileMenu from "@/components/site-header/MobileMenu";
 import SearchResults from "@/components/site-header/SearchResults";
 import {
-  getInitials,
   HamburgerIcon,
   HeaderIconButton,
+  isNavigationItemActive,
+  navigationItems,
   SearchIcon,
+  getInitials,
   type SearchGameItem,
 } from "@/components/site-header/shared";
-
-const navigationItems = [
-  { href: "/", label: "Home" },
-  { href: "/reviews", label: "Ulasan" },
-  { href: "/cek-transaksi", label: "Cek Transaksi" },
-];
 
 export default function SiteHeader({
   siteSetting,
@@ -145,12 +141,12 @@ export default function SiteHeader({
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
           scrolled
-            ? "bg-[rgba(17,18,23,0.9)] shadow-[0_14px_40px_rgba(0,0,0,0.22)]"
-            : "bg-transparent"
+            ? "bg-[rgba(17,18,23,0.94)] shadow-[0_14px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl"
+            : "bg-[rgba(17,18,23,0.78)] backdrop-blur-lg"
         }`}
       >
         <div ref={headerRef} className="site-shell relative">
-          <div className="flex items-center justify-between gap-3 py-2.5 sm:py-4">
+          <div className="flex items-center justify-between gap-3 py-2.5 sm:py-4 md:gap-5 md:py-3.5">
             <Link
               href="/"
               aria-label={siteSetting.siteName}
@@ -185,10 +181,10 @@ export default function SiteHeader({
                   onChange={(event) => setQuery(event.target.value)}
                   onFocus={() => setDesktopSearchOpen(true)}
                   placeholder="Cari game atau voucher"
-                  className="h-10 w-full rounded-full border border-white/10 bg-[#2a2d34] px-4 pr-11 text-base text-white outline-none transition placeholder:text-white/35 focus:border-white/20 focus:bg-[#30333b] lg:h-11 lg:px-5 lg:text-[15px]"
+                  className="h-10 w-full rounded-full border border-white/10 bg-[#2a2d34] px-4 pr-11 text-base text-white outline-none transition placeholder:text-white/35 focus:border-[#d33b3b]/45 focus:bg-[#30333b] focus:shadow-[0_0_0_3px_rgba(211,59,59,0.12)] lg:h-11 lg:px-5 lg:text-[15px]"
                 />
                 <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-white/45">
-                  ⌕
+                  <SearchIcon />
                 </span>
               </div>
 
@@ -205,32 +201,6 @@ export default function SiteHeader({
             </div>
 
             <div className="hidden shrink-0 items-center gap-3 md:flex">
-              <nav className="flex items-center gap-2">
-                {navigationItems.map((item) => {
-                  const isActive =
-                    item.href === "/"
-                      ? normalizedPathname === "/"
-                      : item.href === "/cek-transaksi"
-                        ? normalizedPathname === item.href ||
-                          normalizedPathname.startsWith("/invoice/")
-                      : normalizedPathname === item.href ||
-                        normalizedPathname.startsWith(`${item.href}/`);
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                        isActive
-                          ? "border-[rgba(211,59,59,0.45)] bg-[linear-gradient(135deg,#d33b3b_0%,#a51f1f_100%)] text-white shadow-[0_14px_28px_rgba(211,59,59,0.28)]"
-                          : "border-white/10 bg-[#23262d] text-white/78 hover:border-[rgba(211,59,59,0.45)] hover:bg-[rgba(211,59,59,0.12)] hover:text-white"
-                      }`}
-                    >
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
               <CustomerAuthActions />
             </div>
 
@@ -272,10 +242,10 @@ export default function SiteHeader({
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="Cari game atau voucher"
-                    className="h-11 w-full rounded-2xl border border-white/10 bg-[#2a2d34] px-4 pr-11 text-base text-white outline-none transition placeholder:text-white/35 focus:border-white/20 focus:bg-[#30333b]"
+                    className="h-11 w-full rounded-2xl border border-white/10 bg-[#2a2d34] px-4 pr-11 text-base text-white outline-none transition placeholder:text-white/35 focus:border-[#d33b3b]/45 focus:bg-[#30333b] focus:shadow-[0_0_0_3px_rgba(211,59,59,0.12)]"
                   />
                   <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-white/45">
-                    ⌕
+                    <SearchIcon />
                   </span>
                 </div>
 
@@ -290,6 +260,34 @@ export default function SiteHeader({
               </div>
             </div>
           ) : null}
+
+          <div className="hidden border-t border-white/8 md:flex md:items-center md:justify-between md:gap-6 md:pb-2 md:pt-2.5">
+            <nav className="flex min-w-0 items-center gap-4 overflow-x-auto text-sm">
+              {navigationItems.map((item) => {
+                const isActive = isNavigationItemActive(normalizedPathname, item.href);
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-0.5 pb-2 pt-1 font-semibold transition ${
+                      isActive
+                        ? "border-[#d33b3b] text-[#ff6f6f]"
+                        : "border-transparent text-white/72 hover:border-[#d33b3b]/60 hover:text-white"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="shrink-0 text-xs font-medium text-white/35">
+              Temukan game, voucher, dan artikel lebih cepat.
+            </div>
+          </div>
         </div>
       </header>
 

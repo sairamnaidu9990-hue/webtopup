@@ -2,27 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-
-function ReceiptSearchIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-[18px] w-[18px]"
-      aria-hidden="true"
-    >
-      <path d="M7 3h10a2 2 0 0 1 2 2v16l-2.5-1.5L14 21l-2.5-1.5L9 21l-2.5-1.5L4 21V5a2 2 0 0 1 2-2Z" />
-      <path d="M8 8h8" />
-      <path d="M8 12h5" />
-      <circle cx="17.5" cy="16.5" r="2.5" />
-      <path d="m20 19 1.2 1.2" />
-    </svg>
-  );
-}
+import { ReceiptText } from "lucide-react";
 
 export default function InvoiceLookupSection() {
   const router = useRouter();
@@ -80,7 +60,7 @@ export default function InvoiceLookupSection() {
               className="h-12 w-full rounded-2xl border border-white/10 bg-[#6a7280] px-4 pr-11 text-base text-white outline-none transition placeholder:text-white/55 focus:border-white/20 focus:bg-[#727b89]"
             />
             <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/78">
-              <ReceiptSearchIcon />
+              <ReceiptText className="h-[18px] w-[18px]" strokeWidth={1.9} aria-hidden="true" />
             </span>
           </div>
 
