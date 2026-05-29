@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import PaymentMethodsMarquee from "@/components/PaymentMethodsMarquee";
+import HomeArticlesSection from "@/components/HomeArticlesSection";
 import {
+  getPublicArticles,
   getPublicPaymentMethods,
   getPublicSiteSetting,
   getStorefrontGames,
@@ -54,10 +56,11 @@ function TrendingGameCard({ game }: { game: StorefrontGame }) {
 }
 
 export default async function HomePage() {
-  const [siteSetting, storefront, paymentMethods] = await Promise.all([
+  const [siteSetting, storefront, paymentMethods, articlesPage] = await Promise.all([
     getPublicSiteSetting(),
     getStorefrontGames(),
     getPublicPaymentMethods(),
+    getPublicArticles({ limit: 3 }),
   ]);
   const hasBanner = siteSetting.banners.some((banner) => banner.imageUrl);
 
@@ -120,6 +123,8 @@ export default async function HomePage() {
             />
           )}
         </section>
+
+        <HomeArticlesSection articles={articlesPage.items} />
 
       </div>
 

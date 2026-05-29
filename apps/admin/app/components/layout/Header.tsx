@@ -76,6 +76,10 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
       return "Team Chat";
     }
 
+    if (pathname.startsWith("/articles")) {
+      return "Articles";
+    }
+
     if (pathname.startsWith("/workspace/notepad")) {
       return "Workspace Notepad";
     }

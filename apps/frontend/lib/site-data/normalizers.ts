@@ -1,3 +1,4 @@
+export * from "@/lib/site-data/article-normalizers";
 export * from "@/lib/site-data/order-normalizers";
 export * from "@/lib/site-data/review-normalizers";
 export * from "@/lib/site-data/site-normalizers";

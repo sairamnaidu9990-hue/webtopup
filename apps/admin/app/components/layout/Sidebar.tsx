@@ -49,6 +49,7 @@ const menuItems = [
   { label: "Monitoring", href: "/monitoring" },
   { label: "Users", href: "/customers" },
   { label: "Team Chat", href: "/team-chat" },
+  { label: "Articles", href: "/articles" },
   { label: "Reviews", href: "/reviews" },
   { label: "Promo Codes", href: "/promo-codes" },
   { label: "Payment Methods", href: "/payment-methods" },

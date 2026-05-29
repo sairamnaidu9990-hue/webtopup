@@ -58,6 +58,7 @@ export const config = {
     "/variants/:path*",
     "/orders/:path*",
     "/customers/:path*",
+    "/articles/:path*",
     "/reviews/:path*",
     "/promo-codes/:path*",
     "/team-chat/:path*",

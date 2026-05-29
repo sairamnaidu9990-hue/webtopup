@@ -23,6 +23,44 @@ export type SiteGameFaq = {
   answer: string;
 };
 
+export type PublicArticle = {
+  _id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  coverImageUrl: string;
+  status: "DRAFT" | "PUBLISHED";
+  isFeatured: boolean;
+  sortOrder: number;
+  readingMinutes: number;
+  publishedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  createdBy?: {
+    adminId: string;
+    name: string;
+    email: string;
+    role: string;
+  } | null;
+  updatedBy?: {
+    adminId: string;
+    name: string;
+    email: string;
+    role: string;
+  } | null;
+};
+
+export type PublicArticleListPage = {
+  items: PublicArticle[];
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
 export type StorefrontReviewEntry = {
   _id: string;
   customerDisplay: string;
