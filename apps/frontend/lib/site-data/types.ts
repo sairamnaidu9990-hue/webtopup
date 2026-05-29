@@ -6,6 +6,7 @@ export type SiteBanner = {
 export type SiteFooterLink = {
   label: string;
   url: string;
+  iconUrl: string;
 };
 
 export type SiteFooterColumn = {

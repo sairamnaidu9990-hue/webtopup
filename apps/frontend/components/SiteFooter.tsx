@@ -42,6 +42,35 @@ function getSocialBadge(label: string) {
   );
 }
 
+function SocialLinkIcon({
+  label,
+  iconUrl,
+}: {
+  label: string;
+  iconUrl?: string;
+}) {
+  if (iconUrl) {
+    return (
+      <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-white/10">
+        <Image
+          src={iconUrl}
+          alt={label}
+          width={22}
+          height={22}
+          sizes="32px"
+          className="h-[22px] w-[22px] object-contain"
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-glow)] text-[11px] font-semibold text-[var(--accent-soft)]">
+      {getSocialBadge(label)}
+    </span>
+  );
+}
+
 export default function SiteFooter({
   siteSetting,
 }: {
@@ -94,9 +123,10 @@ export default function SiteFooter({
                     {...getLinkProps(item.url)}
                     className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white transition hover:border-[#d33b3b] hover:bg-white/8"
                   >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-glow)] text-[11px] font-semibold text-[var(--accent-soft)]">
-                      {getSocialBadge(item.label)}
-                    </span>
+                    <SocialLinkIcon
+                      label={item.label}
+                      iconUrl={item.iconUrl}
+                    />
                     <span>{item.label}</span>
                   </a>
                 ))}

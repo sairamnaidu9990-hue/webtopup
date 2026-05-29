@@ -66,30 +66,30 @@ const defaultSiteSetting = {
     "Top up game dan voucher digital dengan katalog yang dikelola langsung dari panel admin.",
   footerBottomText: "© 2026 WebTopup. All rights reserved.",
   footerSocialLinks: [
-    { label: "Instagram", url: "" },
-    { label: "Telegram", url: "" },
-    { label: "Facebook", url: "" },
+    { label: "Instagram", url: "", iconUrl: "" },
+    { label: "Telegram", url: "", iconUrl: "" },
+    { label: "Facebook", url: "", iconUrl: "" },
   ],
   footerLinkColumns: [
     {
       title: "Partnership",
       links: [
-        { label: "Reseller", url: "" },
-        { label: "Affiliate", url: "" },
+        { label: "Reseller", url: "", iconUrl: "" },
+        { label: "Affiliate", url: "", iconUrl: "" },
       ],
     },
     {
       title: "Site Map",
       links: [
-        { label: "Contact Us", url: "" },
-        { label: "Terms & Conditions", url: "" },
+        { label: "Contact Us", url: "", iconUrl: "" },
+        { label: "Terms & Conditions", url: "", iconUrl: "" },
       ],
     },
     {
       title: "Support",
       links: [
-        { label: "Telegram", url: "" },
-        { label: "Line", url: "" },
+        { label: "Telegram", url: "", iconUrl: "" },
+        { label: "Line", url: "", iconUrl: "" },
       ],
     },
   ],
@@ -270,6 +270,7 @@ function normalizeFooterLink(item) {
   return {
     label: String(item?.label || "").trim(),
     url: String(item?.url || "").trim(),
+    iconUrl: String(item?.iconUrl || "").trim(),
   };
 }
 

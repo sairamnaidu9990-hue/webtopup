@@ -16,30 +16,30 @@ export const DEFAULT_GAME_CATEGORIES = [
   "Live Streaming",
 ];
 export const DEFAULT_FOOTER_SOCIAL_LINKS: SiteFooterLink[] = [
-  { label: "Instagram", url: "" },
-  { label: "Telegram", url: "" },
-  { label: "Facebook", url: "" },
+  { label: "Instagram", url: "", iconUrl: "" },
+  { label: "Telegram", url: "", iconUrl: "" },
+  { label: "Facebook", url: "", iconUrl: "" },
 ];
 export const DEFAULT_FOOTER_COLUMNS: SiteFooterColumn[] = [
   {
     title: "Partnership",
     links: [
-      { label: "Reseller", url: "" },
-      { label: "Affiliate", url: "" },
+      { label: "Reseller", url: "", iconUrl: "" },
+      { label: "Affiliate", url: "", iconUrl: "" },
     ],
   },
   {
     title: "Site Map",
     links: [
-      { label: "Contact Us", url: "" },
-      { label: "Terms & Conditions", url: "" },
+      { label: "Contact Us", url: "", iconUrl: "" },
+      { label: "Terms & Conditions", url: "", iconUrl: "" },
     ],
   },
   {
     title: "Support",
     links: [
-      { label: "Telegram", url: "" },
-      { label: "Line", url: "" },
+      { label: "Telegram", url: "", iconUrl: "" },
+      { label: "Line", url: "", iconUrl: "" },
     ],
   },
 ];
@@ -163,6 +163,7 @@ function normalizeFooterSocialLinks(
     ? links.map((item) => ({
         label: item?.label || "",
         url: item?.url || "",
+        iconUrl: item?.iconUrl || "",
       }))
     : [];
 }
@@ -177,6 +178,7 @@ function normalizeFooterLinkColumns(
           ? column.links.map((item) => ({
               label: item?.label || "",
               url: item?.url || "",
+              iconUrl: item?.iconUrl || "",
             }))
           : [],
       }))

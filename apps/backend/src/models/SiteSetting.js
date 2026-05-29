@@ -12,6 +12,11 @@ const siteFooterLinkSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    iconUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
   },
   { _id: false }
 );

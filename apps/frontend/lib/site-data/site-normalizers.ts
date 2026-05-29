@@ -122,8 +122,9 @@ export function normalizeSiteSetting(
           .map((item) => ({
             label: String(item?.label || "").trim(),
             url: String(item?.url || "").trim(),
+            iconUrl: String(item?.iconUrl || "").trim(),
           }))
-          .filter((item) => item.label || item.url)
+          .filter((item) => item.label || item.url || item.iconUrl)
       : defaultSiteSetting.footerSocialLinks,
     footerLinkColumns: Array.isArray(siteSetting?.footerLinkColumns)
       ? siteSetting.footerLinkColumns
@@ -134,8 +135,9 @@ export function normalizeSiteSetting(
                   .map((item) => ({
                     label: String(item?.label || "").trim(),
                     url: String(item?.url || "").trim(),
+                    iconUrl: String(item?.iconUrl || "").trim(),
                   }))
-                  .filter((item) => item.label || item.url)
+                  .filter((item) => item.label || item.url || item.iconUrl)
               : [],
           }))
           .filter((column) => column.title || column.links.length > 0)

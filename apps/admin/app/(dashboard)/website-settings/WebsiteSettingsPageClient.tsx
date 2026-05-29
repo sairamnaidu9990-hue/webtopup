@@ -1073,7 +1073,7 @@ export default function WebsiteSettingsPageClient() {
                     ...current,
                     footerSocialLinks: [
                       ...current.footerSocialLinks,
-                      { label: "", url: "" },
+                      { label: "", url: "", iconUrl: "" },
                     ],
                   }))
                 }
@@ -1109,7 +1109,7 @@ export default function WebsiteSettingsPageClient() {
                     </button>
                   </div>
 
-                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  <div className="mt-4 grid gap-4 lg:grid-cols-3">
                     <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-700">
                         Label
@@ -1161,6 +1161,36 @@ export default function WebsiteSettingsPageClient() {
                         className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
                       />
                     </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        URL Logo Asli
+                      </label>
+                      <input
+                        value={link.iconUrl || ""}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            footerSocialLinks:
+                              current.footerSocialLinks.map(
+                                (currentLink, currentIndex) =>
+                                  currentIndex === index
+                                    ? {
+                                        ...currentLink,
+                                        iconUrl: event.target.value,
+                                      }
+                                    : currentLink
+                              ),
+                          }))
+                        }
+                        placeholder="https://.../instagram.png"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+                      />
+                      <p className="text-xs leading-6 text-gray-500">
+                        Opsional. Jika diisi, footer akan memakai logo asli
+                        sosial media ini.
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1187,7 +1217,7 @@ export default function WebsiteSettingsPageClient() {
                       ...current.footerLinkColumns,
                       {
                         title: "",
-                        links: [{ label: "", url: "" }],
+                        links: [{ label: "", url: "", iconUrl: "" }],
                       },
                     ],
                   }))
@@ -1372,7 +1402,7 @@ export default function WebsiteSettingsPageClient() {
                                     ...currentColumn,
                                     links: [
                                       ...currentColumn.links,
-                                      { label: "", url: "" },
+                                      { label: "", url: "", iconUrl: "" },
                                     ],
                                   }
                                 : currentColumn
