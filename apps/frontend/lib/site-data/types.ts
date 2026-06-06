@@ -324,6 +324,9 @@ export type StorefrontCustomerRewardSummary = {
     username: string;
     referralCode: string;
   } | null;
+  referralNewUserBonusAmount: number;
+  referralReferrerBonusAmount: number;
+  loyaltyPointsPerSpendAmount: number;
   loyaltyRedeemValuePerPoint: number;
   minimumRedeemPoints: number;
 };

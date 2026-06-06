@@ -18,6 +18,8 @@ const {
   normalizeHomepagePopupTitle,
   normalizeMaintenanceMessage,
   normalizeMaintenanceTitle,
+  normalizePositiveProgramNumber,
+  normalizeRewardAmount,
   normalizeStaticInfoContent,
   syncBannerLength,
 } = require("../utils/siteSettingForm");
@@ -64,6 +66,26 @@ function serializeSiteSetting(siteSetting) {
     reviewCommentsVisible: normalizeBoolean(
       siteSetting.reviewCommentsVisible,
       defaultSiteSetting.reviewCommentsVisible
+    ),
+    referralNewUserBonusAmount: normalizeRewardAmount(
+      siteSetting.referralNewUserBonusAmount,
+      defaultSiteSetting.referralNewUserBonusAmount
+    ),
+    referralReferrerBonusAmount: normalizeRewardAmount(
+      siteSetting.referralReferrerBonusAmount,
+      defaultSiteSetting.referralReferrerBonusAmount
+    ),
+    loyaltyPointsPerSpendAmount: normalizePositiveProgramNumber(
+      siteSetting.loyaltyPointsPerSpendAmount,
+      defaultSiteSetting.loyaltyPointsPerSpendAmount
+    ),
+    loyaltyRedeemValuePerPoint: normalizePositiveProgramNumber(
+      siteSetting.loyaltyRedeemValuePerPoint,
+      defaultSiteSetting.loyaltyRedeemValuePerPoint
+    ),
+    loyaltyMinimumRedeemPoints: normalizePositiveProgramNumber(
+      siteSetting.loyaltyMinimumRedeemPoints,
+      defaultSiteSetting.loyaltyMinimumRedeemPoints
     ),
     bannerCount,
     bannerAutoSlideSeconds: normalizeBannerAutoSlideSeconds(
@@ -235,6 +257,42 @@ exports.updateSiteSetting = async (req, res) => {
         req.body.reviewCommentsVisible,
         defaultSiteSetting.reviewCommentsVisible
       );
+    }
+
+    if (req.body.referralNewUserBonusAmount != null) {
+      siteSetting.referralNewUserBonusAmount = normalizeRewardAmount(
+        req.body.referralNewUserBonusAmount,
+        defaultSiteSetting.referralNewUserBonusAmount
+      );
+    }
+
+    if (req.body.referralReferrerBonusAmount != null) {
+      siteSetting.referralReferrerBonusAmount = normalizeRewardAmount(
+        req.body.referralReferrerBonusAmount,
+        defaultSiteSetting.referralReferrerBonusAmount
+      );
+    }
+
+    if (req.body.loyaltyPointsPerSpendAmount != null) {
+      siteSetting.loyaltyPointsPerSpendAmount = normalizePositiveProgramNumber(
+        req.body.loyaltyPointsPerSpendAmount,
+        defaultSiteSetting.loyaltyPointsPerSpendAmount
+      );
+    }
+
+    if (req.body.loyaltyRedeemValuePerPoint != null) {
+      siteSetting.loyaltyRedeemValuePerPoint = normalizePositiveProgramNumber(
+        req.body.loyaltyRedeemValuePerPoint,
+        defaultSiteSetting.loyaltyRedeemValuePerPoint
+      );
+    }
+
+    if (req.body.loyaltyMinimumRedeemPoints != null) {
+      siteSetting.loyaltyMinimumRedeemPoints =
+        normalizePositiveProgramNumber(
+          req.body.loyaltyMinimumRedeemPoints,
+          defaultSiteSetting.loyaltyMinimumRedeemPoints
+        );
     }
 
     if (req.body.bannerCount != null) {

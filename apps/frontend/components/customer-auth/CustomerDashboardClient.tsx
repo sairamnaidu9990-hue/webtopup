@@ -56,6 +56,16 @@ export default function CustomerDashboardClient() {
   const [dashboardReloadNonce, setDashboardReloadNonce] = useState(0);
 
   useEffect(() => {
+    const nextMinimumRedeemPoints = Math.max(
+      1,
+      Number(rewardSummary?.minimumRedeemPoints || 100)
+    );
+
+    setRedeemBalancePoints(String(nextMinimumRedeemPoints));
+    setRedeemPromoPoints(String(nextMinimumRedeemPoints));
+  }, [rewardSummary?.minimumRedeemPoints]);
+
+  useEffect(() => {
     if (!customer?.id) {
       return;
     }

@@ -79,6 +79,15 @@ export default function CustomerRewardsSection({
   const [copyFeedback, setCopyFeedback] = useState("");
   const minimumRedeemPoints = Number(summary?.minimumRedeemPoints || 100);
   const redeemValuePerPoint = Number(summary?.loyaltyRedeemValuePerPoint || 10);
+  const loyaltyPointsPerSpendAmount = Number(
+    summary?.loyaltyPointsPerSpendAmount || 1000
+  );
+  const referralNewUserBonusAmount = Number(
+    summary?.referralNewUserBonusAmount || 0
+  );
+  const referralReferrerBonusAmount = Number(
+    summary?.referralReferrerBonusAmount || 0
+  );
   const recentTransactions = useMemo(
     () => pointTransactions.slice(0, 6),
     [pointTransactions]
@@ -121,7 +130,10 @@ export default function CustomerRewardsSection({
                 </p>
                 <p className="mt-2 text-sm leading-6 text-white/58">
                   User baru yang daftar dengan kode ini dan menyelesaikan order
-                  pertama akan membuka bonus saldo referral.
+                  pertama akan membuka bonus saldo referral. User baru mendapat
+                  Rp{referralNewUserBonusAmount.toLocaleString("id-ID")} dan
+                  pengundang mendapat Rp
+                  {referralReferrerBonusAmount.toLocaleString("id-ID")}.
                 </p>
               </div>
 
@@ -172,8 +184,11 @@ export default function CustomerRewardsSection({
             <div className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5">
               <p className="text-sm font-semibold text-white">Tukar Poin ke Saldo</p>
               <p className="mt-2 text-sm leading-6 text-white/58">
-                1 poin = Rp{redeemValuePerPoint.toLocaleString("id-ID")}. Minimal
-                tukar {minimumRedeemPoints.toLocaleString("id-ID")} poin.
+                Setiap belanja Rp
+                {loyaltyPointsPerSpendAmount.toLocaleString("id-ID")} memberi
+                1 poin. Nilai 1 poin = Rp
+                {redeemValuePerPoint.toLocaleString("id-ID")}. Minimal tukar{" "}
+                {minimumRedeemPoints.toLocaleString("id-ID")} poin.
               </p>
               <div className="mt-4 flex flex-col gap-3">
                 <input

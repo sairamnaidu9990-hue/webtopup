@@ -73,6 +73,11 @@ export default function WebsiteSettingsPageClient() {
           categoryDescriptions: form.categoryDescriptions,
           gameFaqs: form.gameFaqs,
           reviewCommentsVisible: form.reviewCommentsVisible,
+          referralNewUserBonusAmount: form.referralNewUserBonusAmount,
+          referralReferrerBonusAmount: form.referralReferrerBonusAmount,
+          loyaltyPointsPerSpendAmount: form.loyaltyPointsPerSpendAmount,
+          loyaltyRedeemValuePerPoint: form.loyaltyRedeemValuePerPoint,
+          loyaltyMinimumRedeemPoints: form.loyaltyMinimumRedeemPoints,
           bannerCount: form.bannerCount,
           bannerAutoSlideSeconds: form.bannerAutoSlideSeconds,
           homepagePopupEnabled: form.homepagePopupEnabled,
@@ -954,6 +959,146 @@ export default function WebsiteSettingsPageClient() {
                   </span>
                 </label>
               </div>
+            </div>
+          </SettingsSubsection>
+
+          <SettingsSubsection
+            title="Referral & Loyalty"
+            description="Atur nominal bonus referral dan aturan program poin member yang dipakai otomatis di dashboard user dan proses reward transaksi."
+          >
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Bonus User Baru (Rp)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={form.referralNewUserBonusAmount}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    referralNewUserBonusAmount: clampNumber(
+                      Number(event.target.value),
+                      0,
+                      100000000,
+                      defaultSiteSettingForm.referralNewUserBonusAmount
+                    ),
+                  }))
+                }
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Saldo bonus yang masuk ke user baru saat order sukses pertama
+                dari akun referral berhasil diproses.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Bonus Pengundang (Rp)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={form.referralReferrerBonusAmount}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    referralReferrerBonusAmount: clampNumber(
+                      Number(event.target.value),
+                      0,
+                      100000000,
+                      defaultSiteSettingForm.referralReferrerBonusAmount
+                    ),
+                  }))
+                }
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Saldo bonus untuk user yang membagikan kode referral saat
+                referral pertamanya berhasil menyelesaikan order sukses.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                1 Poin Didapat Tiap Belanja (Rp)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={form.loyaltyPointsPerSpendAmount}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    loyaltyPointsPerSpendAmount: clampNumber(
+                      Number(event.target.value),
+                      1,
+                      100000000,
+                      defaultSiteSettingForm.loyaltyPointsPerSpendAmount
+                    ),
+                  }))
+                }
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Contoh: isi 1000 berarti user mendapat 1 poin setiap belanja
+                Rp1.000 dari subtotal setelah promo.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Nilai 1 Poin Menjadi Saldo/Promo (Rp)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={form.loyaltyRedeemValuePerPoint}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    loyaltyRedeemValuePerPoint: clampNumber(
+                      Number(event.target.value),
+                      1,
+                      100000000,
+                      defaultSiteSettingForm.loyaltyRedeemValuePerPoint
+                    ),
+                  }))
+                }
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                Nilai ini dipakai saat user menukar poin ke saldo KITAGG atau
+                promo personal.
+              </p>
+            </div>
+
+            <div className="space-y-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Minimal Tukar Poin
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={form.loyaltyMinimumRedeemPoints}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    loyaltyMinimumRedeemPoints: clampNumber(
+                      Number(event.target.value),
+                      1,
+                      100000000,
+                      defaultSiteSettingForm.loyaltyMinimumRedeemPoints
+                    ),
+                  }))
+                }
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+              />
+              <p className="text-xs leading-6 text-gray-500">
+                User minimal harus punya poin sebesar angka ini sebelum bisa
+                menukar ke saldo atau promo.
+              </p>
             </div>
           </SettingsSubsection>
 

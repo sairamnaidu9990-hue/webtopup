@@ -6,11 +6,10 @@ const {
   serializeCustomerBalanceTransaction,
 } = require("../utils/customerBalance");
 const {
-  LOYALTY_MIN_REDEEM_POINTS,
-  LOYALTY_REDEEM_VALUE_PER_POINT,
   calculateLoyaltyRedeemAmount,
   debitCustomerPoints,
   generateUniqueLoyaltyPromoCode,
+  getRewardProgramSettings,
   serializeCustomerPointTransaction,
 } = require("../utils/customerRewards");
 
@@ -36,19 +35,21 @@ async function getCurrentCustomerRewards(req, res) {
       toPositiveInteger(req.query.limit, MAX_HISTORY_LIMIT),
       MAX_HISTORY_LIMIT
     );
-    const [customer, pointTransactions, referredCustomersCount] = await Promise.all([
-      Customer.findById(req.customer._id)
-        .select(
-          "referralCode referredBy referralBonusGrantedAt referralQualifiedOrder loyaltyPoints totalLoyaltyPointsEarned totalLoyaltyPointsRedeemed"
-        )
-        .populate("referredBy", "name username referralCode")
-        .lean(),
-      CustomerPointTransaction.find({ customer: req.customer._id })
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .lean(),
-      Customer.countDocuments({ referredBy: req.customer._id }),
-    ]);
+    const [customer, pointTransactions, referredCustomersCount, rewardProgramSettings] =
+      await Promise.all([
+        Customer.findById(req.customer._id)
+          .select(
+            "referralCode referredBy referralBonusGrantedAt referralQualifiedOrder loyaltyPoints totalLoyaltyPointsEarned totalLoyaltyPointsRedeemed"
+          )
+          .populate("referredBy", "name username referralCode")
+          .lean(),
+        CustomerPointTransaction.find({ customer: req.customer._id })
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .lean(),
+        Customer.countDocuments({ referredBy: req.customer._id }),
+        getRewardProgramSettings(),
+      ]);
 
     return res.status(200).json({
       summary: {
@@ -71,8 +72,15 @@ async function getCurrentCustomerRewards(req, res) {
               referralCode: toStringValue(customer.referredBy.referralCode),
             }
           : null,
-        loyaltyRedeemValuePerPoint: LOYALTY_REDEEM_VALUE_PER_POINT,
-        minimumRedeemPoints: LOYALTY_MIN_REDEEM_POINTS,
+        referralNewUserBonusAmount:
+          rewardProgramSettings.referralNewUserBonusAmount,
+        referralReferrerBonusAmount:
+          rewardProgramSettings.referralReferrerBonusAmount,
+        loyaltyPointsPerSpendAmount:
+          rewardProgramSettings.loyaltyPointsPerSpendAmount,
+        loyaltyRedeemValuePerPoint:
+          rewardProgramSettings.loyaltyRedeemValuePerPoint,
+        minimumRedeemPoints: rewardProgramSettings.loyaltyMinimumRedeemPoints,
       },
       pointTransactions: pointTransactions.map(serializeCustomerPointTransaction),
       limit,
@@ -88,14 +96,15 @@ async function getCurrentCustomerRewards(req, res) {
 async function redeemCustomerPointsToBalance(req, res) {
   try {
     const points = toPositiveInteger(req.body?.points, 0);
+    const rewardProgramSettings = await getRewardProgramSettings();
 
-    if (points < LOYALTY_MIN_REDEEM_POINTS) {
+    if (points < rewardProgramSettings.loyaltyMinimumRedeemPoints) {
       return res.status(400).json({
-        message: `Minimal tukar poin ke saldo adalah ${LOYALTY_MIN_REDEEM_POINTS} poin`,
+        message: `Minimal tukar poin ke saldo adalah ${rewardProgramSettings.loyaltyMinimumRedeemPoints} poin`,
       });
     }
 
-    const amount = calculateLoyaltyRedeemAmount(points);
+    const amount = calculateLoyaltyRedeemAmount(points, rewardProgramSettings);
     const pointResult = await debitCustomerPoints({
       customerId: req.customer._id,
       points,
@@ -133,14 +142,18 @@ async function redeemCustomerPointsToBalance(req, res) {
 async function redeemCustomerPointsToPromo(req, res) {
   try {
     const points = toPositiveInteger(req.body?.points, 0);
+    const rewardProgramSettings = await getRewardProgramSettings();
 
-    if (points < LOYALTY_MIN_REDEEM_POINTS) {
+    if (points < rewardProgramSettings.loyaltyMinimumRedeemPoints) {
       return res.status(400).json({
-        message: `Minimal tukar poin ke promo adalah ${LOYALTY_MIN_REDEEM_POINTS} poin`,
+        message: `Minimal tukar poin ke promo adalah ${rewardProgramSettings.loyaltyMinimumRedeemPoints} poin`,
       });
     }
 
-    const discountAmount = calculateLoyaltyRedeemAmount(points);
+    const discountAmount = calculateLoyaltyRedeemAmount(
+      points,
+      rewardProgramSettings
+    );
     const code = await generateUniqueLoyaltyPromoCode(req.customer.username);
     const promoCode = await PromoCode.create({
       title: `Promo Loyalty ${req.customer.username}`,

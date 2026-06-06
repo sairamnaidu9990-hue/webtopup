@@ -37,6 +37,11 @@ export type SiteSetting = {
   categoryDescriptions: SiteCategoryDescription[];
   gameFaqs: SiteGameFaq[];
   reviewCommentsVisible: boolean;
+  referralNewUserBonusAmount: number;
+  referralReferrerBonusAmount: number;
+  loyaltyPointsPerSpendAmount: number;
+  loyaltyRedeemValuePerPoint: number;
+  loyaltyMinimumRedeemPoints: number;
   bannerCount: number;
   bannerAutoSlideSeconds: number;
   homepagePopupEnabled: boolean;

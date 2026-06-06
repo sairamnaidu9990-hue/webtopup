@@ -120,6 +120,31 @@ const siteSettingSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    referralNewUserBonusAmount: {
+      type: Number,
+      default: 2500,
+      min: 0,
+    },
+    referralReferrerBonusAmount: {
+      type: Number,
+      default: 2500,
+      min: 0,
+    },
+    loyaltyPointsPerSpendAmount: {
+      type: Number,
+      default: 1000,
+      min: 1,
+    },
+    loyaltyRedeemValuePerPoint: {
+      type: Number,
+      default: 10,
+      min: 1,
+    },
+    loyaltyMinimumRedeemPoints: {
+      type: Number,
+      default: 100,
+      min: 1,
+    },
     bannerCount: {
       type: Number,
       default: 3,

@@ -1,13 +1,10 @@
 const Customer = require("../models/Customer");
 const PromoCode = require("../models/PromoCode");
 const CustomerPointTransaction = require("../models/CustomerPointTransaction");
+const SiteSetting = require("../models/SiteSetting");
 const { creditCustomerBalance } = require("./customerBalance");
+const { defaultSiteSetting } = require("./siteSettingForm");
 
-const REFERRAL_NEW_USER_BONUS_AMOUNT = 2500;
-const REFERRAL_REFERRER_BONUS_AMOUNT = 2500;
-const LOYALTY_POINTS_PER_SPEND_AMOUNT = 1000;
-const LOYALTY_REDEEM_VALUE_PER_POINT = 10;
-const LOYALTY_MIN_REDEEM_POINTS = 100;
 const LOYALTY_PROMO_PREFIX = "KITLP";
 const MAX_PROMO_CODE_ATTEMPTS = 5;
 
@@ -23,6 +20,50 @@ function toPositiveInteger(value, fallback = 0) {
   }
 
   return Math.floor(parsed);
+}
+
+function normalizeRewardProgramSettings(value = null) {
+  return {
+    referralNewUserBonusAmount: toPositiveInteger(
+      value?.referralNewUserBonusAmount,
+      toPositiveInteger(defaultSiteSetting.referralNewUserBonusAmount, 2500)
+    ),
+    referralReferrerBonusAmount: toPositiveInteger(
+      value?.referralReferrerBonusAmount,
+      toPositiveInteger(defaultSiteSetting.referralReferrerBonusAmount, 2500)
+    ),
+    loyaltyPointsPerSpendAmount: Math.max(
+      1,
+      toPositiveInteger(
+        value?.loyaltyPointsPerSpendAmount,
+        toPositiveInteger(defaultSiteSetting.loyaltyPointsPerSpendAmount, 1000)
+      )
+    ),
+    loyaltyRedeemValuePerPoint: Math.max(
+      1,
+      toPositiveInteger(
+        value?.loyaltyRedeemValuePerPoint,
+        toPositiveInteger(defaultSiteSetting.loyaltyRedeemValuePerPoint, 10)
+      )
+    ),
+    loyaltyMinimumRedeemPoints: Math.max(
+      1,
+      toPositiveInteger(
+        value?.loyaltyMinimumRedeemPoints,
+        toPositiveInteger(defaultSiteSetting.loyaltyMinimumRedeemPoints, 100)
+      )
+    ),
+  };
+}
+
+async function getRewardProgramSettings() {
+  const siteSetting = await SiteSetting.findOne()
+    .select(
+      "referralNewUserBonusAmount referralReferrerBonusAmount loyaltyPointsPerSpendAmount loyaltyRedeemValuePerPoint loyaltyMinimumRedeemPoints"
+    )
+    .lean();
+
+  return normalizeRewardProgramSettings(siteSetting);
 }
 
 function normalizeCode(value) {
@@ -71,19 +112,21 @@ async function generateUniqueReferralCode(seed) {
   return `${Date.now().toString(36)}${createRandomSuffix(4)}`.toUpperCase();
 }
 
-function calculateLoyaltyPointsEarned(amount) {
+function calculateLoyaltyPointsEarned(amount, rewardsSettings = null) {
   const normalizedAmount = Number(amount || 0);
+  const programSettings = normalizeRewardProgramSettings(rewardsSettings);
 
   if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
     return 0;
   }
 
-  return Math.floor(normalizedAmount / LOYALTY_POINTS_PER_SPEND_AMOUNT);
+  return Math.floor(normalizedAmount / programSettings.loyaltyPointsPerSpendAmount);
 }
 
-function calculateLoyaltyRedeemAmount(points) {
+function calculateLoyaltyRedeemAmount(points, rewardsSettings = null) {
   const normalizedPoints = toPositiveInteger(points, 0);
-  return normalizedPoints * LOYALTY_REDEEM_VALUE_PER_POINT;
+  const programSettings = normalizeRewardProgramSettings(rewardsSettings);
+  return normalizedPoints * programSettings.loyaltyRedeemValuePerPoint;
 }
 
 function serializeCustomerPointTransaction(transaction) {
@@ -247,11 +290,13 @@ async function syncCustomerRewardsForSuccessfulOrder(order) {
     return order;
   }
 
+  const rewardsSettings = await getRewardProgramSettings();
   let shouldSaveOrder = false;
 
   if (!order.loyaltyPointsGrantedAt) {
     const pointsToGrant = calculateLoyaltyPointsEarned(
-      Number(order?.price?.subtotalAfterDiscount || 0)
+      Number(order?.price?.subtotalAfterDiscount || 0),
+      rewardsSettings
     );
 
     if (pointsToGrant > 0) {
@@ -283,16 +328,17 @@ async function syncCustomerRewardsForSuccessfulOrder(order) {
     if (
       customer?.referredBy &&
       !customer.referralBonusGrantedAt &&
-      (REFERRAL_NEW_USER_BONUS_AMOUNT > 0 || REFERRAL_REFERRER_BONUS_AMOUNT > 0)
+      (rewardsSettings.referralNewUserBonusAmount > 0 ||
+        rewardsSettings.referralReferrerBonusAmount > 0)
     ) {
       const now = new Date();
       let welcomeTransaction = null;
       let referrerTransaction = null;
 
-      if (REFERRAL_NEW_USER_BONUS_AMOUNT > 0) {
+      if (rewardsSettings.referralNewUserBonusAmount > 0) {
         welcomeTransaction = await creditCustomerBalance({
           customerId,
-          amount: REFERRAL_NEW_USER_BONUS_AMOUNT,
+          amount: rewardsSettings.referralNewUserBonusAmount,
           source: "REFERRAL_WELCOME_BONUS",
           description: `Bonus referral user baru dari transaksi ${order.invoiceNumber}`,
           orderId: order._id,
@@ -300,10 +346,10 @@ async function syncCustomerRewardsForSuccessfulOrder(order) {
         });
       }
 
-      if (REFERRAL_REFERRER_BONUS_AMOUNT > 0) {
+      if (rewardsSettings.referralReferrerBonusAmount > 0) {
         referrerTransaction = await creditCustomerBalance({
           customerId: customer.referredBy,
-          amount: REFERRAL_REFERRER_BONUS_AMOUNT,
+          amount: rewardsSettings.referralReferrerBonusAmount,
           source: "REFERRAL_REFERRER_BONUS",
           description: `Bonus referral dari transaksi ${order.invoiceNumber}`,
           orderId: order._id,
@@ -317,8 +363,10 @@ async function syncCustomerRewardsForSuccessfulOrder(order) {
       });
 
       order.referralRewardsProcessedAt = now;
-      order.referralWelcomeBonusAmount = REFERRAL_NEW_USER_BONUS_AMOUNT;
-      order.referralReferrerBonusAmount = REFERRAL_REFERRER_BONUS_AMOUNT;
+      order.referralWelcomeBonusAmount =
+        rewardsSettings.referralNewUserBonusAmount;
+      order.referralReferrerBonusAmount =
+        rewardsSettings.referralReferrerBonusAmount;
       order.referralWelcomeBalanceTransactionId =
         welcomeTransaction?.transaction?._id || null;
       order.referralReferrerBalanceTransactionId =
@@ -350,17 +398,14 @@ async function generateUniqueLoyaltyPromoCode(seed = LOYALTY_PROMO_PREFIX) {
 }
 
 module.exports = {
-  REFERRAL_NEW_USER_BONUS_AMOUNT,
-  REFERRAL_REFERRER_BONUS_AMOUNT,
-  LOYALTY_POINTS_PER_SPEND_AMOUNT,
-  LOYALTY_REDEEM_VALUE_PER_POINT,
-  LOYALTY_MIN_REDEEM_POINTS,
   calculateLoyaltyPointsEarned,
   calculateLoyaltyRedeemAmount,
   creditCustomerPoints,
   debitCustomerPoints,
+  getRewardProgramSettings,
   generateUniqueLoyaltyPromoCode,
   generateUniqueReferralCode,
+  normalizeRewardProgramSettings,
   normalizeReferralCode,
   serializeCustomerPointTransaction,
   syncCustomerRewardsForSuccessfulOrder,

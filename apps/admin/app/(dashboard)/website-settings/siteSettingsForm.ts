@@ -64,6 +64,11 @@ export const defaultSiteSettingForm: SiteSetting = {
   categoryDescriptions: DEFAULT_CATEGORY_DESCRIPTIONS,
   gameFaqs: DEFAULT_GAME_FAQS,
   reviewCommentsVisible: true,
+  referralNewUserBonusAmount: 2500,
+  referralReferrerBonusAmount: 2500,
+  loyaltyPointsPerSpendAmount: 1000,
+  loyaltyRedeemValuePerPoint: 10,
+  loyaltyMinimumRedeemPoints: 100,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_AUTO_SLIDE_SECONDS,
   homepagePopupEnabled: false,
@@ -207,6 +212,51 @@ export function normalizeSiteSetting(
     ),
     gameFaqs: normalizeGameFaqs(value?.gameFaqs),
     reviewCommentsVisible: Boolean(value?.reviewCommentsVisible ?? true),
+    referralNewUserBonusAmount: clampNumber(
+      Number(
+        value?.referralNewUserBonusAmount ??
+          defaultSiteSettingForm.referralNewUserBonusAmount
+      ),
+      0,
+      100000000,
+      defaultSiteSettingForm.referralNewUserBonusAmount
+    ),
+    referralReferrerBonusAmount: clampNumber(
+      Number(
+        value?.referralReferrerBonusAmount ??
+          defaultSiteSettingForm.referralReferrerBonusAmount
+      ),
+      0,
+      100000000,
+      defaultSiteSettingForm.referralReferrerBonusAmount
+    ),
+    loyaltyPointsPerSpendAmount: clampNumber(
+      Number(
+        value?.loyaltyPointsPerSpendAmount ??
+          defaultSiteSettingForm.loyaltyPointsPerSpendAmount
+      ),
+      1,
+      100000000,
+      defaultSiteSettingForm.loyaltyPointsPerSpendAmount
+    ),
+    loyaltyRedeemValuePerPoint: clampNumber(
+      Number(
+        value?.loyaltyRedeemValuePerPoint ??
+          defaultSiteSettingForm.loyaltyRedeemValuePerPoint
+      ),
+      1,
+      100000000,
+      defaultSiteSettingForm.loyaltyRedeemValuePerPoint
+    ),
+    loyaltyMinimumRedeemPoints: clampNumber(
+      Number(
+        value?.loyaltyMinimumRedeemPoints ??
+          defaultSiteSettingForm.loyaltyMinimumRedeemPoints
+      ),
+      1,
+      100000000,
+      defaultSiteSettingForm.loyaltyMinimumRedeemPoints
+    ),
     bannerCount,
     bannerAutoSlideSeconds: clampNumber(
       Number(

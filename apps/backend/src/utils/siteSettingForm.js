@@ -14,6 +14,11 @@ const MAX_GAME_FAQS = 20;
 const MAX_FOOTER_SOCIAL_LINKS = 12;
 const MAX_FOOTER_COLUMNS = 6;
 const MAX_FOOTER_COLUMN_LINKS = 10;
+const DEFAULT_REFERRAL_NEW_USER_BONUS_AMOUNT = 2500;
+const DEFAULT_REFERRAL_REFERRER_BONUS_AMOUNT = 2500;
+const DEFAULT_LOYALTY_POINTS_PER_SPEND_AMOUNT = 1000;
+const DEFAULT_LOYALTY_REDEEM_VALUE_PER_POINT = 10;
+const DEFAULT_LOYALTY_MINIMUM_REDEEM_POINTS = 100;
 
 const defaultSiteSetting = {
   siteName: "WebTopup",
@@ -32,6 +37,11 @@ const defaultSiteSetting = {
   })),
   gameFaqs: [],
   reviewCommentsVisible: true,
+  referralNewUserBonusAmount: DEFAULT_REFERRAL_NEW_USER_BONUS_AMOUNT,
+  referralReferrerBonusAmount: DEFAULT_REFERRAL_REFERRER_BONUS_AMOUNT,
+  loyaltyPointsPerSpendAmount: DEFAULT_LOYALTY_POINTS_PER_SPEND_AMOUNT,
+  loyaltyRedeemValuePerPoint: DEFAULT_LOYALTY_REDEEM_VALUE_PER_POINT,
+  loyaltyMinimumRedeemPoints: DEFAULT_LOYALTY_MINIMUM_REDEEM_POINTS,
   bannerCount: DEFAULT_BANNER_COUNT,
   bannerAutoSlideSeconds: DEFAULT_BANNER_SLIDE_SECONDS,
   homepagePopupEnabled: false,
@@ -274,6 +284,14 @@ function normalizeFooterLink(item) {
   };
 }
 
+function normalizeRewardAmount(value, fallback = 0) {
+  return clampNumber(value, 0, 100000000, fallback);
+}
+
+function normalizePositiveProgramNumber(value, fallback = 1) {
+  return clampNumber(value, 1, 100000000, fallback);
+}
+
 function normalizeFooterSocialLinks(items, fallback = []) {
   const source = Array.isArray(items) ? items : fallback;
 
@@ -350,6 +368,8 @@ module.exports = {
   normalizeHomepagePopupTitle,
   normalizeMaintenanceMessage,
   normalizeMaintenanceTitle,
+  normalizePositiveProgramNumber,
+  normalizeRewardAmount,
   normalizeStaticInfoContent,
   syncBannerLength,
 };
