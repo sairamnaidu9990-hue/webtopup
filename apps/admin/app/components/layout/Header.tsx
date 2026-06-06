@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
 import LogoutButton from "../../components/auth/LogoutButton";
 
 type HeaderProps = {
@@ -119,9 +120,10 @@ export default function Header({ adminEmail, onMenuClick }: HeaderProps) {
         <button
           type="button"
           onClick={onMenuClick}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white lg:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10 lg:hidden"
+          aria-label="Buka menu"
         >
-          ☰
+          <Menu className="h-[18px] w-[18px]" />
         </button>
 
         <div className="min-w-0">

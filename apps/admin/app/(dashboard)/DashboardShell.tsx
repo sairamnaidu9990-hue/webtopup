@@ -16,6 +16,7 @@ export default function DashboardShell({
   children,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#eef2f6] text-[#0f172a]">
@@ -24,6 +25,10 @@ export default function DashboardShell({
         <Sidebar
           mobileOpen={mobileOpen}
           onClose={() => setMobileOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() =>
+            setSidebarCollapsed((current) => !current)
+          }
         />
 
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
